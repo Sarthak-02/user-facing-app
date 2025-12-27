@@ -1,0 +1,97 @@
+import { useState, useRef, useEffect } from "react";
+import { Button, Card, Select,Dropdown } from "../../ui-components";
+import { DayPicker } from "react-day-picker";
+import { SlidersHorizontal } from 'lucide-react';
+import "react-day-picker/style.css";
+import FiltersButton from "./FiltersButton";
+
+function formatDate(date) {
+  if (!date) return "";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export default function Header({
+  selectedClass,
+  setSelectedClass,
+  selectedDate,
+  setSelectedDate,
+}) {
+  const [showCalendar, setShowCalendar] = useState(false);
+  const calendarRef = useRef(null);
+
+  // Close calendar on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target)) {
+        setShowCalendar(false);
+      }
+    };
+
+    if (showCalendar) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showCalendar]);
+
+  return (
+    <Card>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-4 relative">
+          {/* Class Selector */}
+          <Select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            options={[
+              { label: "10-A", value: "10-A" },
+              { label: "10-B", value: "10-B" },
+            ]}
+          />
+          
+
+          {/* Date trigger */}
+          <Button
+            onClick={() => setShowCalendar((v) => !v)}
+            className="
+              inline-flex items-center gap-2
+              rounded-lg border border-border bg-surface
+              px-3 py-2 text-sm font-medium
+              text-gray-700 hover:bg-black/5
+              focus:outline-none focus:ring-2 focus:ring-primary-600
+            "
+          >
+            <span className="text-gray-500">📅</span>
+            <span className="text-gray-500">{formatDate(selectedDate)}</span>
+          </Button>
+
+          {/* Calendar popover */}
+          {showCalendar && (
+            <div
+              ref={calendarRef}
+              className="absolute top-full mt-2 z-50 rounded-lg border border-border bg-surface p-2 shadow-lg"
+            >
+              <DayPicker
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  if (!date) return;
+                  setSelectedDate(date);
+                  setShowCalendar(false);
+                }}
+                disabled={{ after: new Date() }} // 🚫 future dates
+              />
+            </div>
+          )}
+          <div className="md:hidden">
+          <FiltersButton />
+          </div>
+          
+        </div>
+      </div>
+    </Card>
+  );
+}
