@@ -3,6 +3,7 @@ import {Badge} from "./ui-components"
 import { useThemeClasses } from "./hooks/useThemeClasses";
 import AttendancePage from "./pages/Attendance";
 import Layout from "./ui-components/layout/Layout";
+import BroadcastNotification from "./pages/BroadcastNotification";
 // import { routes } from "./utils/routes/Routes";
 // import { useRoutes } from "react-router-dom";
 function App() {
@@ -19,9 +20,10 @@ function App() {
     {/* <Badge>Badge</Badge> */}
     {/* <Button> </Button> */}
     {/* <AttendancePage /> */}
-    <Layout >
-        <AttendancePage />
-    </Layout>
+    {/* <Layout >
+    </Layout> */}
+    <BroadcastNotification />
+    
     </>
   );
 }

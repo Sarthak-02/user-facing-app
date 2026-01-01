@@ -1,0 +1,97 @@
+import { useMemo, useRef, useState } from "react";
+import BroadcastForm from "../components/broadcast/BroadcastForm";
+import TargetSelector from "../components/broadcast/TargetSelector";
+import DesktopView from "../components/broadcast/DesktopView";
+import MobileView from "../components/broadcast/MobileView";
+
+export default function BroadcastPage({
+  classes = [
+    { id: "c1", name: "Class 1" },
+    { id: "c2", name: "Class 2" },
+  ],
+  sectionsByClassId = {
+    c1: [
+      { id: "s1", name: "A" },
+      { id: "s2", name: "B" },
+    ],
+    c2: [{ id: "s3", name: "A" }],
+  },
+  studentsBySectionId = {
+    s1: [{ id: "st1", name: "Aarav Sharma" }],
+    s2: [{ id: "st2", name: "Diya Singh" }],
+    s3: [{ id: "st3", name: "Kabir Verma" }],
+  },
+}) {
+  /* ---------------- state ---------------- */
+  const [targetType, setTargetType] = useState("SCHOOL");
+  const [classId, setClassId] = useState("");
+  const [sectionId, setSectionId] = useState("");
+  const [studentId, setStudentId] = useState("");
+
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+
+  const [showTargetModal, setShowTargetModal] = useState(false);
+
+  /* ---------------- derived ---------------- */
+  const sections = useMemo(() => sectionsByClassId[classId] || [], [classId]);
+
+  const students = useMemo(
+    () => studentsBySectionId[sectionId] || [],
+    [sectionId]
+  );
+
+  /* ---------------- helpers ---------------- */
+  function resetCascade(type) {
+    setTargetType(type);
+    setClassId("");
+    setSectionId("");
+    setStudentId("");
+  }
+
+  const canSubmit = title.trim() && message.trim();
+
+  const props = {
+    title,
+    setTitle,
+    targetType,
+    setTargetType,
+    studentId,
+    setStudentId,
+    classId,
+    setClassId,
+    sectionId,
+    setSectionId,
+    sections,
+    students,
+    message,
+    setMessage,
+    canSubmit,
+    resetCascade,
+    classes,
+    sectionsByClassId,
+    studentsBySectionId
+  };
+
+  const propsMobile = {...props,showTargetModal,setShowTargetModal}
+  /* ---------------- render ---------------- */
+  return (
+    <div className="h-screen  p-4 gap-6 ">
+      {/* ===== Mobile Target Button ===== */}
+
+      {/* ===== Desktop Layout ===== */}
+      <div className="hidden md:block h-full">
+      <DesktopView  {...props}/>
+      </div>
+      
+
+      {/* ===== Mobile Bottom Sheet ===== */}
+      <div className="">
+        <MobileView {...propsMobile} />
+      </div>
+      
+    </div>
+  );
+}
+
+

@@ -12,7 +12,7 @@ const navItems = [
 
 export default function Layout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
-  const [activeNav,setActiveNav] = useState("")
+  const [activeNav,setActiveNav] = useState("Home")
   return (
     <div className="h-screen flex bg-[var(--color-background)]">
       {/* Desktop Sidebar */}
