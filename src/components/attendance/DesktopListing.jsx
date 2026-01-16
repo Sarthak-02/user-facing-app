@@ -63,7 +63,7 @@ export default function DesktopListing({
 
   return (
     <div className="hidden md:block">
-      <Table columns={columns} data={STUDENTS} maxHeight="75vh" />
+      <Table columns={columns} data={STUDENTS} maxHeight="65vh" />
     </div>
   );
 }

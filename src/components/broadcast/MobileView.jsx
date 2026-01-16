@@ -24,9 +24,8 @@ export default function MobileView({
   setShowTargetModal,
 }) {
   return (
-    <>
-
-      <div className="md:hidden mb-3">
+    <div className="flex flex-col h-full gap-4">
+      <div>
         <button
           onClick={() => setShowTargetModal(true)}
           className="w-full px-4 py-3 rounded-xl border bg-[var(--color-surface)] flex justify-between items-center"
@@ -93,7 +92,7 @@ export default function MobileView({
         setMessage={setMessage}
         canSubmit={canSubmit}
       />
-    </>
+    </div>
   );
 }
 

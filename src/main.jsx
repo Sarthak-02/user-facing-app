@@ -4,15 +4,17 @@ import "./index.css";
 import App from "./App.jsx";
 import { ThemeProvider } from "./providers/ThemeProvider.jsx";
 import { registerSW } from "virtual:pwa-register";
+import { BrowserRouter } from "react-router-dom";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </BrowserRouter>
   </StrictMode>
 );
-
 
 registerSW({
   onNeedRefresh() {

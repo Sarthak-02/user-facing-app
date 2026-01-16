@@ -7,7 +7,7 @@ export default function MobileListing({
   editMode,
 }) {
   return (
-    <div className="md:hidden flex-1 overflow-y-auto space-y-3 pb-24">
+    <div className="md:hidden flex-1 overflow-y-auto space-y-3 pb-24 mb-20">
       {STUDENTS.map((student) => {
         const status = attendance[student.id];
 

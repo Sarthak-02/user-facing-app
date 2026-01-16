@@ -70,28 +70,19 @@ export default function BroadcastPage({
     resetCascade,
     classes,
     sectionsByClassId,
-    studentsBySectionId
+    studentsBySectionId,
   };
 
-  const propsMobile = {...props,showTargetModal,setShowTargetModal}
+  const propsMobile = { ...props, showTargetModal, setShowTargetModal };
   /* ---------------- render ---------------- */
   return (
-    <div className="h-screen  p-4 gap-6 ">
-      {/* ===== Mobile Target Button ===== */}
-
-      {/* ===== Desktop Layout ===== */}
-      <div className="hidden md:block h-full">
-      <DesktopView  {...props}/>
+    <>
+      <div className="h-full hidden md:block  p-4  ">
+        <DesktopView {...props} />
       </div>
-      
-
-      {/* ===== Mobile Bottom Sheet ===== */}
-      <div className="">
+      <div className="h-screen block md:hidden p-4 flex flex-col ">
         <MobileView {...propsMobile} />
       </div>
-      
-    </div>
+    </>
   );
 }
-
-

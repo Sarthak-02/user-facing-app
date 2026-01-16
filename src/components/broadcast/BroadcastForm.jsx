@@ -42,7 +42,7 @@ export default function BroadcastForm({
   }
 
   return (
-    <section className="h-full col-span-8 flex flex-col border rounded-xl bg-[var(--color-surface)] overflow-hidden">
+    <section className="h-full flex flex-col border rounded-xl bg-[var(--color-surface)] overflow-hidden">
       {/* Form body scrolls */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 ">
         <Input
@@ -51,7 +51,7 @@ export default function BroadcastForm({
           onChange={setTitle}
           placeholder="Enter title"
         />
-  
+
         <Textarea
           label="Message"
           value={message}
@@ -161,4 +161,3 @@ function Textarea({ label, value, onChange, placeholder }) {
     </div>
   );
 }
-

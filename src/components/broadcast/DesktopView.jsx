@@ -20,9 +20,9 @@ export default function DesktopView({title,
     classes}) {
    
   return (
-    <div className="h-full grid md:grid-cols-12 gap-4 overflow-hidden ">
+    <div className="grid md:grid-cols-12 gap-4 overflow-hidden h-full md:h-[calc(100vh-6rem)]">
       {/* ---- Desktop Target Panel ---- */}
-      <aside className="h-1/2  col-span-4 border rounded-xl p-4 bg-[var(--color-surface)]">
+      <aside className="h-1/2 col-span-4 border rounded-xl p-4 bg-[var(--color-surface)]">
         <TargetSelector
           {...{
             targetType,
@@ -41,6 +41,7 @@ export default function DesktopView({title,
       </aside>
 
       {/* ---- Form ---- */}
+      <div className="col-span-8 h-auto">
       <BroadcastForm
         title={title}
         setTitle={setTitle}
@@ -48,6 +49,8 @@ export default function DesktopView({title,
         setMessage={setMessage}
         canSubmit={canSubmit}
       />
+      </div>
+      
     </div>
   );
 }

@@ -1,19 +1,13 @@
 import { useMemo, useState } from "react";
-import {
-  Button,
-  Card,
-  Select,
-  Table,
-  Badge,
-  Avatar,
-  Modal,
-} from "../ui-components";
-import Header from "../components/attendance/Header";
-import DesktopListing from "../components/attendance/DesktopListing";
-import MobileListing from "../components/attendance/MobileListing";
-import ConfirmationModal from "../components/attendance/ConfirmationModal";
-import { isToday } from "../utils/common-functions";
 import AttendanceSummary from "../components/attendance/AttendanceSummary";
+import ConfirmationModal from "../components/attendance/ConfirmationModal";
+import DesktopListing from "../components/attendance/DesktopListing";
+import Header from "../components/attendance/Header";
+import MobileListing from "../components/attendance/MobileListing";
+import {
+  Button
+} from "../ui-components";
+import { isToday } from "../utils/common-functions";
 
 const STUDENTS = [
   { id: 1, name: "Aarav Sharma", roll: "01" },
@@ -78,7 +72,22 @@ export default function AttendancePage() {
     return isToday(selectedDate);
   }, [selectedDate]);
 
-  function handleSubmit() {}
+  function handleSubmit() {
+    const payload = {
+      section_id: selectedClass,
+      teacher_id: "12345", //this will be fetched from the logged in details
+      date: new Date().toISOString(), //today's date
+      campus_session: "FULL_DAY", //get it from the selected filters
+      period: "OVERALL", //get it from the selected filters
+      records: Object.entries(attendance).map(([key, value]) => ({
+        student_id: key,
+        status: value,
+      })),
+    };
+
+    console.log(payload);
+    setShowConfirmation(false);
+  }
 
   const markAttendance = (id, status) => {
     setAttendance((prev) => ({
@@ -139,7 +148,7 @@ export default function AttendancePage() {
 
       {/* Mobile sticky action bar */}
       {editMode && (
-        <div className=" fixed bottom-0 left-0 right-0 z-20 bg-surface border-t border-border p-2  text-center">
+        <div className="fixed bottom-0 left-0 right-0 lg:max-w-lg z-20 bg-surface lg:bg-transparent border-t lg:border-none lg:mb-2 border-border p-2  text-center m-auto">
           <div className="text-xs text-gray-500 pb-1">
             {Object.keys(attendance).length ?? 0} / {STUDENTS.length} students
             marked
