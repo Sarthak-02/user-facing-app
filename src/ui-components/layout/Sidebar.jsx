@@ -5,15 +5,23 @@ import {
   Bell,
   ChevronLeft,
 } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const navItems = [
-  { label: "Home", icon: Home },
-  { label: "Attendance", icon: ClipboardCheck },
-  { label: "Homework", icon: BookOpen },
-  { label: "Notifications", icon: Bell },
+  { label: "Home", icon: Home, path: "/" },
+  { label: "Attendance", icon: ClipboardCheck, path: "/attendance" },
+  { label: "Homework", icon: BookOpen, path: "/homework" },
+  { label: "Notifications", icon: Bell, path: "/alerts" },
 ];
 
 export default function Sidebar({ collapsed, setCollapsed }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
   return (
     <aside
       className={`
@@ -37,10 +45,15 @@ export default function Sidebar({ collapsed, setCollapsed }) {
 
       {/* Nav */}
       <nav className="mt-4 space-y-1">
-        {navItems.map(({ label, icon: Icon }) => (
+        {navItems.map(({ label, icon: Icon, path }) => (
           <button
             key={label}
-            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary-100 text-left"
+            onClick={() => navigate(path)}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+              isActive(path)
+                ? "bg-primary-100 text-[var(--color-primary)] font-medium"
+                : "hover:bg-primary-50"
+            }`}
           >
             <Icon size={20} />
             {!collapsed && <span>{label}</span>}

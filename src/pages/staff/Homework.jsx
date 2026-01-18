@@ -1,8 +1,14 @@
 import { useMemo, useRef, useState } from "react";
-import BroadcastForm from "../components/broadcast/BroadcastForm";
-import TargetSelector from "../components/broadcast/TargetSelector";
-import DesktopView from "../components/broadcast/DesktopView";
-import MobileView from "../components/broadcast/MobileView";
+import BroadcastForm from "../../components/broadcast/BroadcastForm";
+import TargetSelector from "../../components/broadcast/TargetSelector";
+import DesktopView from "../../components/broadcast/DesktopView";
+import MobileView from "../../components/broadcast/MobileView";
+
+const TARGET_OPTIONS = [
+    { value: "CLASS", label: "Class" },
+    { value: "SECTION", label: "Section" },
+    { value: "STUDENT", label: "Student" },
+  ]
 
 export default function BroadcastPage({
   classes = [
@@ -23,7 +29,7 @@ export default function BroadcastPage({
   },
 }) {
   /* ---------------- state ---------------- */
-  const [targetType, setTargetType] = useState("SCHOOL");
+  const [targetType, setTargetType] = useState("SECTION");
   const [classId, setClassId] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [studentId, setStudentId] = useState("");
@@ -71,6 +77,7 @@ export default function BroadcastPage({
     classes,
     sectionsByClassId,
     studentsBySectionId,
+    TARGET_OPTIONS,
   };
 
   const propsMobile = { ...props, showTargetModal, setShowTargetModal };

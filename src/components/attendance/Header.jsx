@@ -1,17 +1,20 @@
 import { useState, useRef, useEffect } from "react";
-import { Button, Card, Select,Dropdown } from "../../ui-components";
+import { Button, Card, Select } from "../../ui-components";
 import { DayPicker } from "react-day-picker";
-import { SlidersHorizontal } from 'lucide-react';
 import "react-day-picker/style.css";
-import FiltersButton from "./FiltersButton";
+import FiltersModal from "./FiltersModal";
 
 function formatDate(date) {
   if (!date) return "";
-  return date.toLocaleDateString("en-GB", {
+  
+  const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "short" });
+  const formattedDate = date.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
+  
+  return `${formattedDate} (${dayOfWeek})`;
 }
 
 export default function Header({
@@ -19,6 +22,10 @@ export default function Header({
   setSelectedClass,
   selectedDate,
   setSelectedDate,
+  campusSession,
+  setCampusSession,
+  period,
+  setPeriod,
 }) {
   const [showCalendar, setShowCalendar] = useState(false);
   const calendarRef = useRef(null);
@@ -40,8 +47,9 @@ export default function Header({
 
   return (
     <Card>
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4 relative">
+      <div className="flex flex-col gap-4">
+        {/* Top row: Class, Date, Filters button (mobile) */}
+        <div className="flex items-center gap-2 sm:gap-3 relative flex-wrap">
           {/* Class Selector */}
           <Select
             value={selectedClass}
@@ -51,7 +59,6 @@ export default function Header({
               { label: "10-B", value: "10-B" },
             ]}
           />
-          
 
           {/* Date trigger */}
           <Button
@@ -59,20 +66,21 @@ export default function Header({
             className="
               inline-flex items-center gap-2
               rounded-lg border border-border bg-surface
-              px-3 py-2 text-sm font-medium
+              px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium
               text-gray-700 hover:bg-black/5
               focus:outline-none focus:ring-2 focus:ring-primary-600
+              min-w-0
             "
           >
             <span className="text-gray-500">📅</span>
-            <span className="text-gray-500">{formatDate(selectedDate)}</span>
+            <span className="text-gray-500 truncate">{formatDate(selectedDate)}</span>
           </Button>
 
           {/* Calendar popover */}
           {showCalendar && (
             <div
               ref={calendarRef}
-              className="absolute top-full mt-2 z-50 rounded-lg border border-border bg-surface p-2 shadow-lg"
+              className="absolute top-full mt-2 z-50 rounded-lg border border-border bg-surface p-2 shadow-lg left-0 sm:left-auto"
             >
               <DayPicker
                 mode="single"
@@ -86,10 +94,14 @@ export default function Header({
               />
             </div>
           )}
-          <div className="md:hidden">
-          <FiltersButton />
-          </div>
-          
+
+          {/* Filters - Mobile shows button, Desktop shows inline */}
+          <FiltersModal
+            campusSession={campusSession}
+            setCampusSession={setCampusSession}
+            period={period}
+            setPeriod={setPeriod}
+          />
         </div>
       </div>
     </Card>

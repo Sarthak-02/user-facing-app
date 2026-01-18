@@ -2,9 +2,12 @@ import LoginPage from "../../pages/Login";
 import PublicRoute from "./PublicRoute";
 import ProtectedRoute from "./ProtectedRoute";
 import Layout from "../../ui-components/layout/Layout";
-import Attendance from "../../pages/Attendance";
-import BroadcastNotification from "../../pages/BroadcastNotification";
-import Home from "../../pages/Home";
+import Attendance from "../../pages/staff/Attendance";
+import BroadcastNotification from "../../pages/staff/BroadcastNotification";
+import Home from "../../pages/staff/Home";
+import StudentAttendance from "../../pages/student/Attendance";
+import Homework from "../../pages/student/Homework";
+import HomeworkDetail from "../../pages/student/HomeworkDetail";
 
 export const routes = [
   {
@@ -26,6 +29,9 @@ export const routes = [
       { index: true, element: <Home /> },
       { path: "attendance", element: <Attendance /> },
       { path: "broadcast", element: <BroadcastNotification /> },
+      { path: "student/attendance", element: <StudentAttendance /> },
+      { path: "homework", element: <Homework /> },
+      { path: "homework/:homeworkId", element: <HomeworkDetail /> },
       // {path:"class", element: <Class />},
       // {path:"section", element: <Section />},
       // {path:"teacher", element: <Teacher />},

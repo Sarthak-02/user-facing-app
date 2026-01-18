@@ -22,6 +22,7 @@ export default function MobileView({
   studentsBySectionId,
   showTargetModal,
   setShowTargetModal,
+  TARGET_OPTIONS
 }) {
   return (
     <div className="flex flex-col h-full gap-4">
@@ -79,6 +80,7 @@ export default function MobileView({
                   setClassId,
                   setSectionId,
                   setStudentId,
+                  TARGET_OPTIONS,
                 }}
               />
             </div>

@@ -1,3 +1,10 @@
+const DEFAULT_TARGET_OPTIONS = [
+  { value: "SCHOOL", label: "Entire School" },
+  { value: "CLASS", label: "Class" },
+  { value: "SECTION", label: "Section" },
+  { value: "STUDENT", label: "Student" },
+]
+
 export default function TargetSelector({
   targetType,
   classId,
@@ -10,6 +17,7 @@ export default function TargetSelector({
   setClassId,
   setSectionId,
   setStudentId,
+  TARGET_OPTIONS=DEFAULT_TARGET_OPTIONS,
 }) {
   return (
     <div className="space-y-4">
@@ -17,12 +25,7 @@ export default function TargetSelector({
         label="Target type"
         value={targetType}
         onChange={resetCascade}
-        options={[
-          { value: "SCHOOL", label: "Entire School" },
-          { value: "CLASS", label: "Class" },
-          { value: "SECTION", label: "Section" },
-          { value: "STUDENT", label: "Student" },
-        ]}
+        options={TARGET_OPTIONS}
       />
 
       {targetType !== "SCHOOL" && (

@@ -4,7 +4,7 @@ import TargetSelector from "./TargetSelector";
 export default function DesktopView({title,
     setTitle,
     targetType,
-  
+    TARGET_OPTIONS,
     studentId,
     setStudentId,
     classId,
@@ -36,6 +36,7 @@ export default function DesktopView({title,
             setClassId,
             setSectionId,
             setStudentId,
+            TARGET_OPTIONS,
           }}
         />
       </aside>

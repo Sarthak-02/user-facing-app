@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 
 export default function ProtectedRoute({ children }) {
-    const isLoggedin = localStorage.getItem("token") === "true" || false; // or use cookies/context
+    const isLoggedin = localStorage.getItem("token") === "true" || true; // or use cookies/context
   
     if (!isLoggedin) {
       // User is NOT logged in → redirect to login

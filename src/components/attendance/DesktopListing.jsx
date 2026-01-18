@@ -40,30 +40,42 @@ export default function DesktopListing({
         );
       },
     },
-    {
-      key: "action",
-      label: "Action",
-      render: (row) => (
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => markAttendance(row.id, "PRESENT")}>
-            Present
-          </Button>
+    ...(editMode
+      ? [
+          {
+            key: "action",
+            label: "Action",
+            render: (row) => {
+              const status = attendance[row.id];
+              
+              return (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={status === "PRESENT" ? "success" : "secondary"}
+                    onClick={() => markAttendance(row.id, "PRESENT")}
+                  >
+                    {status === "PRESENT" && "✓ "}Present
+                  </Button>
 
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={() => markAttendance(row.id, "ABSENT")}
-          >
-            Absent
-          </Button>
-        </div>
-      ),
-    },
+                  <Button
+                    size="sm"
+                    variant={status === "ABSENT" ? "danger" : "secondary"}
+                    onClick={() => markAttendance(row.id, "ABSENT")}
+                  >
+                    {status === "ABSENT" && "✓ "}Absent
+                  </Button>
+                </div>
+              );
+            },
+          },
+        ]
+      : []),
   ];
 
   return (
-    <div className="hidden md:block">
-      <Table columns={columns} data={STUDENTS} maxHeight="65vh" />
+    <div className="hidden md:block h-full">
+      <Table columns={columns} data={STUDENTS} maxHeight="calc(100vh - 360px)" />
     </div>
   );
 }
