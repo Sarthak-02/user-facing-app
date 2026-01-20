@@ -315,7 +315,7 @@ export default function HomeworkDetail() {
         </Card>
       )}
 
-      {/* Submission Details (if submitted) */}
+      {/* Submission Details (if submitted)
       {homework.submission && (
         <Card title="Your Submission">
           <div className="space-y-4">
@@ -387,7 +387,7 @@ export default function HomeworkDetail() {
               )}
           </div>
         </Card>
-      )}
+      )} */}
 
       {/* Submit Button (if not submitted) */}
       {/* {homework.status !== "SUBMITTED" && (

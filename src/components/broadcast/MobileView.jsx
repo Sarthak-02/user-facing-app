@@ -1,10 +1,11 @@
 import BroadcastForm from "./BroadcastForm";
-import TargetSelector from "./TargetSelector";
+import TargetSelector from "../TargetSelector";
 
 export default function MobileView({
   title,
   setTitle,
   targetType,
+  setTargetType,
   studentId,
   setStudentId,
   classId,
@@ -16,7 +17,6 @@ export default function MobileView({
   message,
   setMessage,
   canSubmit,
-  resetCascade,
   classes,
   sectionsByClassId,
   studentsBySectionId,
@@ -70,13 +70,13 @@ export default function MobileView({
               <TargetSelector
                 {...{
                   targetType,
+                  setTargetType,
                   classId,
                   sectionId,
                   studentId,
                   classes,
                   sections,
                   students,
-                  resetCascade,
                   setClassId,
                   setSectionId,
                   setStudentId,

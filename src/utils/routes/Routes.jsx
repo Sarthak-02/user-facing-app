@@ -8,6 +8,8 @@ import Home from "../../pages/staff/Home";
 import StudentAttendance from "../../pages/student/Attendance";
 import Homework from "../../pages/student/Homework";
 import HomeworkDetail from "../../pages/student/HomeworkDetail";
+import TeacherHomework from "../../pages/staff/Homework";
+// import TeacherHomeworkDetail from "../../pages/staff/HomeworkDetail";
 
 export const routes = [
   {
@@ -30,8 +32,10 @@ export const routes = [
       { path: "attendance", element: <Attendance /> },
       { path: "broadcast", element: <BroadcastNotification /> },
       { path: "student/attendance", element: <StudentAttendance /> },
-      { path: "homework", element: <Homework /> },
-      { path: "homework/:homeworkId", element: <HomeworkDetail /> },
+      { path: "student/homework", element: <Homework /> },
+      { path: "student/homework/:homeworkId", element: <HomeworkDetail /> },
+      { path: "staff/homework", element: <TeacherHomework /> },
+      { path: "staff/homework/:homeworkId", element: <HomeworkDetail /> },
       // {path:"class", element: <Class />},
       // {path:"section", element: <Section />},
       // {path:"teacher", element: <Teacher />},

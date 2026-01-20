@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import BroadcastForm from "../../components/broadcast/BroadcastForm";
-import TargetSelector from "../../components/broadcast/TargetSelector";
+import TargetSelector from "../../components/TargetSelector";
 import DesktopView from "../../components/broadcast/DesktopView";
 import MobileView from "../../components/broadcast/MobileView";
 
@@ -42,13 +42,6 @@ export default function BroadcastPage({
   );
 
   /* ---------------- helpers ---------------- */
-  function resetCascade(type) {
-    setTargetType(type);
-    setClassId("");
-    setSectionId("");
-    setStudentId("");
-  }
-
   const canSubmit = title.trim() && message.trim();
 
   const props = {
@@ -67,7 +60,6 @@ export default function BroadcastPage({
     message,
     setMessage,
     canSubmit,
-    resetCascade,
     classes,
     sectionsByClassId,
     studentsBySectionId,

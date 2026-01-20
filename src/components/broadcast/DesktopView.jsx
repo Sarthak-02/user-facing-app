@@ -1,9 +1,10 @@
 import BroadcastForm from "./BroadcastForm";
-import TargetSelector from "./TargetSelector";
+import TargetSelector from "../TargetSelector";
 
 export default function DesktopView({title,
     setTitle,
     targetType,
+    setTargetType,
     TARGET_OPTIONS,
     studentId,
     setStudentId,
@@ -16,7 +17,6 @@ export default function DesktopView({title,
     message,
     setMessage,
     canSubmit,
-    resetCascade,
     classes}) {
    
   return (
@@ -26,13 +26,13 @@ export default function DesktopView({title,
         <TargetSelector
           {...{
             targetType,
+            setTargetType,
             classId,
             sectionId,
             studentId,
             classes,
             sections,
             students,
-            resetCascade,
             setClassId,
             setSectionId,
             setStudentId,

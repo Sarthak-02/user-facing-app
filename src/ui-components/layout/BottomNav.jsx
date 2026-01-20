@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 const routeMap = {
   Home: "/",
   Attendance: "/attendance",
-  Homework: "/homework",
+  Homework: "student/homework",
   Alerts: "/alerts",
 };
 

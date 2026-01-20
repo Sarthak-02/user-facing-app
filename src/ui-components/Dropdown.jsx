@@ -64,6 +64,7 @@ export default function Dropdown({
       {/* Trigger + Clear Button */}
       <div className="relative">
         <button
+          type="button"
           onClick={() => {
             setOpen((prev) => !prev);
             setSearchQuery("");
@@ -77,6 +78,7 @@ export default function Dropdown({
 
         {(multi ? selected?.length > 0 : selected) && (
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               onChange(multi ? [] : "");
