@@ -1,183 +1,25 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card } from "../../ui-components";
 import AttendanceSummary from "../../components/student-attendance/AttendanceSummary";
 import FiltersModal from "../../components/student-attendance/FiltersModal";
 import DesktopListing from "../../components/student-attendance/DesktopListing";
 import MobileListing from "../../components/student-attendance/MobileListing";
-
-// Mock data - Replace with actual API call
-const MOCK_ATTENDANCE_DATA = [
-  {
-    date: "2026-01-17",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Sharma",
-  },
-  {
-    date: "2026-01-16",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Gupta",
-  },
-  {
-    date: "2026-01-15",
-    period: "PERIOD_1",
-    status: "PRESENT",
-    markedBy: "Prof. Kumar",
-  },
-  {
-    date: "2026-01-15",
-    period: "PERIOD_2",
-    status: "ABSENT",
-    markedBy: "Prof. Singh",
-  },
-  {
-    date: "2026-01-14",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Verma",
-  },
-  {
-    date: "2026-01-13",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Sharma",
-  },
-  {
-    date: "2026-01-10",
-    period: "OVERALL",
-    status: "ABSENT",
-    markedBy: "Prof. Patel",
-  },
-  {
-    date: "2026-01-09",
-    period: "PERIOD_1",
-    status: "PRESENT",
-    markedBy: "Prof. Mehta",
-  },
-  {
-    date: "2026-01-09",
-    period: "PERIOD_2",
-    status: "LATE",
-    markedBy: "Prof. Jain",
-  },
-  {
-    date: "2026-01-08",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Reddy",
-  },
-  {
-    date: "2026-01-07",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Iyer",
-  },
-  {
-    date: "2026-01-06",
-    period: "OVERALL",
-    status: "ON_LEAVE",
-    markedBy: "Prof. Nair",
-  },
-  {
-    date: "2026-01-03",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Khan",
-  },
-  {
-    date: "2026-01-02",
-    period: "PERIOD_1",
-    status: "PRESENT",
-    markedBy: "Prof. Desai",
-  },
-  {
-    date: "2026-01-02",
-    period: "PERIOD_2",
-    status: "PRESENT",
-    markedBy: "Prof. Rao",
-  },
-  {
-    date: "2026-01-01",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Kapoor",
-  },
-  {
-    date: "2025-12-31",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Sharma",
-  },
-  {
-    date: "2025-12-30",
-    period: "OVERALL",
-    status: "ABSENT",
-    markedBy: "Prof. Bansal",
-  },
-  {
-    date: "2025-12-27",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Malhotra",
-  },
-  {
-    date: "2025-12-26",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Arora",
-  },
-  {
-    date: "2025-12-25",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Khanna",
-  },
-  {
-    date: "2025-12-24",
-    period: "PERIOD_1",
-    status: "PRESENT",
-    markedBy: "Prof. Sinha",
-  },
-  {
-    date: "2025-12-24",
-    period: "PERIOD_2",
-    status: "PRESENT",
-    markedBy: "Prof. Chopra",
-  },
-  {
-    date: "2025-12-23",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Sharma",
-  },
-  {
-    date: "2025-12-20",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Tiwari",
-  },
-  {
-    date: "2025-12-19",
-    period: "OVERALL",
-    status: "PRESENT",
-    markedBy: "Prof. Yadav",
-  },
-  {
-    date: "2025-12-18",
-    period: "OVERALL",
-    status: "ABSENT",
-    markedBy: "Prof. Saxena",
-  },
-];
+import { getStudentAttendance } from "../../api/attendance.api";
+import { useAttendance } from "../../store/attendance.store";
+import { useAuth } from "../../store/auth.store";
 
 export default function StudentAttendance() {
   const [period, setPeriod] = useState("ALL");
   const [dateRange, setDateRange] = useState("30");
+  const [statusFilter, setStatusFilter] = useState("ALL"); // ALL, PRESENT, ABSENT
   const [customDateRange, setCustomDateRange] = useState({
     start: null,
     end: null,
   });
+
+  // Get auth and attendance store
+  const { auth } = useAuth();
+  const { summary, records, loading, error, setAttendanceData, setLoading, setError } = useAttendance();
 
   // Calculate date range
   const { startDate, endDate } = useMemo(() => {
@@ -196,47 +38,176 @@ export default function StudentAttendance() {
     }
   }, [dateRange, customDateRange]);
 
+  // Generate period options from records
+  const periodOptions = useMemo(() => {
+    const uniquePeriods = new Set();
+    
+    records.forEach((record) => {
+      if (record.period) {
+        uniquePeriods.add(record.period);
+      }
+    });
+
+    // Convert to array and sort
+    const periods = Array.from(uniquePeriods).sort();
+
+    // Create options array with "All Periods" first
+    const options = [{ label: "All Periods", value: "ALL" }];
+    
+    periods.forEach((period) => {
+      // Format the label (e.g., "PERIOD_1" -> "Period 1", "OVERALL" -> "Overall")
+      let label = period;
+      if (period.startsWith("PERIOD_")) {
+        const num = period.split("_")[1];
+        label = `Period ${num}`;
+      } else {
+        label = period.charAt(0) + period.slice(1).toLowerCase();
+      }
+      
+      options.push({ label, value: period });
+    });
+
+    return options;
+  }, [records]);
+
+  // Fetch attendance data
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      if (!auth.userId || !auth.section_id) {
+        console.warn("Missing required data: student_id or section_id");
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const params = {
+          student_id: auth.userId,
+          section_id: auth.section_id,
+        };
+
+        // Fetch all attendance records without date filters
+        const response = await getStudentAttendance(params);
+        
+        if (response.success && response.data) {
+          // Transform records to match UI expectations
+          const transformedRecords = response.data.records.map((record) => {
+            const teacherName = record.attendanceSession?.teacher
+              ? `${record.attendanceSession.teacher.teacher_first_name} ${record.attendanceSession.teacher.teacher_last_name}`
+              : "N/A";
+            
+            // Use submittedAt as date or default to current date
+            const date = record.attendanceSession?.submittedAt 
+              ? new Date(record.attendanceSession.submittedAt).toISOString().split('T')[0]
+              : new Date().toISOString().split('T')[0];
+
+            return {
+              date: date,
+              period: record.attendanceSession?.period || "OVERALL",
+              status: record.status,
+              markedBy: teacherName,
+            };
+          });
+
+          setAttendanceData({
+            summary: response.data.summary,
+            records: transformedRecords,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch attendance:", err);
+        setError(err.message || "Failed to load attendance data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttendance();
+  }, [auth.userId, auth.section_id, startDate, endDate, setAttendanceData, setLoading, setError]);
+
   // Filter attendance records based on filters
   const filteredRecords = useMemo(() => {
-    let filtered = [...MOCK_ATTENDANCE_DATA];
-
-    // Filter by date range
-    if (startDate && endDate) {
-      filtered = filtered.filter((record) => {
-        const recordDate = new Date(record.date);
-        return recordDate >= startDate && recordDate <= endDate;
-      });
-    }
+    let filtered = [...records];
 
     // Filter by period
     if (period !== "ALL") {
       filtered = filtered.filter((record) => record.period === period);
     }
 
+    // Filter by status
+    if (statusFilter === "PRESENT") {
+      filtered = filtered.filter((record) => record.status === "PRESENT");
+    } else if (statusFilter === "ABSENT") {
+      filtered = filtered.filter((record) => record.status === "ABSENT");
+    }
+    // If statusFilter is "ALL", show everything
+
     // Sort by date (newest first)
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     return filtered;
-  }, [startDate, endDate, period]);
+  }, [records, period, statusFilter]);
 
-  // Calculate summary statistics
-  const summary = useMemo(() => {
-    const total = filteredRecords.length;
-    const present = filteredRecords.filter((r) => r.status === "PRESENT").length;
-    const absent = filteredRecords.filter((r) => r.status === "ABSENT").length;
-    const onLeave = filteredRecords.filter((r) => r.status === "ON_LEAVE").length;
-
-    return { total, present, absent, onLeave };
-  }, [filteredRecords]);
+  // Calculate summary statistics from filtered records
+  const displaySummary = useMemo(() => {
+    // Use API summary but calculate onLeave from filtered records
+    const onLeave = filteredRecords.filter((r) => r.status === "ON_LEAVE" || r.status === "EXCUSED").length;
+    
+    return {
+      total: summary.total,
+      present: summary.present,
+      absent: summary.absent,
+      onLeave: summary.excused || onLeave,
+    };
+  }, [summary, filteredRecords]);
 
   return (
     <div className="h-screen md:min-h-screen flex flex-col  p-4 gap-6">
-      {/* Header */}
-      <Card className="hidden md:block">
-        <div className="flex items-center justify-between ">
-          
-          {/* Desktop: Show filters inline in header */}
-          <div >
+      {/* Loading State */}
+      {loading && (
+        <Card>
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+            <p className="text-gray-600">Loading attendance data...</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <Card>
+          <div className="text-center py-8 text-error-600">
+            <p className="font-medium mb-2">Error loading attendance</p>
+            <p className="text-sm text-gray-600">{error}</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Content - only show when not loading */}
+      {!loading && !error && (
+        <>
+          {/* Header */}
+          <Card className="hidden md:block">
+            <div className="flex items-center justify-between ">
+              
+              {/* Desktop: Show filters inline in header */}
+              <div >
+                <FiltersModal
+                  period={period}
+                  setPeriod={setPeriod}
+                  dateRange={dateRange}
+                  setDateRange={setDateRange}
+                  customDateRange={customDateRange}
+                  setCustomDateRange={setCustomDateRange}
+                  periodOptions={periodOptions}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Mobile: Floating Filter Button */}
+          <div className="md:hidden">
             <FiltersModal
               period={period}
               setPeriod={setPeriod}
@@ -244,55 +215,46 @@ export default function StudentAttendance() {
               setDateRange={setDateRange}
               customDateRange={customDateRange}
               setCustomDateRange={setCustomDateRange}
+              periodOptions={periodOptions}
             />
           </div>
-        </div>
-      </Card>
 
-      {/* Mobile: Floating Filter Button */}
-      <div className="md:hidden">
-        <FiltersModal
-          period={period}
-          setPeriod={setPeriod}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          customDateRange={customDateRange}
-          setCustomDateRange={setCustomDateRange}
-        />
-      </div>
+          {/* Summary */}
+          <AttendanceSummary
+            total={displaySummary.total}
+            present={displaySummary.present}
+            absent={displaySummary.absent}
+            onLeave={displaySummary.onLeave}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+          />
 
-      {/* Summary */}
-      <AttendanceSummary
-        total={summary.total}
-        present={summary.present}
-        absent={summary.absent}
-        onLeave={summary.onLeave}
-      />
+          {/* Desktop Table */}
+          <div className="hidden md:block flex-1 overflow-hidden">
+            <DesktopListing attendanceRecords={filteredRecords} />
+          </div>
 
-      {/* Desktop Table */}
-      <div className="hidden md:block flex-1 overflow-hidden">
-        <DesktopListing attendanceRecords={filteredRecords} />
-      </div>
+          {/* Mobile List */}
+          <div className="md:hidden flex-1 overflow-hidden">
+            <MobileListing attendanceRecords={filteredRecords} />
+          </div>
 
-      {/* Mobile List */}
-      <div className="md:hidden flex-1 overflow-hidden">
-        <MobileListing attendanceRecords={filteredRecords} />
-      </div>
-
-      {/* Empty state for desktop when no records */}
-      {filteredRecords.length === 0 && (
-        <div className="hidden md:block">
-          <Card>
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-lg font-medium mb-2">
-                No attendance records found
-              </p>
-              <p className="text-sm">
-                Try adjusting your filters or date range to see more results.
-              </p>
+          {/* Empty state for desktop when no records */}
+          {filteredRecords.length === 0 && (
+            <div className="hidden md:block">
+              <Card>
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg font-medium mb-2">
+                    No attendance records found
+                  </p>
+                  <p className="text-sm">
+                    Try adjusting your filters or date range to see more results.
+                  </p>
+                </div>
+              </Card>
             </div>
-          </Card>
-        </div>
+          )}
+        </>
       )}
     </div>
   );

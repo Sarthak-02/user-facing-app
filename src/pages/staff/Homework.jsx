@@ -1,10 +1,12 @@
-import { useState, useMemo } from "react";
-import { Card, Button } from "../../ui-components";
+import { useState, useMemo, useEffect } from "react";
+import { Card, Button, DateRange } from "../../ui-components";
 import DesktopListing from "../../components/staff-homework/DesktopListing";
 import MobileListing from "../../components/staff-homework/MobileListing";
 import HomeworkFormModal from "../../components/staff-homework/HomeworkFormModal";
 import TargetSelector from "../../components/TargetSelector";
 import Dropdown from "../../ui-components/Dropdown";
+import { createHomework, getTeacherHomeworkAll } from "../../api/homework.api";
+import { useAuth } from "../../store/auth.store";
 
 // Mock data - Replace with actual API call
 const MOCK_TEACHER_HOMEWORK = [
@@ -15,7 +17,7 @@ const MOCK_TEACHER_HOMEWORK = [
     class: "Class 10",
     section: "Section A",
     dueDate: "2026-01-25",
-    status: "ACTIVE",
+    status: "PUBLISHED",
     attachmentCount: 2,
     description: "Solve all problems from exercise 5.1 and 5.2",
     assignedDate: "2026-01-15",
@@ -29,7 +31,7 @@ const MOCK_TEACHER_HOMEWORK = [
     class: "Class 10",
     section: "Section B",
     dueDate: "2026-01-24",
-    status: "ACTIVE",
+    status: "PUBLISHED",
     attachmentCount: 1,
     description: "Complete the trigonometry worksheet on unit circle",
     assignedDate: "2026-01-17",
@@ -57,7 +59,7 @@ const MOCK_TEACHER_HOMEWORK = [
     class: "Class 9",
     section: "Section B",
     dueDate: "2026-01-20",
-    status: "ACTIVE",
+    status: "PUBLISHED",
     attachmentCount: 3,
     description: "Study and prove circle theorems from the textbook",
     assignedDate: "2026-01-12",
@@ -71,30 +73,73 @@ const MOCK_TEACHER_HOMEWORK = [
     class: "Class 11",
     section: "Section A",
     dueDate: "2026-01-28",
-    status: "ACTIVE",
+    status: "PUBLISHED",
     attachmentCount: 0,
     description: "Complete exercises on polynomial factorization",
     assignedDate: "2026-01-18",
     submissionCount: 5,
     totalStudents: 32,
   },
+  {
+    id: "hw-006",
+    subject: "Mathematics",
+    title: "Statistics - Mean, Median, Mode Practice",
+    class: "Class 10",
+    section: "Section A",
+    dueDate: "2026-01-30",
+    status: "DRAFT",
+    attachmentCount: 2,
+    description: "Practice problems on central tendency measures",
+    assignedDate: "2026-01-23",
+    submissionCount: 0,
+    totalStudents: 30,
+  },
+  {
+    id: "hw-007",
+    subject: "Mathematics",
+    title: "Calculus Introduction - Limits",
+    class: "Class 11",
+    section: "Section A",
+    dueDate: "2026-02-01",
+    status: "DRAFT",
+    attachmentCount: 1,
+    description: "Introduction to limits and continuity",
+    assignedDate: "2026-01-23",
+    submissionCount: 0,
+    totalStudents: 32,
+  },
 ];
 
 export default function TeacherHomework() {
+  const { auth } = useAuth();
   const [statusFilter] = useState("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState(null);
+  
+  // Publish confirmation modal
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [homeworkToPublish, setHomeworkToPublish] = useState(null);
   
   // Mobile filter states
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
+  const [statusFilterDropdown, setStatusFilterDropdown] = useState("");
   const [dateRangeStart, setDateRangeStart] = useState("");
   const [dateRangeEnd, setDateRangeEnd] = useState("");
   const [targetType, setTargetType] = useState("SCHOOL");
   const [classId, setClassId] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [studentId, setStudentId] = useState("");
+  
+  // Loading and error states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  
+  // Homework data states
+  const [homeworkList, setHomeworkList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   
   // Mock data for dropdowns - Replace with actual API calls
   const classes = [
@@ -121,9 +166,15 @@ export default function TeacherHomework() {
     { value: "Biology", label: "Biology" },
   ];
 
+  const statusOptions = [
+    { value: "", label: "All Status" },
+    { value: "DRAFT", label: "Draft" },
+    { value: "PUBLISHED", label: "Published" },
+  ];
+
   // Filter homework based on status and mobile filters
   const filteredHomework = useMemo(() => {
-    let filtered = [...MOCK_TEACHER_HOMEWORK];
+    let filtered = [...homeworkList];
 
     // Status filter
     if (statusFilter !== "ALL") {
@@ -134,9 +185,9 @@ export default function TeacherHomework() {
         if (statusFilter === "COMPLETED") {
           return hw.status === "COMPLETED";
         } else if (statusFilter === "OVERDUE") {
-          return due < now && hw.status !== "COMPLETED";
+          return due < now && hw.status !== "COMPLETED" && hw.status !== "DRAFT";
         } else if (statusFilter === "ACTIVE") {
-          return hw.status === "ACTIVE" && due >= now;
+          return (hw.status === "PUBLISHED" || hw.status === "ACTIVE") && due >= now;
         }
         return true;
       });
@@ -155,6 +206,11 @@ export default function TeacherHomework() {
     // Subject filter
     if (subjectFilter) {
       filtered = filtered.filter((hw) => hw.subject === subjectFilter);
+    }
+
+    // Status filter
+    if (statusFilterDropdown) {
+      filtered = filtered.filter((hw) => hw.status === statusFilterDropdown);
     }
 
     // Date range filter
@@ -179,27 +235,31 @@ export default function TeacherHomework() {
     filtered.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
     return filtered;
-  }, [statusFilter, searchQuery, subjectFilter, dateRangeStart, dateRangeEnd, targetType, classId, sectionId]);
+  }, [homeworkList, statusFilter, searchQuery, subjectFilter, statusFilterDropdown, dateRangeStart, dateRangeEnd, targetType, classId, sectionId]);
 
   // Calculate summary statistics
   const _summary = useMemo(() => {
-    const total = MOCK_TEACHER_HOMEWORK.length;
+    const total = homeworkList.length;
     const now = new Date();
     
-    const active = MOCK_TEACHER_HOMEWORK.filter(
-      (hw) => hw.status === "ACTIVE" && new Date(hw.dueDate) >= now
+    const active = homeworkList.filter(
+      (hw) => (hw.status === "PUBLISHED" || hw.status === "ACTIVE") && new Date(hw.dueDate) >= now
     ).length;
     
-    const completed = MOCK_TEACHER_HOMEWORK.filter(
+    const completed = homeworkList.filter(
       (hw) => hw.status === "COMPLETED"
     ).length;
     
-    const overdue = MOCK_TEACHER_HOMEWORK.filter(
-      (hw) => new Date(hw.dueDate) < now && hw.status !== "COMPLETED"
+    const overdue = homeworkList.filter(
+      (hw) => new Date(hw.dueDate) < now && hw.status !== "COMPLETED" && hw.status !== "DRAFT"
     ).length;
 
-    return { total, active, completed, overdue };
-  }, []);
+    const draft = homeworkList.filter(
+      (hw) => hw.status === "DRAFT"
+    ).length;
+
+    return { total, active, completed, overdue, draft };
+  }, [homeworkList]);
 
   const handleCreateHomework = () => {
     setEditingHomework(null);
@@ -214,17 +274,101 @@ export default function TeacherHomework() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingHomework(null);
+    setSubmitError(null);
   };
 
-  const handleSubmitHomework = (homeworkData) => {
-    if (editingHomework) {
-      console.log("Updating homework:", editingHomework.id, homeworkData);
-      // TODO: Call API to update homework
-    } else {
-      console.log("Creating new homework:", homeworkData);
-      // TODO: Call API to create homework
+  const handleSubmitHomework = async (homeworkData) => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      if (editingHomework) {
+        console.log("Updating homework:", editingHomework.id, homeworkData);
+        // TODO: Call API to update homework
+      } else {
+        // Transform form data to API schema
+        const targets = [];
+        
+        // Build targets array based on targetType
+        if (homeworkData.targetType === "CLASS" && homeworkData.classId) {
+          targets.push({
+            targetType: "CLASS",
+            targetId: homeworkData.classId
+          });
+        } else if (homeworkData.targetType === "SECTION" && homeworkData.sectionId) {
+          targets.push({
+            targetType: "SECTION",
+            targetId: homeworkData.sectionId
+          });
+        } else if (homeworkData.targetType === "STUDENT" && homeworkData.studentId) {
+          // Handle multiple students if studentId is an array
+          const studentIds = Array.isArray(homeworkData.studentId) 
+            ? homeworkData.studentId 
+            : [homeworkData.studentId];
+          
+          studentIds.forEach(id => {
+            targets.push({
+              targetType: "STUDENT",
+              targetId: id
+            });
+          });
+        }
+        
+        // Transform attachments (File objects to attachment metadata)
+        // Note: Files should be uploaded first to get URLs
+        const attachments = homeworkData.attachments.map(file => ({
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          fileUrl: "" // TODO: Upload file first and get URL
+        }));
+        
+        // Prepare API payload
+        const payload = {
+          title: homeworkData.title,
+          description: homeworkData.description,
+          due_date: new Date(homeworkData.dueDate).toISOString(),
+          subject: homeworkData.subject,
+          teacher_id: auth.userId,
+          targets: targets,
+          publish: homeworkData.status === "PUBLISHED",
+          ...(attachments.length > 0 && { attachments })
+        };
+        
+        // Call API
+        const response = await createHomework(payload);
+        console.log("Homework created successfully:", response);
+        
+        // Refresh homework list
+        await fetchHomework();
+        
+        // TODO: Show success notification
+        
+        handleCloseModal();
+      }
+    } catch (error) {
+      console.error("Error submitting homework:", error);
+      setSubmitError(error.message || "Failed to create homework. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-    handleCloseModal();
+  };
+
+  const handlePublishHomework = (homework) => {
+    setHomeworkToPublish(homework);
+    setIsPublishModalOpen(true);
+  };
+
+  const confirmPublish = () => {
+    console.log("Publishing homework:", homeworkToPublish.id);
+    // TODO: Call API to publish homework
+    setIsPublishModalOpen(false);
+    setHomeworkToPublish(null);
+  };
+
+  const cancelPublish = () => {
+    setIsPublishModalOpen(false);
+    setHomeworkToPublish(null);
   };
 
   const handleApplyFilters = () => {
@@ -234,6 +378,7 @@ export default function TeacherHomework() {
   const handleClearFilters = () => {
     setSearchQuery("");
     setSubjectFilter("");
+    setStatusFilterDropdown("");
     setDateRangeStart("");
     setDateRangeEnd("");
     setTargetType("SCHOOL");
@@ -242,7 +387,46 @@ export default function TeacherHomework() {
     setStudentId("");
   };
 
-  const hasActiveFilters = searchQuery || subjectFilter || dateRangeStart || dateRangeEnd || targetType !== "SCHOOL";
+  const hasActiveFilters = searchQuery || subjectFilter || statusFilterDropdown || dateRangeStart || dateRangeEnd || targetType !== "SCHOOL";
+
+  // Fetch homework list
+  const fetchHomework = async () => {
+    if (!auth.userId) return;
+    
+    setIsLoading(true);
+    setLoadError(null);
+    
+    try {
+      const params = {
+        teacher_id: auth.userId,
+      };
+      
+      // Add optional filters
+      if (statusFilterDropdown) {
+        params.status = statusFilterDropdown;
+      }
+      if (dateRangeStart) {
+        params.start_date = dateRangeStart;
+      }
+      if (dateRangeEnd) {
+        params.end_date = dateRangeEnd;
+      }
+      
+      const data = await getTeacherHomeworkAll(params);
+      setHomeworkList(data);
+    } catch (error) {
+      console.error("Error fetching homework:", error);
+      setLoadError(error.message || "Failed to load homework. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch homework on component mount and when filters change
+  useEffect(() => {
+    fetchHomework();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.userId, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
 
   return (
     <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6">
@@ -275,14 +459,14 @@ export default function TeacherHomework() {
           {/* Search and Filters Row */}
           <div className="grid grid-cols-12 gap-4">
             {/* Search Bar */}
-            <div className="col-span-4">
+            <div className="col-span-3">
               <div className="relative">
                 <input
                   type="text"
                   placeholder="Search homework..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -311,6 +495,16 @@ export default function TeacherHomework() {
               />
             </div>
 
+            {/* Status Filter */}
+            <div className="col-span-2">
+              <Dropdown
+                selected={statusFilterDropdown}
+                onChange={setStatusFilterDropdown}
+                options={statusOptions}
+                placeholder="Status"
+              />
+            </div>
+
             {/* Date Range Start */}
             <div className="col-span-2">
               <input
@@ -334,13 +528,13 @@ export default function TeacherHomework() {
             </div>
 
             {/* Clear Filters Button */}
-            <div className="col-span-2">
+            <div className="col-span-1">
               {hasActiveFilters && (
                 <button
                   onClick={handleClearFilters}
                   className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                 >
-                  Clear Filters
+                  Clear
                 </button>
               )}
             </div>
@@ -477,21 +671,71 @@ export default function TeacherHomework() {
           </div>
         </Card>
       </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <p className="mt-4 text-gray-600">Loading homework...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {loadError && !isLoading && (
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full">
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8 text-red-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Error Loading Homework</h3>
+                <p className="text-gray-600 mt-2">{loadError}</p>
+              </div>
+              <Button onClick={fetchHomework}>
+                Try Again
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Desktop Listing */}
-      <div className="hidden md:block flex-1 overflow-y-auto">
-        <DesktopListing 
-          homeworkList={filteredHomework} 
-          onEdit={handleEditHomework}
-        />
-      </div>
+      {!isLoading && !loadError && (
+        <div className="hidden md:block flex-1 overflow-y-auto">
+          <DesktopListing 
+            homeworkList={filteredHomework} 
+            onEdit={handleEditHomework}
+            onPublish={handlePublishHomework}
+          />
+        </div>
+      )}
 
       {/* Mobile Listing */}
-      <div className="md:hidden flex-1 overflow-hidden">
-        <MobileListing 
-          homeworkList={filteredHomework}
-          onEdit={handleEditHomework}
-        />
-      </div>
+      {!isLoading && !loadError && (
+        <div className="md:hidden flex-1 overflow-hidden">
+          <MobileListing 
+            homeworkList={filteredHomework}
+            onEdit={handleEditHomework}
+            onPublish={handlePublishHomework}
+          />
+        </div>
+      )}
 
       {/* Floating Action Button (Mobile Only) */}
       <button
@@ -521,6 +765,8 @@ export default function TeacherHomework() {
         onClose={handleCloseModal}
         onSubmit={handleSubmitHomework}
         homework={editingHomework}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
       />
 
       {/* Filter Modal (Mobile Only) */}
@@ -565,8 +811,19 @@ export default function TeacherHomework() {
                 />
               </div>
 
+              {/* Status Filter */}
+              <div>
+                <Dropdown
+                  label="Status"
+                  selected={statusFilterDropdown}
+                  onChange={setStatusFilterDropdown}
+                  options={statusOptions}
+                  placeholder="Select status"
+                />
+              </div>
+
               {/* Date Range Filters */}
-              <div className="space-y-4">
+              {/* <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Due Date From
@@ -589,8 +846,14 @@ export default function TeacherHomework() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-              </div>
-
+              </div> */}
+              <DateRange
+                label="Due Date Range"
+                startDate={dateRangeStart}
+                endDate={dateRangeEnd}
+                onStartDateChange={setDateRangeStart}
+                onEndDateChange={setDateRangeEnd}
+              />
               {/* Target Selector */}
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Filter by Target</h3>
@@ -624,6 +887,49 @@ export default function TeacherHomework() {
               >
                 Apply Filters
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Publish Confirmation Modal */}
+      {isPublishModalOpen && homeworkToPublish && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900">Publish Homework?</h3>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              <p className="text-gray-700">
+                Are you sure you want to publish this homework? Students will be able to see and submit it.
+              </p>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900">{homeworkToPublish.title}</h4>
+                <p className="text-sm text-gray-600 mt-1">{homeworkToPublish.subject}</p>
+                <p className="text-sm text-gray-600">
+                  {homeworkToPublish.class} - {homeworkToPublish.section}
+                </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  Due: {new Date(homeworkToPublish.dueDate).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+              <Button variant="secondary" onClick={cancelPublish}>
+                Cancel
+              </Button>
+              <Button onClick={confirmPublish}>
+                Publish
+              </Button>
             </div>
           </div>
         </div>

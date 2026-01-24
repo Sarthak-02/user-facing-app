@@ -4,19 +4,6 @@ import { SlidersHorizontal, Calendar } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 
-const PERIOD_OPTIONS = [
-  { label: "All Periods", value: "ALL" },
-  { label: "Overall", value: "OVERALL" },
-  { label: "Period 1", value: "PERIOD_1" },
-  { label: "Period 2", value: "PERIOD_2" },
-  { label: "Period 3", value: "PERIOD_3" },
-  { label: "Period 4", value: "PERIOD_4" },
-  { label: "Period 5", value: "PERIOD_5" },
-  { label: "Period 6", value: "PERIOD_6" },
-  { label: "Period 7", value: "PERIOD_7" },
-  { label: "Period 8", value: "PERIOD_8" },
-];
-
 const DATE_RANGE_OPTIONS = [
   { label: "Last 7 Days", value: "7" },
   { label: "Last 15 Days", value: "15" },
@@ -42,12 +29,26 @@ export default function FiltersModal({
   setDateRange,
   customDateRange,
   setCustomDateRange,
+  periodOptions = [{ label: "All Periods", value: "ALL" }],
 }) {
   const [showModal, setShowModal] = useState(false);
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
   const startCalendarRef = useRef(null);
   const endCalendarRef = useRef(null);
+
+  // Local state for mobile filters (only applied when Apply is clicked)
+  const [localPeriod, setLocalPeriod] = useState(period);
+  const [localDateRange, setLocalDateRange] = useState(dateRange);
+  const [localCustomDateRange, setLocalCustomDateRange] = useState(customDateRange);
+
+  // Function to open modal and initialize local state
+  const handleOpenModal = () => {
+    setLocalPeriod(period);
+    setLocalDateRange(dateRange);
+    setLocalCustomDateRange(customDateRange);
+    setShowModal(true);
+  };
 
   // Close calendar on outside click
   useEffect(() => {
@@ -74,20 +75,31 @@ export default function FiltersModal({
   }, [showStartCalendar, showEndCalendar]);
 
   const handleApply = () => {
+    // Apply local filters to parent state
+    setPeriod(localPeriod);
+    setDateRange(localDateRange);
+    setCustomDateRange(localCustomDateRange);
     setShowModal(false);
   };
 
   const handleReset = () => {
-    setPeriod("ALL");
-    setDateRange("30");
-    setCustomDateRange({ start: null, end: null });
+    const resetValues = {
+      period: "ALL",
+      dateRange: "30",
+      customDateRange: { start: null, end: null }
+    };
+    
+    // Update local state
+    setLocalPeriod(resetValues.period);
+    setLocalDateRange(resetValues.dateRange);
+    setLocalCustomDateRange(resetValues.customDateRange);
   };
 
   return (
     <>
       {/* Mobile: Floating Action Button */}
       <button
-        onClick={() => setShowModal(true)}
+        onClick={handleOpenModal}
         className="md:hidden fixed bottom-14 right-4 z-30 bg-primary-600 text-white rounded-full p-4 shadow-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 transition-all"
         aria-label="Filters"
       >
@@ -103,7 +115,7 @@ export default function FiltersModal({
           <Select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            options={PERIOD_OPTIONS}
+            options={periodOptions}
             className="min-w-[140px]"
           />
         </div>
@@ -211,9 +223,9 @@ export default function FiltersModal({
               Period
             </label>
             <Select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              options={PERIOD_OPTIONS}
+              value={localPeriod}
+              onChange={(e) => setLocalPeriod(e.target.value)}
+              options={periodOptions}
             />
           </div>
 
@@ -223,14 +235,14 @@ export default function FiltersModal({
               Date Range
             </label>
             <Select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
+              value={localDateRange}
+              onChange={(e) => setLocalDateRange(e.target.value)}
               options={DATE_RANGE_OPTIONS}
             />
           </div>
 
           {/* Custom Date Range */}
-          {dateRange === "custom" && (
+          {localDateRange === "custom" && (
             <div className="space-y-3">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -242,8 +254,8 @@ export default function FiltersModal({
                     className="w-full inline-flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-gray-700 hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-primary-600"
                   >
                     <span>
-                      {customDateRange.start
-                        ? formatDate(customDateRange.start)
+                      {localCustomDateRange.start
+                        ? formatDate(localCustomDateRange.start)
                         : "Select start date"}
                     </span>
                     <Calendar size={16} />
@@ -256,10 +268,10 @@ export default function FiltersModal({
                     >
                       <DayPicker
                         mode="single"
-                        selected={customDateRange.start}
+                        selected={localCustomDateRange.start}
                         onSelect={(date) => {
                           if (!date) return;
-                          setCustomDateRange((prev) => ({
+                          setLocalCustomDateRange((prev) => ({
                             ...prev,
                             start: date,
                           }));
@@ -282,8 +294,8 @@ export default function FiltersModal({
                     className="w-full inline-flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-gray-700 hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-primary-600"
                   >
                     <span>
-                      {customDateRange.end
-                        ? formatDate(customDateRange.end)
+                      {localCustomDateRange.end
+                        ? formatDate(localCustomDateRange.end)
                         : "Select end date"}
                     </span>
                     <Calendar size={16} />
@@ -296,14 +308,14 @@ export default function FiltersModal({
                     >
                       <DayPicker
                         mode="single"
-                        selected={customDateRange.end}
+                        selected={localCustomDateRange.end}
                         onSelect={(date) => {
                           if (!date) return;
-                          setCustomDateRange((prev) => ({ ...prev, end: date }));
+                          setLocalCustomDateRange((prev) => ({ ...prev, end: date }));
                           setShowEndCalendar(false);
                         }}
                         disabled={{
-                          before: customDateRange.start || undefined,
+                          before: localCustomDateRange.start || undefined,
                           after: new Date(),
                         }}
                       />

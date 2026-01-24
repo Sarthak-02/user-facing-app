@@ -54,7 +54,7 @@ export default function MobileListing({ homeworkList }) {
   
   const handleCardClick = (homeworkId) => {
     console.log("homeworkId", homeworkId);
-    navigate(`/homework/${homeworkId}`);
+    navigate(`/student/homework/${homeworkId}`);
   };
 
   return (

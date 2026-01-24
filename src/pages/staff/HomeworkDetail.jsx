@@ -29,12 +29,14 @@ function StatusBadge({ status, dueDate }) {
   const now = new Date();
   const due = new Date(dueDate);
   
-  if (status === "SUBMITTED") {
-    return <Badge variant="success">Submitted</Badge>;
-  } else if (due < now && status !== "SUBMITTED") {
+  if (status === "DRAFT") {
+    return <Badge variant="warning">Draft</Badge>;
+  } else if (status === "CLOSED") {
+    return <Badge variant="default">Closed</Badge>;
+  } else if (due < now && status !== "CLOSED" && status !== "DRAFT") {
     return <Badge variant="error">Overdue</Badge>;
-  } else if (status === "ASSIGNED") {
-    return <Badge variant="info">Assigned</Badge>;
+  } else if (status === "PUBLISHED" || status === "ACTIVE") {
+    return <Badge variant="info">Active</Badge>;
   }
   return <Badge variant="default">{status}</Badge>;
 }
@@ -69,12 +71,12 @@ export default function HomeworkDetail() {
   }, [homeworkId]);
 
   const handleGoBack = () => {
-    navigate("/student/homework");
+    navigate("/staff/homework");
   };
 
-  const handleSubmit = () => {
-    // TODO: Implement homework submission logic
-    alert("Submission functionality will be implemented");
+  const handleViewSubmissions = () => {
+    // TODO: Implement view submissions functionality
+    alert("View submissions functionality will be implemented");
   };
 
   if (loading) {
@@ -109,7 +111,7 @@ export default function HomeworkDetail() {
                 {error || "Homework not found"}
               </h2>
             </div>
-            <Button onClick={() => navigate("/student/homework")}>
+            <Button onClick={() => navigate("/staff/homework")}>
               Back to Homework List
             </Button>
           </div>
@@ -163,27 +165,29 @@ export default function HomeworkDetail() {
           {/* Info Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
             <div>
-              <div className="text-xs text-gray-500 mb-1">Class / Section</div>
+              <div className="text-xs text-gray-500 mb-1">Target Classes/Sections</div>
               <div className="text-sm font-medium text-gray-900">
-                {homework.class || homework.class_name} - {homework.section || homework.section_name}
+                {homework.targets?.map(t => `${t.class_name} - ${t.section_name}`).join(", ") ||
+                 homework.class_name || 
+                 "N/A"}
               </div>
             </div>
             <div>
-              <div className="text-xs text-gray-500 mb-1">Assigned By</div>
+              <div className="text-xs text-gray-500 mb-1">Created By</div>
               <div className="text-sm font-medium text-gray-900">
-                {homework.assignedBy || homework.teacher_name || homework.created_by}
+                {homework.teacher_name || homework.created_by || "N/A"}
               </div>
             </div>
             <div>
-              <div className="text-xs text-gray-500 mb-1">Assigned Date</div>
+              <div className="text-xs text-gray-500 mb-1">Created Date</div>
               <div className="text-sm font-medium text-gray-900">
-                {formatDate(homework.assignedDate || homework.created_at)}
+                {formatDate(homework.created_at)}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Due Date</div>
               <div className="text-sm font-medium text-gray-900">
-                {formatDate(homework.dueDate || homework.due_date)}
+                {formatDate(homework.due_date || homework.dueDate)}
               </div>
             </div>
           </div>
@@ -215,9 +219,9 @@ export default function HomeworkDetail() {
       {homework.attachments && homework.attachments.length > 0 && (
         <Card title="Attachments">
           <div className="space-y-2">
-            {homework.attachments.map((attachment) => (
+            {homework.attachments.map((attachment, index) => (
               <a
-                key={attachment.id}
+                key={attachment.id || index}
                 href={attachment.url}
                 className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
                 target="_blank"
@@ -242,7 +246,7 @@ export default function HomeworkDetail() {
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">
-                      {attachment.name}
+                      {attachment.name || attachment.filename}
                     </div>
                     <div className="text-xs text-gray-500">{attachment.size}</div>
                   </div>
@@ -267,106 +271,46 @@ export default function HomeworkDetail() {
         </Card>
       )}
 
-      {/* Submission Details (if submitted)
-      {homework.submission && (
-        <Card title="Your Submission">
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-green-900">
-                  Submitted on {formatDateTime(homework.submission.submittedDate)}
-                </div>
-                {homework.submission.remarks && (
-                  <div className="text-sm text-green-700 mt-1">
-                    {homework.submission.remarks}
-                  </div>
-                )}
+      {/* Submission Statistics */}
+      {homework.submission_stats && (
+        <Card title="Submission Statistics">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+              <div className="text-2xl font-bold text-blue-600">
+                {homework.submission_stats.total || 0}
               </div>
+              <div className="text-sm text-blue-700 mt-1">Total Students</div>
             </div>
-
-            {homework.submission.submittedFiles &&
-              homework.submission.submittedFiles.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-sm font-medium text-gray-700">
-                    Submitted Files:
-                  </div>
-                  {homework.submission.submittedFiles.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-gray-50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-green-600"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {file.name}
-                          </div>
-                          <div className="text-xs text-gray-500">{file.size}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+              <div className="text-2xl font-bold text-green-600">
+                {homework.submission_stats.submitted || 0}
+              </div>
+              <div className="text-sm text-green-700 mt-1">Submitted</div>
+            </div>
+            <div className="p-4 rounded-lg bg-yellow-50 border border-yellow-200">
+              <div className="text-2xl font-bold text-yellow-600">
+                {homework.submission_stats.pending || 0}
+              </div>
+              <div className="text-sm text-yellow-700 mt-1">Pending</div>
+            </div>
+            <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+              <div className="text-2xl font-bold text-red-600">
+                {homework.submission_stats.overdue || 0}
+              </div>
+              <div className="text-sm text-red-700 mt-1">Overdue</div>
+            </div>
           </div>
         </Card>
-      )} */}
+      )}
 
-      {/* Submit Button (if not submitted) */}
-      {/* {homework.status !== "SUBMITTED" && (
-        <Card>
-          <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-            <div className="text-sm text-gray-600">
-              {new Date(homework.dueDate) < new Date() ? (
-                <span className="text-red-600 font-medium">
-                  This homework is overdue!
-                </span>
-              ) : (
-                <span>
-                  Time remaining:{" "}
-                  {Math.ceil(
-                    (new Date(homework.dueDate) - new Date()) /
-                      (1000 * 60 * 60 * 24)
-                  )}{" "}
-                  days
-                </span>
-              )}
-            </div>
-            <Button onClick={handleSubmit} className="w-full md:w-auto">
-              Submit Homework
-            </Button>
-          </div>
-        </Card>
-      )} */}
+      {/* Actions */}
+      <Card>
+        <div className="flex flex-col md:flex-row gap-4">
+          <Button onClick={handleViewSubmissions} className="flex-1">
+            View Submissions
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }

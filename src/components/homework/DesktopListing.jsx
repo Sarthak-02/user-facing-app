@@ -53,7 +53,7 @@ export default function DesktopListing({ homeworkList }) {
   const navigate = useNavigate();
 
   const handleCardClick = (homeworkId) => {
-    navigate(`/homework/${homeworkId}`);
+    navigate(`/student/homework/${homeworkId}`);
   };
 
   return (

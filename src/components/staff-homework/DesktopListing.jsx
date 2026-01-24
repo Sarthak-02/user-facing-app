@@ -15,11 +15,13 @@ function StatusBadge({ status, dueDate }) {
   const now = new Date();
   const due = new Date(dueDate);
   
-  if (status === "COMPLETED") {
+  if (status === "DRAFT") {
+    return <Badge variant="warning">Draft</Badge>;
+  } else if (status === "COMPLETED") {
     return <Badge variant="success">Completed</Badge>;
-  } else if (due < now && status !== "COMPLETED") {
+  } else if (due < now && status !== "COMPLETED" && status !== "DRAFT") {
     return <Badge variant="error">Overdue</Badge>;
-  } else if (status === "ACTIVE") {
+  } else if (status === "PUBLISHED" || status === "ACTIVE") {
     return <Badge variant="info">Active</Badge>;
   }
   return <Badge variant="default">{status}</Badge>;
@@ -49,7 +51,7 @@ function AttachmentIndicator({ count }) {
   );
 }
 
-export default function DesktopListing({ homeworkList, onEdit }) {
+export default function DesktopListing({ homeworkList, onEdit, onPublish }) {
   const navigate = useNavigate();
 
   const handleCardClick = (homeworkId) => {
@@ -59,6 +61,11 @@ export default function DesktopListing({ homeworkList, onEdit }) {
   const handleEditClick = (e, homework) => {
     e.stopPropagation();
     onEdit(homework);
+  };
+
+  const handlePublishClick = (e, homework) => {
+    e.stopPropagation();
+    onPublish(homework);
   };
 
   return (
@@ -154,27 +161,41 @@ export default function DesktopListing({ homeworkList, onEdit }) {
                     <AttachmentIndicator count={homework.attachmentCount} />
                   </div>
                   
-                  {/* Edit Button */}
-                  <button
-                    onClick={(e) => handleEditClick(e, homework)}
-                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Edit homework"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    {/* Publish Button (only for drafts) */}
+                    {homework.status === "DRAFT" && (
+                      <button
+                        onClick={(e) => handlePublishClick(e, homework)}
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                        title="Publish homework"
+                      >
+                        Publish
+                      </button>
+                    )}
+                    
+                    {/* Edit Button */}
+                    <button
+                      onClick={(e) => handleEditClick(e, homework)}
+                      className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit homework"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             </Card>

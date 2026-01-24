@@ -5,7 +5,7 @@ import { logoutApi } from "../api/auth.api";  // <-- add this
 const initialValue = {
   userId: "",
   username: "",
-  role: "",
+  role: "student",
   campus_id:"",
   section_id:"",
   details: {},

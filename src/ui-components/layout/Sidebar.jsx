@@ -1,20 +1,9 @@
 import {
-  Home,
-  ClipboardCheck,
-  BookOpen,
-  Bell,
   ChevronLeft,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const navItems = [
-  { label: "Home", icon: Home, path: "/" },
-  { label: "Attendance", icon: ClipboardCheck, path: "/attendance" },
-  { label: "Homework", icon: BookOpen, path: "/homework" },
-  { label: "Notifications", icon: Bell, path: "/alerts" },
-];
-
-export default function Sidebar({ collapsed, setCollapsed }) {
+export default function Sidebar({ collapsed, setCollapsed, navItems }) {
   const navigate = useNavigate();
   const location = useLocation();
 

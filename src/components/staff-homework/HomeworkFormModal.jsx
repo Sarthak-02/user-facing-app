@@ -112,7 +112,7 @@ const TARGET_OPTIONS = [
   { value: "STUDENT", label: "Student",multiple: true },
 ];
 
-export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework }) {
+export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework, isSubmitting, submitError }) {
   const isEditing = !!homework;
   
   // Form state
@@ -126,6 +126,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework 
     sectionId: "",
     studentId: "",
     attachments: [],
+    status: "DRAFT", // DRAFT or PUBLISHED
   });
 
   // Error state for attachments
@@ -169,6 +170,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework 
         sectionId: "",
         studentId: "",
         attachments: [],
+        status: homework.status || "DRAFT",
       });
     } else {
       // Reset form for new homework
@@ -182,6 +184,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework 
         sectionId: "",
         studentId: "",
         attachments: [],
+        status: "DRAFT",
       });
     }
   }, [homework, isOpen]);
@@ -276,9 +279,9 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework 
     return parts.length > 0 ? parts.join(" • ") : "Select Target";
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e, status) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({ ...formData, status });
   };
 
   const canSubmit =
@@ -534,13 +537,56 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework 
             )}
           </div>
 
+          {/* Error Message */}
+          {submitError && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-red-800">Error</h4>
+                  <p className="text-sm text-red-700 mt-1">{submitError}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Form Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-            <Button type="button" variant="secondary" onClick={onClose}>
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={!canSubmit}>
-              {isEditing ? "Update Homework" : "Create Homework"}
+            <Button 
+              type="button" 
+              variant="secondary" 
+              disabled={!canSubmit || isSubmitting}
+              onClick={(e) => handleSubmit(e, "DRAFT")}
+            >
+              {isSubmitting ? "Saving..." : isEditing ? "Save as Draft" : "Save as Draft"}
+            </Button>
+            <Button 
+              type="button" 
+              disabled={!canSubmit || isSubmitting}
+              onClick={(e) => handleSubmit(e, "PUBLISHED")}
+            >
+              {isSubmitting ? "Publishing..." : isEditing ? "Publish" : "Publish"}
             </Button>
           </div>
         </form>

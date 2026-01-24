@@ -1,25 +1,16 @@
 import { useNavigate, useLocation } from "react-router-dom";
 
-const routeMap = {
-  Home: "/",
-  Attendance: "/attendance",
-  Homework: "student/homework",
-  Alerts: "/alerts",
-};
-
 export default function BottomNav({navItems, setActiveNav}) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleNavClick = (label) => {
+  const handleNavClick = (label, path) => {
     setActiveNav(label);
-    const route = routeMap[label] || "/";
-    navigate(route);
+    navigate(path);
   };
 
-  const isActive = (label) => {
-    const route = routeMap[label] || "/";
-    return location.pathname === route;
+  const isActive = (path) => {
+    return location.pathname === path;
   };
 
   return (
@@ -31,17 +22,17 @@ export default function BottomNav({navItems, setActiveNav}) {
         flex justify-around items-center
       "
     >
-      {navItems.map(({ label, icon: IconComponent }) => {
+      {navItems.map(({ label, icon: IconComponent, path }) => {
         const Icon = IconComponent;
         return (
           <button
             key={label}
             className={`flex flex-col items-center text-xs transition-colors ${
-              isActive(label) 
+              isActive(path) 
                 ? "text-[var(--color-primary)]" 
                 : "text-[var(--color-text-muted)]"
             }`}
-            onClick={() => handleNavClick(label)}
+            onClick={() => handleNavClick(label, path)}
           >
             <Icon size={20} />
             <span>{label}</span>
