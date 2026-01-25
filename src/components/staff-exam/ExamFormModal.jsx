@@ -146,15 +146,55 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
   // Initialize form when exam changes
   useEffect(() => {
     if (exam) {
+      // Determine target type and extract target IDs from the targets array
+      let targetType = { value: "CLASS", label: "Class" };
+      let classId = null;
+      let sectionId = null;
+      let studentId = [];
+
+      if (exam.targets && exam.targets.length > 0) {
+        const firstTarget = exam.targets[0];
+        
+        if (firstTarget.targetType === "CLASS") {
+          targetType = { value: "CLASS", label: "Class" };
+          // Find the class in permissions to get the label
+          const classItem = permissions.classes?.find(c => c.class_id === firstTarget.targetId);
+          classId = classItem ? { value: classItem.class_id, label: classItem.class_name } : null;
+        } else if (firstTarget.targetType === "SECTION") {
+          targetType = { value: "SECTION", label: "Section" };
+          // Find the section in permissions to get the label
+          const sectionItem = permissions.sections?.find(s => s.section_id === firstTarget.targetId);
+          sectionId = sectionItem ? { value: sectionItem.section_id, label: sectionItem.section_name } : null;
+        } else if (firstTarget.targetType === "STUDENT") {
+          targetType = { value: "STUDENT", label: "Student" };
+          // Handle multiple students
+          studentId = exam.targets.map(target => {
+            const studentItem = permissions.students?.find(s => s.student_id === target.targetId);
+            return studentItem ? { value: studentItem.student_id, label: studentItem.student_name } : null;
+          }).filter(Boolean);
+        }
+      }
+
+      // Transform subjects to match dropdown format
+      const transformedSubjects = exam.subjects && exam.subjects.length > 0
+        ? exam.subjects.map(sub => ({
+            subjectId: { value: sub.subjectName, label: sub.subjectName }, // Transform to dropdown format
+            subjectName: sub.subjectName,
+            examDate: sub.examDate || "",
+            startTime: sub.startTime || "",
+            endTime: sub.endTime || "",
+          }))
+        : [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }];
+
       // Load existing exam data
       setFormData({
         examType: exam.examType || "",
         customExamType: exam.customExamType || "",
-        targetType: { value: "CLASS", label: "Class" },
-        classId: null,
-        sectionId: null,
-        studentId: [],
-        subjects: exam.subjects || [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
+        targetType: targetType,
+        classId: classId,
+        sectionId: sectionId,
+        studentId: studentId,
+        subjects: transformedSubjects,
         gradingType: exam.gradingType || "PERCENTAGE",
         passingValue: exam.passingValue || "",
         maxValue: exam.maxValue || "",
@@ -172,7 +212,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
       setFormData({
         examType: "",
         customExamType: "",
-        targetType: { value: "ClASS", label: "Class" },
+        targetType: { value: "CLASS", label: "Class" },
         classId: null,
         sectionId: null,
         studentId: [],
@@ -191,7 +231,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
       });
     }
     setCurrentStep(1);
-  }, [exam, isOpen]);
+  }, [exam, isOpen, permissions.classes, permissions.sections, permissions.students]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

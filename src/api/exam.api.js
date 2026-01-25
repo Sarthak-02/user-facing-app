@@ -234,7 +234,7 @@ export async function createExam(examData) {
  */
 export async function updateExam(examId, examData) {
   try {
-    const response = await api.put(`/exams/${examId}`, examData);
+    const response = await api.patch(`/exam/${examId}`, examData);
     return response.data;
   } catch (err) {
     console.error("Error updating exam:", err.response?.data);
@@ -260,11 +260,14 @@ export async function deleteExam(examId) {
 /**
  * Publish a draft exam
  * @param {string} examId - The ID of the exam
+ * @param {string} teacherId - Teacher ID who is publishing the exam
  * @returns {Promise<Object>} Published exam object
  */
-export async function publishExam(examId) {
+export async function publishExam(examId, teacherId) {
   try {
-    const response = await api.post(`/exams/${examId}/publish`);
+    const response = await api.post(`/exam/${examId}/publish`, {
+      teacher_id: teacherId
+    });
     return response.data;
   } catch (err) {
     console.error("Error publishing exam:", err.response?.data);

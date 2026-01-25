@@ -88,7 +88,7 @@ export const routes = [
       { 
         path: "broadcast", 
         element: (
-          <RoleBasedRoute allowedRoles={["admin"]}>
+          <RoleBasedRoute allowedRoles={["admin","teacher","staff"]}>
             <BroadcastNotification />
           </RoleBasedRoute>
         )

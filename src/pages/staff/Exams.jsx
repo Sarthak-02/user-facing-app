@@ -4,7 +4,7 @@ import DesktopListing from "../../components/staff-exam/DesktopListing";
 import MobileListing from "../../components/staff-exam/MobileListing";
 import ExamFormModal from "../../components/staff-exam/ExamFormModal";
 import Dropdown from "../../ui-components/Dropdown";
-import { createExam, getTeacherExamsAll, publishExam } from "../../api/exam.api";
+import { createExam, getTeacherExamsAll, publishExam, getExamDetail, updateExam } from "../../api/exam.api";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
 import { useNavigate } from "react-router-dom";
@@ -184,9 +184,36 @@ export default function Exams() {
     setIsModalOpen(true);
   };
 
-  const handleEditExam = (exam) => {
-    setEditingExam(exam);
-    setIsModalOpen(true);
+  const handleEditExam = async (exam) => {
+    try {
+      // Fetch full exam details including all data
+      const examId = exam.id;
+      const fullExamDetails = await getExamDetail(examId, permissions);
+      
+      // Transform the exam details to the format expected by ExamFormModal
+      const formattedExam = {
+        id: fullExamDetails.id,
+        examType: fullExamDetails.examType,
+        customExamType: fullExamDetails.customExamType || '',
+        status: fullExamDetails.status,
+        subjects: fullExamDetails.subjects || [],
+        gradingType: fullExamDetails.gradingType,
+        passingValue: fullExamDetails.passingValue,
+        maxValue: fullExamDetails.maxValue,
+        gradeRanges: fullExamDetails.gradeRanges || [],
+        targets: fullExamDetails.targets || [],
+        // Keep the original raw data for reference
+        _rawData: fullExamDetails
+      };
+      
+      setEditingExam(formattedExam);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching exam details for editing:", error);
+      // Fallback to basic exam object if API call fails
+      setEditingExam(exam);
+      setIsModalOpen(true);
+    }
   };
 
   const handleViewExam = (exam) => {
@@ -205,8 +232,86 @@ export default function Exams() {
 
     try {
       if (editingExam) {
-        console.log("Updating exam:", editingExam.id, examData);
-        // TODO: Call API to update exam
+        // Transform form data to API schema for update
+        const targets = [];
+
+        // Build targets array based on targetType
+        if (examData.targetType?.value === "CLASS" && examData.classId?.value) {
+          targets.push({
+            targetType: "CLASS",
+            targetId: examData.classId.value,
+          });
+        } else if (examData.targetType?.value === "SECTION" && examData.sectionId?.value) {
+          targets.push({
+            targetType: "SECTION",
+            targetId: examData.sectionId.value,
+          });
+        } else if (examData.targetType?.value === "STUDENT" && examData.studentId) {
+          const studentIds = Array.isArray(examData.studentId)
+            ? examData.studentId
+            : [examData.studentId];
+
+          studentIds.forEach((student) => {
+            targets.push({
+              targetType: "STUDENT",
+              targetId: student.value,
+            });
+          });
+        }
+
+        // Prepare grading_extras based on grading type
+        let grading_extras = {};
+        if (examData.gradingType === "PERCENTAGE" || examData.gradingType === "GPA") {
+          grading_extras = {
+            passing_value: examData.passingValue ? Number(examData.passingValue) : null,
+            max_value: examData.maxValue ? Number(examData.maxValue) : null,
+          };
+        } else if (examData.gradingType === "LETTER_GRADE") {
+          grading_extras = {
+            passing_value: examData.passingValue || null,
+            max_value: examData.maxValue || null,
+            grade_ranges: examData.gradeRanges || [],
+          };
+        }
+
+        // Helper function to format time to HH:MM:SS
+        const formatTime = (timeString) => {
+          if (!timeString) return "";
+          // If already has seconds (HH:MM:SS), return as is
+          if (timeString.split(':').length === 3) {
+            return timeString;
+          }
+          // Otherwise add :00 for seconds (HH:MM -> HH:MM:00)
+          return timeString + ":00";
+        };
+
+        // Prepare API payload for update
+        const payload = {
+          exam_type: examData.customExamType || examData.examType,
+          target: examData.targetType?.value || "CLASS",
+          subjects: examData.subjects.map((sub) => ({
+            subjectName: sub.subjectName,
+            examDate: sub.examDate,
+            examStartTime: formatTime(sub.startTime),
+            examEndTime: formatTime(sub.endTime),
+            extras: {},
+          })),
+          targets: targets,
+          grading_type: examData.gradingType,
+          grading_extras: grading_extras,
+          publish: examData.status === "PUBLISHED",
+        };
+
+        console.log("Updating exam:", editingExam.id, "with payload:", JSON.stringify(payload, null, 2));
+
+        // Call API to update exam
+        const response = await updateExam(editingExam.id, payload);
+        console.log("Exam updated successfully:", response);
+
+        // Refresh exam list
+        await fetchExams();
+
+        handleCloseModal();
       } else {
         // Transform form data to API schema
         const targets = [];
@@ -293,7 +398,7 @@ export default function Exams() {
       }
     } catch (error) {
       console.error("Error submitting exam:", error);
-      setSubmitError(error.message || "Failed to create exam. Please try again.");
+      setSubmitError(error.message || `Failed to ${editingExam ? 'update' : 'create'} exam. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -307,7 +412,7 @@ export default function Exams() {
   const confirmPublish = async () => {
     try {
       console.log("Publishing exam:", examToPublish.id);
-      await publishExam(examToPublish.id);
+      await publishExam(examToPublish.id, auth.userId);
       
       // Refresh exam list after publishing
       await fetchExams();

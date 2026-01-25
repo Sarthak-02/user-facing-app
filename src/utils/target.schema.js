@@ -25,7 +25,7 @@ export const SECTION_TARGET_SCHEMA = [
         onChange: (value) => {
             console.log(value);
         },
-    }  ,
+    },
     {
         label: "Select Section",
         value: [],
@@ -52,11 +52,11 @@ export const STUDENT_TARGET_SCHEMA = [
         onChange: (value) => {
             console.log(value);
         },
-    }  ,
+    },
     {
         label: "Select Section",
         value: "",
-        multiple: true,
+        multiple: false,
         type: "section",
         required: true,
         options: [],
@@ -68,7 +68,7 @@ export const STUDENT_TARGET_SCHEMA = [
     {
         label: "Select Student",
         value: [],
-        multi: true,
+        multiple: true,
         type: "student",
         required: true,
         options: [],
