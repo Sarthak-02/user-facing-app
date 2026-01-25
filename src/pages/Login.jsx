@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Button, TextField } from "../ui-components";
-import { loginApi } from "../api/auth.api";
+import { loginApi, fetchTeacherPermissions } from "../api/auth.api";
 import { useAuth } from "../store/auth.store";
+import { usePermissions } from "../store/permissions.store";
 // import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { setAuth } = useAuth();
+  const { setPermissions, setLoading, setError: setPermissionsError } = usePermissions();
   const navigate = useNavigate();
 
   async function handleLogin() {
@@ -46,6 +48,24 @@ export default function LoginPage() {
       localStorage.setItem("token", true);
 
       setAuth(authData);
+
+      // Fetch teacher permissions if the user is a teacher/staff
+      if (data.role === "TEACHER" || data.role === "STAFF") {
+        try {
+          setLoading(true);
+          const permissionsResponse = await fetchTeacherPermissions(data.userid);
+          
+          if (permissionsResponse?.success && permissionsResponse?.data) {
+            setPermissions(permissionsResponse.data);
+          }
+        } catch (permissionsErr) {
+          console.error("Failed to fetch teacher permissions:", permissionsErr);
+          setPermissionsError(permissionsErr?.message || "Failed to fetch permissions");
+          // Don't block login if permissions fetch fails
+        } finally {
+          setLoading(false);
+        }
+      }
     
       // navigate("/attendance");
       navigate("/");

@@ -27,13 +27,14 @@ export default function Dropdown({
 
   const handleSelect = (option) => {
     if (multi) {
-      if (selected?.includes(option.value)) {
-        onChange(selected.filter((v) => v !== option.value));
+      const isSelected = selected?.some((item) => item.value === option.value);
+      if (isSelected) {
+        onChange(selected.filter((item) => item.value !== option.value));
       } else {
-        onChange([...(selected || []), option.value]);
+        onChange([...(selected || []), option]);
       }
     } else {
-      onChange(option.value);
+      onChange(option);
       setOpen(false);
     }
   };
@@ -41,14 +42,10 @@ export default function Dropdown({
   const renderLabel = () => {
     if (multi) {
       if (!selected?.length) return placeholder;
-      return options
-        .filter((o) => selected.includes(o.value))
-        .map((o) => o.label)
-        .join(", ");
+      return selected.map((item) => item.label).join(", ");
     }
 
-    const option = options.find((o) => o.value === selected);
-    return option ? option.label : placeholder;
+    return selected ? selected.label : placeholder;
   };
 
   const filteredOptions = options.filter((o) =>
@@ -81,7 +78,7 @@ export default function Dropdown({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onChange(multi ? [] : "");
+              onChange(multi ? [] : null);
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-600"
           >
@@ -110,8 +107,8 @@ export default function Dropdown({
           {filteredOptions.length > 0 ? (
             filteredOptions.map((opt) => {
               const active = multi
-                ? selected?.includes(opt.value)
-                : selected === opt.value;
+                ? selected?.some((item) => item.value === opt.value)
+                : selected?.value === opt.value;
 
               return (
                 <div

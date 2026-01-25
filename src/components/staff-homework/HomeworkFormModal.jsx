@@ -1,174 +1,193 @@
-import { useState, useEffect, useMemo } from "react";
-import { Button } from "../../ui-components";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Button, Dropdown } from "../../ui-components";
 import TargetSelector from "../../components/TargetSelector";
-
-// Mock data - Replace with actual API calls
-const CLASSES = [
-  { id: "c1", name: "Class 9" },
-  { id: "c2", name: "Class 10" },
-  { id: "c3", name: "Class 11" },
-];
-
-const SECTIONS_BY_CLASS_ID = {
-    c1: [
-      { id: "s1", name: "Section A" },
-      { id: "s2", name: "Section B" },
-    ],
-    c2: [
-      { id: "s3", name: "Section A" },
-      { id: "s4", name: "Section B" },
-    ],
-    c3: [{ id: "s5", name: "Section A" }],
-  };
-
-const STUDENTS_BY_SECTION_ID = {
-  s1: [
-    { id: "st1", name: "Aarav Sharma" },
-    { id: "st2", name: "Diya Singh" },
-  ],
-  s2: [
-    { id: "st3", name: "Kabir Verma" },
-    { id: "st4", name: "Ananya Patel" },
-  ],
-  s3: [
-    { id: "st5", name: "Rohan Kumar" },
-    { id: "st6", name: "Priya Gupta" },
-  ],
-  s4: [
-    { id: "st7", name: "Arjun Mehta" },
-    { id: "st8", name: "Ishita Reddy" },
-  ],
-  s5: [
-    { id: "st9", name: "Vikram Singh" },
-    { id: "st10", name: "Sneha Iyer" },
-  ],
-};
-
-// Subjects mapped by class and section - Mock data, replace with API call
-const SUBJECTS_BY_CLASS_ID = {
-    c1: [
-      { id: "sub1", name: "Mathematics" },
-      { id: "sub2", name: "Science" },
-      { id: "sub3", name: "English" },
-      { id: "sub4", name: "Hindi" },
-      { id: "sub5", name: "Social Studies" },
-    ],
-    c2: [
-      { id: "sub1", name: "Mathematics" },
-      { id: "sub7", name: "Physics" },
-      { id: "sub8", name: "Chemistry" },
-      { id: "sub9", name: "Biology" },
-      { id: "sub3", name: "English" },
-    ],
-    c3: [
-      { id: "sub1", name: "Mathematics" },
-      { id: "sub7", name: "Physics" },
-      { id: "sub8", name: "Chemistry" },
-      { id: "sub10", name: "Computer Science" },
-      { id: "sub3", name: "English" },
-    ],
-  };
-
-const SUBJECTS_BY_SECTION_ID = {
-  s1: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub2", name: "Science" },
-    { id: "sub3", name: "English" },
-    { id: "sub4", name: "Hindi" },
-    { id: "sub5", name: "Social Studies" },
-  ],
-  s2: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub2", name: "Science" },
-    { id: "sub3", name: "English" },
-    { id: "sub6", name: "Computer Science" },
-  ],
-  s3: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub7", name: "Physics" },
-    { id: "sub8", name: "Chemistry" },
-    { id: "sub9", name: "Biology" },
-    { id: "sub3", name: "English" },
-  ],
-  s4: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub7", name: "Physics" },
-    { id: "sub8", name: "Chemistry" },
-    { id: "sub9", name: "Biology" },
-    { id: "sub3", name: "English" },
-  ],
-  s5: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub7", name: "Physics" },
-    { id: "sub8", name: "Chemistry" },
-    { id: "sub10", name: "Computer Science" },
-    { id: "sub3", name: "English" },
-  ],
-};
+import { usePermissions } from "../../store/permissions.store";
+import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA } from "../../utils/target.schema";
+import { updateSchema } from "../../utils/update.schema";
 
 const TARGET_OPTIONS = [
-  { value: "CLASS", label: "Class" },
-  { value: "SECTION", label: "Section" },
-  { value: "STUDENT", label: "Student",multiple: true },
+  { value: "SECTION", label: "Section"},
+  { value: "STUDENT", label: "Student"},
 ];
 
 export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework, isSubmitting, submitError }) {
+
+  // Get permissions data from store
+  const {
+    permissions
+  } = usePermissions();
+
   const isEditing = !!homework;
-  
+
+  // Track previous homework ID to avoid unnecessary re-initializations
+  const prevHomeworkIdRef = useRef(null);
+
   // Form state
   const [formData, setFormData] = useState({
     title: "",
     subject: "",
     description: "",
     dueDate: "",
-    targetType: "SECTION", // CLASS, SECTION, STUDENT
-    classId: "",
-    sectionId: "",
-    studentId: "",
+    targetType: { value: "SECTION", label: "Section" }, // SECTION or STUDENT
+    sectionId: null,
+    studentId: [],
+    classId: null,
     attachments: [],
     status: "DRAFT", // DRAFT or PUBLISHED
   });
 
+  console.log("formData", formData);
   // Error state for attachments
   const [attachmentError, setAttachmentError] = useState("");
-  
+
   // Target selector modal state
   const [showTargetModal, setShowTargetModal] = useState(false);
 
-  const sections = useMemo(
-    () => SECTIONS_BY_CLASS_ID[formData.classId] || [],
-    [formData.classId]
-  );
-
-  const students = useMemo(
-    () => STUDENTS_BY_SECTION_ID[formData.sectionId] || [],
-    [formData.sectionId]
-  );
-
-  // Get subjects based on target type: use section if available, otherwise use class
+  // Get subjects based on selected section from permissions store
   const subjects = useMemo(() => {
-    if (formData.targetType === "CLASS" && formData.classId) {
-      return SUBJECTS_BY_CLASS_ID[formData.classId] || [];
-    }
-    if (formData.sectionId) {
-      return SUBJECTS_BY_SECTION_ID[formData.sectionId] || [];
-    }
-    return [];
-  }, [formData.targetType, formData.classId, formData.sectionId]);
-
+    if (!formData.sectionId?.value) return [];
+    return permissions?.teacher_subjects.map(subject => ({
+      label: subject,
+      value: subject
+    }));
+  }, [permissions, formData.sectionId]);
   // Initialize form when homework changes
+
+  const targetSchema = useMemo(() => {
+    let data = {
+      "class": {
+        selected: formData.classId,
+        options: permissions.classes.map(({ class_id, class_name }) => ({
+          value: class_id,
+          label: class_name
+        })),
+        onChange: (option) => {
+          console.log("option", option);
+          setFormData((prev) => ({
+            ...prev,
+            classId: option,
+          }));
+        },
+      },
+      "section": {
+        selected: formData.sectionId,
+        options: permissions.sections.map(({ section_id, section_name }) => ({
+          value: section_id,
+          label: section_name
+        })),
+        onChange: (option) => {
+          setFormData((prev) => ({
+            ...prev,
+            sectionId: option,
+          }));
+        },
+      }
+    }
+    if (formData.targetType?.value === "SECTION") {
+      return updateSchema(SECTION_TARGET_SCHEMA, data);
+    } else if (formData.targetType?.value === "STUDENT") {
+      data['student'] = {
+        selected: formData.studentId,
+        options: permissions.students.map(({ student_id, student_name, section_id }) => (
+          {
+            value: student_id,
+            label: student_name,
+            section_id: section_id,
+          })).filter(({ section_id }) => section_id === formData.sectionId?.value),
+        onChange: (options) => {
+          setFormData((prev) => ({
+            ...prev,
+            studentId: options,
+          }));
+        },
+      }
+      return updateSchema(STUDENT_TARGET_SCHEMA, data);
+    }
+  }, [formData.targetType, formData.sectionId, formData.classId, formData.studentId, permissions.classes, permissions.sections, permissions.students]);
+
+
+  // Initialize form data from homework prop
+  // This effect is intentionally calling setState to sync form with external data (homework prop)
   useEffect(() => {
+    // Only update form data when modal opens or homework changes
+    if (!isOpen) return;
+
+    // Check if this is a new homework or if homework ID has changed
+    const currentHomeworkId = homework?.id || homework?.homework_id || null;
+    const hasHomeworkChanged = prevHomeworkIdRef.current !== currentHomeworkId;
+    
+    if (!hasHomeworkChanged && prevHomeworkIdRef.current !== null) {
+      return; // Skip if homework hasn't changed and we've already initialized
+    }
+
+    prevHomeworkIdRef.current = currentHomeworkId;
+
     if (homework) {
+      // Parse homework data for editing
+      let targetType = { value: "SECTION", label: "Section" };
+      let sectionId = null;
+      let studentId = [];
+      let classId = null;
+
+      // Extract target information from homework.targets array
+      if (homework.targets && homework.targets.length > 0) {
+        const firstTarget = homework.targets[0];
+
+        if (firstTarget.target_type === "SECTION" || firstTarget.targetType === "SECTION") {
+          targetType = { value: "SECTION", label: "Section" };
+          const targetId = firstTarget.target_id || firstTarget.targetId || firstTarget.section_id || "";
+          const section = permissions.sections.find(s => s.section_id === targetId);
+          if (section) {
+            sectionId = { value: section.section_id, label: section.section_name };
+          }
+        } else if (firstTarget.target_type === "STUDENT" || firstTarget.targetType === "STUDENT") {
+          targetType = { value: "STUDENT", label: "Student" };
+          // Handle multiple students
+          const studentIds = homework.targets.map(t => t.target_id || t.targetId || t.student_id).filter(Boolean);
+          studentId = studentIds.map(sid => {
+            const student = permissions.students.find(s => s.student_id === sid);
+            return student ? { value: student.student_id, label: student.student_name } : null;
+          }).filter(Boolean);
+          // Get section from first student's data if available
+          const sectionIdValue = firstTarget.section_id || "";
+          const section = permissions.sections.find(s => s.section_id === sectionIdValue);
+          if (section) {
+            sectionId = { value: section.section_id, label: section.section_name };
+          }
+        } else if (firstTarget.target_type === "CLASS" || firstTarget.targetType === "CLASS") {
+          targetType = { value: "CLASS", label: "Class" };
+          const targetId = firstTarget.target_id || firstTarget.targetId || firstTarget.class_id || "";
+          const classObj = permissions.classes.find(c => c.class_id === targetId);
+          if (classObj) {
+            classId = { value: classObj.class_id, label: classObj.class_name };
+          }
+        }
+      }
+
+      // Format due date for input field (YYYY-MM-DD)
+      let formattedDueDate = "";
+      if (homework.dueDate || homework.due_date) {
+        const date = new Date(homework.dueDate || homework.due_date);
+        formattedDueDate = date.toISOString().split('T')[0];
+      }
+
+      // Convert subject to option object
+      let subjectOption = null;
+      if (homework.subject) {
+        subjectOption = { value: homework.subject, label: homework.subject };
+      }
+
+      // Form initialization from external data is valid use case
       // eslint-disable-next-line
       setFormData({
         title: homework.title || "",
-        subject: homework.subject || "",
+        subject: subjectOption,
         description: homework.description || "",
-        dueDate: homework.dueDate || "",
-        targetType: "SECTION",
-        classId: "",
-        sectionId: "",
-        studentId: "",
+        dueDate: formattedDueDate,
+        targetType: targetType,
+        sectionId: sectionId,
+        studentId: studentId,
+        classId: classId,
         attachments: [],
         status: homework.status || "DRAFT",
       });
@@ -176,18 +195,18 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
       // Reset form for new homework
       setFormData({
         title: "",
-        subject: "",
+        subject: null,
         description: "",
         dueDate: "",
-        targetType: "SECTION",
-        classId: "",
-        sectionId: "",
-        studentId: "",
+        targetType: { value: "SECTION", label: "Section" },
+        sectionId: null,
+        studentId: [],
+        classId: null,
         attachments: [],
         status: "DRAFT",
       });
     }
-  }, [homework, isOpen]);
+  }, [homework, isOpen, permissions]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -195,37 +214,18 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
   };
 
   const setTargetType = (type) => {
+    console.log("type", type);
     setFormData((prev) => ({
       ...prev,
       targetType: type,
+      sectionId: null, // Reset to null
+      studentId: [], // Array for multiple students
+      classId: null, // Reset to null
+      subject: null, // Reset subject when target type changes
     }));
   };
 
-  const setClassId = (classId) => {
-    setFormData((prev) => ({
-      ...prev,
-      classId,
-      sectionId: "",
-      studentId: "",
-      subject: "", // Reset subject when class changes
-    }));
-  };
-
-  const setSectionId = (sectionId) => {
-    setFormData((prev) => ({
-      ...prev,
-      sectionId,
-      studentId: "",
-      subject: "", // Reset subject when section changes
-    }));
-  };
-
-  const setStudentId = (studentId) => {
-    setFormData((prev) => ({
-      ...prev,
-      studentId,
-    }));
-  };
+  
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -240,7 +240,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
     // Validation: Each file max 10MB
     const maxSize = 10 * 1024 * 1024; // 10MB in bytes
     const invalidFiles = files.filter((file) => file.size > maxSize);
-    
+
     if (invalidFiles.length > 0) {
       setAttachmentError("Each file must be less than 10MB");
       return;
@@ -268,14 +268,23 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
   };
 
+
   // Format target label for display
   const formatTargetLabel = () => {
-    const targetTypeLabel = TARGET_OPTIONS.find(opt => opt.value === formData.targetType)?.label || "";
-    const c = CLASSES.find((x) => x.id === formData.classId)?.name;
-    const s = sections.find((x) => x.id === formData.sectionId)?.name;
-    const st = students.find((x) => x.id === formData.studentId)?.name;
-    
-    const parts = [targetTypeLabel, c, s, st].filter(Boolean);
+    const targetTypeLabel = TARGET_OPTIONS.find(opt => opt.value === formData.targetType?.value)?.label || "";
+    const s = formData.sectionId?.label;
+
+    // Handle student selection (can be array for multiple students)
+    let st = "";
+    if (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0) {
+      if (formData.studentId.length === 1) {
+        st = formData.studentId[0].label;
+      } else {
+        st = `${formData.studentId.length} students`;
+      }
+    }
+
+    const parts = [targetTypeLabel, s, st].filter(Boolean);
     return parts.length > 0 ? parts.join(" • ") : "Select Target";
   };
 
@@ -286,12 +295,11 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
 
   const canSubmit =
     formData.title.trim() &&
-    formData.subject.trim() &&
+    formData.subject?.value &&
     formData.description.trim() &&
     formData.dueDate &&
-    ((formData.targetType === "CLASS" && formData.classId) ||
-      (formData.targetType === "SECTION" && formData.sectionId) ||
-      (formData.targetType === "STUDENT" && formData.studentId));
+    ((formData.targetType?.value === "SECTION" && formData.sectionId?.value) ||
+      (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0));
 
   if (!isOpen) return null;
 
@@ -355,7 +363,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
                 className="absolute inset-0 bg-black/40"
                 onClick={() => setShowTargetModal(false)}
               />
-              
+
               <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
                 {/* Modal Header */}
                 <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -373,17 +381,9 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
                 <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
                   <TargetSelector
                     targetType={formData.targetType}
-                    setTargetType={setTargetType}
-                    classId={formData.classId}
-                    sectionId={formData.sectionId}
-                    studentId={formData.studentId}
-                    classes={CLASSES}
-                    sections={sections}
-                    students={students}
-                    setClassId={setClassId}
-                    setSectionId={setSectionId}
-                    setStudentId={setStudentId}
+                    handleTargetTypeChange={setTargetType}
                     TARGET_OPTIONS={TARGET_OPTIONS}
+                    schema={targetSchema}
                   />
                 </div>
               </div>
@@ -395,31 +395,13 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
             <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
               Subject <span className="text-red-500">*</span>
             </label>
-            <select
-              id="subject"
-              name="subject"
-              value={formData.subject}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              disabled={
-                (formData.targetType === "CLASS" && !formData.classId) ||
-                ((formData.targetType === "SECTION" || formData.targetType === "STUDENT") && !formData.sectionId)
-              }
-              required
-            >
-              <option value="">
-                {subjects.length > 0
-                  ? "Select a subject" 
-                  : formData.targetType === "CLASS"
-                  ? "Please select a class first"
-                  : "Please select a section first"}
-              </option>
-              {subjects.map((subject) => (
-                <option key={subject.id} value={subject.name}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
+            <Dropdown
+              label="Subject"
+              selected={formData.subject}
+              onChange={(option) => setFormData((prev) => ({ ...prev, subject: option }))}
+              options={subjects}
+              placeholder="Select subject"
+            />
           </div>
 
           {/* Title */}
@@ -486,7 +468,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
               disabled={formData.attachments.length >= 3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
-            
+
             {/* Error message */}
             {attachmentError && (
               <p className="mt-2 text-sm text-red-600">{attachmentError}</p>
@@ -565,24 +547,24 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
 
           {/* Form Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-            <Button 
-              type="button" 
-              variant="secondary" 
+            <Button
+              type="button"
+              variant="secondary"
               onClick={onClose}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              type="button" 
-              variant="secondary" 
+            <Button
+              type="button"
+              variant="secondary"
               disabled={!canSubmit || isSubmitting}
               onClick={(e) => handleSubmit(e, "DRAFT")}
             >
               {isSubmitting ? "Saving..." : isEditing ? "Save as Draft" : "Save as Draft"}
             </Button>
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               disabled={!canSubmit || isSubmitting}
               onClick={(e) => handleSubmit(e, "PUBLISHED")}
             >

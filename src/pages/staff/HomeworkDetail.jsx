@@ -159,7 +159,7 @@ export default function HomeworkDetail() {
                 {homework.title}
               </h1>
             </div>
-            <StatusBadge status={homework.status} dueDate={homework.due_date || homework.dueDate} />
+            <StatusBadge status={homework.status} dueDate={homework.dueDate || homework.due_date} />
           </div>
 
           {/* Info Grid */}
@@ -167,27 +167,27 @@ export default function HomeworkDetail() {
             <div>
               <div className="text-xs text-gray-500 mb-1">Target Classes/Sections</div>
               <div className="text-sm font-medium text-gray-900">
-                {homework.targets?.map(t => `${t.class_name} - ${t.section_name}`).join(", ") ||
-                 homework.class_name || 
-                 "N/A"}
+                {homework.targets && homework.targets.length > 0
+                  ? homework.targets.map(t => t.target_name || `${t.class_name} - ${t.section_name}`).join(", ")
+                  : homework.class_name || "N/A"}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Created By</div>
               <div className="text-sm font-medium text-gray-900">
-                {homework.teacher_name || homework.created_by || "N/A"}
+                {homework.teacher?.teacher_name || homework.teacher_name || homework.created_by || "N/A"}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Created Date</div>
               <div className="text-sm font-medium text-gray-900">
-                {formatDate(homework.created_at)}
+                {formatDate(homework.createdAt || homework.created_at)}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Due Date</div>
               <div className="text-sm font-medium text-gray-900">
-                {formatDate(homework.due_date || homework.dueDate)}
+                {formatDate(homework.dueDate || homework.due_date)}
               </div>
             </div>
           </div>

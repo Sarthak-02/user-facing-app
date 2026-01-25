@@ -17,7 +17,7 @@ import { useAuth } from "../../store/auth.store";
 
 export default function AttendancePage() {
 
-  const { auth : { sections=[] , userId } } = useAuth();
+  const { auth: { sections = [], userId } } = useAuth();
 
 
   const [attendance, setAttendance] = useState({});
@@ -30,6 +30,7 @@ export default function AttendancePage() {
   const [students, setStudents] = useState([]);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [noAttendanceFound, setNoAttendanceFound] = useState(false);
+  const [submittedAttendanceData, setSubmittedAttendanceData] = useState({});
 
   // Fetch attendance details for any date (including today)
   useEffect(() => {
@@ -39,8 +40,8 @@ export default function AttendancePage() {
       setIsLoadingAttendance(true);
       setNoAttendanceFound(false);
       try {
-        
-        
+
+
         const params = {
           section_id: selectedClass,
           date: getFormattedDate(selectedDate),
@@ -49,29 +50,32 @@ export default function AttendancePage() {
         };
 
         const response = await getAttendanceDetails(params);
-        
+
         // Check if success is true or false
         if (response.success === false) {
           // No attendance found - get students list from response if available
           setNoAttendanceFound(true);
           setAttendance({});
           setStudents([]);
-          
+
         } else if (response.success === true) {
           // Attendance found - extract students and attendance data
           if (response.data && response.data.students && Array.isArray(response.data.students)) {
             // Set students list
             setStudents(response.data.students);
-            
+
             // Build attendance map
             const attendanceMap = {};
             response?.data?.students?.forEach(record => {
-              if (record.status) {
-                attendanceMap[record.student_id] = record.status;
+              if (record?.attendance_status) {
+                attendanceMap[record.student_id] = record.attendance_status;
               }
             });
             setAttendance(attendanceMap);
             setNoAttendanceFound(false);
+
+            const { teacher_id = "", teacher_name = "", submitStatus = "", submittedAt = "", attendanceSessionId = "", section_id = "", section_name = "",is_attendance_taken=false } = response.data || {};
+              setSubmittedAttendanceData({ teacher_id, teacher_name, submitStatus, submittedAt, attendanceSessionId, section_id, section_name,is_attendance_taken });
           } else {
             setAttendance({});
             setStudents([]);
@@ -92,13 +96,14 @@ export default function AttendancePage() {
   }, [selectedClass, selectedDate, campusSession, period]);
 
   const editMode = useMemo(() => {
-    return isToday(selectedDate);
-  }, [selectedDate]);
+    console.log(submittedAttendanceData);
+    return isToday(selectedDate) && submittedAttendanceData?.is_attendance_taken === false;
+  }, [submittedAttendanceData]);
 
   // Filter students based on search query
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
-    
+
     const query = searchQuery.toLowerCase();
     return students.filter(
       (student) =>
@@ -187,7 +192,7 @@ export default function AttendancePage() {
         period={period}
         setPeriod={setPeriod}
       />
-      
+
       {/* Loading State */}
       {isLoadingAttendance && (
         <div className="flex justify-center items-center py-8">
@@ -207,17 +212,17 @@ export default function AttendancePage() {
         <div className="flex justify-center items-center py-8">
           <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8 max-w-md text-center">
             <div className="mb-4">
-              <svg 
-                className="w-16 h-16 mx-auto text-gray-400" 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className="w-16 h-16 mx-auto text-gray-400"
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
             </div>

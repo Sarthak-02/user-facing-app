@@ -7,157 +7,92 @@ import TargetSelector from "../../components/TargetSelector";
 import Dropdown from "../../ui-components/Dropdown";
 import { createHomework, getTeacherHomeworkAll } from "../../api/homework.api";
 import { useAuth } from "../../store/auth.store";
+import { usePermissions } from "../../store/permissions.store";
 
-// Mock data - Replace with actual API call
-const MOCK_TEACHER_HOMEWORK = [
-  {
-    id: "hw-001",
-    subject: "Mathematics",
-    title: "Chapter 5 - Quadratic Equations Practice Problems",
-    class: "Class 10",
-    section: "Section A",
-    dueDate: "2026-01-25",
-    status: "PUBLISHED",
-    attachmentCount: 2,
-    description: "Solve all problems from exercise 5.1 and 5.2",
-    assignedDate: "2026-01-15",
-    submissionCount: 15,
-    totalStudents: 30,
-  },
-  {
-    id: "hw-002",
-    subject: "Mathematics",
-    title: "Trigonometry Worksheet - Unit Circle",
-    class: "Class 10",
-    section: "Section B",
-    dueDate: "2026-01-24",
-    status: "PUBLISHED",
-    attachmentCount: 1,
-    description: "Complete the trigonometry worksheet on unit circle",
-    assignedDate: "2026-01-17",
-    submissionCount: 22,
-    totalStudents: 28,
-  },
-  {
-    id: "hw-003",
-    subject: "Mathematics",
-    title: "Linear Equations - Word Problems",
-    class: "Class 9",
-    section: "Section A",
-    dueDate: "2026-01-15",
-    status: "COMPLETED",
-    attachmentCount: 1,
-    description: "Solve word problems from chapter 3",
-    assignedDate: "2026-01-08",
-    submissionCount: 25,
-    totalStudents: 25,
-  },
-  {
-    id: "hw-004",
-    subject: "Mathematics",
-    title: "Geometry - Circle Theorems",
-    class: "Class 9",
-    section: "Section B",
-    dueDate: "2026-01-20",
-    status: "PUBLISHED",
-    attachmentCount: 3,
-    description: "Study and prove circle theorems from the textbook",
-    assignedDate: "2026-01-12",
-    submissionCount: 18,
-    totalStudents: 26,
-  },
-  {
-    id: "hw-005",
-    subject: "Mathematics",
-    title: "Algebra - Polynomial Factorization",
-    class: "Class 11",
-    section: "Section A",
-    dueDate: "2026-01-28",
-    status: "PUBLISHED",
-    attachmentCount: 0,
-    description: "Complete exercises on polynomial factorization",
-    assignedDate: "2026-01-18",
-    submissionCount: 5,
-    totalStudents: 32,
-  },
-  {
-    id: "hw-006",
-    subject: "Mathematics",
-    title: "Statistics - Mean, Median, Mode Practice",
-    class: "Class 10",
-    section: "Section A",
-    dueDate: "2026-01-30",
-    status: "DRAFT",
-    attachmentCount: 2,
-    description: "Practice problems on central tendency measures",
-    assignedDate: "2026-01-23",
-    submissionCount: 0,
-    totalStudents: 30,
-  },
-  {
-    id: "hw-007",
-    subject: "Mathematics",
-    title: "Calculus Introduction - Limits",
-    class: "Class 11",
-    section: "Section A",
-    dueDate: "2026-02-01",
-    status: "DRAFT",
-    attachmentCount: 1,
-    description: "Introduction to limits and continuity",
-    assignedDate: "2026-01-23",
-    submissionCount: 0,
-    totalStudents: 32,
-  },
-];
+
 
 export default function TeacherHomework() {
   const { auth } = useAuth();
+  const { permissions, getSectionsByClass, getStudentsBySection } = usePermissions();
   const [statusFilter] = useState("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState(null);
-  
+
   // Publish confirmation modal
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [homeworkToPublish, setHomeworkToPublish] = useState(null);
-  
+  const [isPublishing, setIsPublishing] = useState(false);
+
   // Mobile filter states
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [subjectFilter, setSubjectFilter] = useState("");
-  const [statusFilterDropdown, setStatusFilterDropdown] = useState("");
+  const [subjectFilter, setSubjectFilter] = useState(null);
+  const [statusFilterDropdown, setStatusFilterDropdown] = useState(null);
   const [dateRangeStart, setDateRangeStart] = useState("");
   const [dateRangeEnd, setDateRangeEnd] = useState("");
-  const [targetType, setTargetType] = useState("SCHOOL");
-  const [classId, setClassId] = useState("");
-  const [sectionId, setSectionId] = useState("");
-  const [studentId, setStudentId] = useState("");
-  
+  const [targetType, setTargetType] = useState(null);
+  const [classId, setClassId] = useState(null);
+  const [sectionId, setSectionId] = useState(null);
+  const [studentId, setStudentId] = useState(null);
+
   // Loading and error states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
-  
+
   // Homework data states
   const [homeworkList, setHomeworkList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+
+  // Get classes, sections, and students from permissions store
+  // Map to format expected by dropdowns: { id, name }
+  const classes = useMemo(() => {
+    return (permissions.classes || []).map(cls => ({
+      id: cls.class_id,
+      name: cls.class_name
+    }));
+  }, [permissions.classes]);
   
-  // Mock data for dropdowns - Replace with actual API calls
-  const classes = [
-    { id: "9", name: "Class 9" },
-    { id: "10", name: "Class 10" },
-    { id: "11", name: "Class 11" },
-  ];
-  
-  const sections = [
-    { id: "A", name: "Section A" },
-    { id: "B", name: "Section B" },
-  ];
-  
-  const students = [
-    { id: "1", name: "Student 1" },
-    { id: "2", name: "Student 2" },
-  ];
-  
+  // Get sections based on selected class
+  // Map to format expected by dropdowns: { value, label }
+  const sections = useMemo(() => {
+    if (classId?.value) {
+      const filteredSections = getSectionsByClass(classId.value);
+      return filteredSections.map(sec => ({
+        value: sec.section_id,
+        label: sec.section_name
+      }));
+    }
+    return (permissions.sections || []).map(sec => ({
+      value: sec.section_id,
+      label: sec.section_name
+    }));
+  }, [classId, permissions.sections, getSectionsByClass]);
+
+  // Get students based on selected section
+  // Map to format expected by dropdowns: { id, name }
+  const students = useMemo(() => {
+    if (sectionId?.value) {
+      const filteredStudents = getStudentsBySection(sectionId.value);
+      return filteredStudents.map(student => ({
+        id: student.student_id,
+        name: student.student_name
+      }));
+    }
+    return (permissions.students || []).map(student => ({
+      id: student.student_id,
+      name: student.student_name
+    }));
+  }, [sectionId, permissions.students, getStudentsBySection]);
+
+  // Reset dependent selections when classId changes
+  useEffect(() => {
+    if (targetType?.value !== "SCHOOL") {
+      setSectionId(null);
+      setStudentId(null);
+    }
+  }, [classId, targetType]);
+
   const subjects = [
     { value: "", label: "All Subjects" },
     { value: "Mathematics", label: "Mathematics" },
@@ -181,7 +116,7 @@ export default function TeacherHomework() {
       filtered = filtered.filter((hw) => {
         const now = new Date();
         const due = new Date(hw.dueDate);
-        
+
         if (statusFilter === "COMPLETED") {
           return hw.status === "COMPLETED";
         } else if (statusFilter === "OVERDUE") {
@@ -196,7 +131,7 @@ export default function TeacherHomework() {
     // Search query filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((hw) => 
+      filtered = filtered.filter((hw) =>
         hw.title.toLowerCase().includes(query) ||
         hw.description.toLowerCase().includes(query) ||
         hw.subject.toLowerCase().includes(query)
@@ -204,13 +139,13 @@ export default function TeacherHomework() {
     }
 
     // Subject filter
-    if (subjectFilter) {
-      filtered = filtered.filter((hw) => hw.subject === subjectFilter);
+    if (subjectFilter?.value) {
+      filtered = filtered.filter((hw) => hw.subject === subjectFilter.value);
     }
 
     // Status filter
-    if (statusFilterDropdown) {
-      filtered = filtered.filter((hw) => hw.status === statusFilterDropdown);
+    if (statusFilterDropdown?.value) {
+      filtered = filtered.filter((hw) => hw.status === statusFilterDropdown.value);
     }
 
     // Date range filter
@@ -222,13 +157,13 @@ export default function TeacherHomework() {
     }
 
     // Class filter
-    if (targetType !== "SCHOOL" && classId) {
-      filtered = filtered.filter((hw) => hw.class.includes(classId));
+    if (targetType?.value !== "SCHOOL" && classId?.value) {
+      filtered = filtered.filter((hw) => hw.class.includes(classId.value));
     }
 
     // Section filter
-    if ((targetType === "SECTION" || targetType === "STUDENT") && sectionId) {
-      filtered = filtered.filter((hw) => hw.section.includes(sectionId));
+    if ((targetType?.value === "SECTION" || targetType?.value === "STUDENT") && sectionId?.value) {
+      filtered = filtered.filter((hw) => hw.section.includes(sectionId.value));
     }
 
     // Sort by due date (earliest first)
@@ -241,15 +176,15 @@ export default function TeacherHomework() {
   const _summary = useMemo(() => {
     const total = homeworkList.length;
     const now = new Date();
-    
+
     const active = homeworkList.filter(
       (hw) => (hw.status === "PUBLISHED" || hw.status === "ACTIVE") && new Date(hw.dueDate) >= now
     ).length;
-    
+
     const completed = homeworkList.filter(
       (hw) => hw.status === "COMPLETED"
     ).length;
-    
+
     const overdue = homeworkList.filter(
       (hw) => new Date(hw.dueDate) < now && hw.status !== "COMPLETED" && hw.status !== "DRAFT"
     ).length;
@@ -266,9 +201,20 @@ export default function TeacherHomework() {
     setIsModalOpen(true);
   };
 
-  const handleEditHomework = (homework) => {
-    setEditingHomework(homework);
-    setIsModalOpen(true);
+  const handleEditHomework = async (homework) => {
+    try {
+      // Fetch full homework details including targets
+      const { getHomeworkDetail } = await import("../../api/homework.api");
+      const homeworkId = homework.id || homework.homework_id;
+      const fullHomeworkDetails = await getHomeworkDetail(homeworkId);
+      setEditingHomework(fullHomeworkDetails);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching homework details for editing:", error);
+      // Fallback to basic homework object if API call fails
+      setEditingHomework(homework);
+      setIsModalOpen(true);
+    }
   };
 
   const handleCloseModal = () => {
@@ -280,15 +226,16 @@ export default function TeacherHomework() {
   const handleSubmitHomework = async (homeworkData) => {
     setIsSubmitting(true);
     setSubmitError(null);
-    
+
     try {
       if (editingHomework) {
-        console.log("Updating homework:", editingHomework.id, homeworkData);
-        // TODO: Call API to update homework
-      } else {
-        // Transform form data to API schema
-        const targets = [];
+        // Update existing homework
+        const homeworkId = editingHomework.id || editingHomework.homework_id;
+        console.log("Updating homework:", homeworkId, homeworkData);
         
+        // Transform form data to API schema for update
+        const targets = [];
+
         // Build targets array based on targetType
         if (homeworkData.targetType === "CLASS" && homeworkData.classId) {
           targets.push({
@@ -302,10 +249,10 @@ export default function TeacherHomework() {
           });
         } else if (homeworkData.targetType === "STUDENT" && homeworkData.studentId) {
           // Handle multiple students if studentId is an array
-          const studentIds = Array.isArray(homeworkData.studentId) 
-            ? homeworkData.studentId 
+          const studentIds = Array.isArray(homeworkData.studentId)
+            ? homeworkData.studentId
             : [homeworkData.studentId];
-          
+
           studentIds.forEach(id => {
             targets.push({
               targetType: "STUDENT",
@@ -313,7 +260,65 @@ export default function TeacherHomework() {
             });
           });
         }
-        
+
+        // Transform attachments (File objects to attachment metadata)
+        const attachments = homeworkData.attachments.map(file => ({
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          fileUrl: "" // TODO: Upload file first and get URL
+        }));
+
+        // Prepare API payload for update
+        const payload = {
+          title: homeworkData.title,
+          description: homeworkData.description,
+          due_date: new Date(homeworkData.dueDate).toISOString(),
+          subject: homeworkData.subject,
+          teacher_id: auth.userId,
+          targets: targets,
+          publish: homeworkData.status === "PUBLISHED",
+          ...(attachments.length > 0 && { attachments })
+        };
+
+        // Call update API
+        const { updateHomework } = await import("../../api/homework.api");
+        const response = await updateHomework(homeworkId, payload);
+        console.log("Homework updated successfully:", response);
+
+        // Refresh homework list
+        await fetchHomework();
+
+        handleCloseModal();
+      } else {
+        // Transform form data to API schema
+        const targets = [];
+
+        // Build targets array based on targetType
+        if (homeworkData.targetType === "CLASS" && homeworkData.classId) {
+          targets.push({
+            targetType: "CLASS",
+            targetId: homeworkData.classId
+          });
+        } else if (homeworkData.targetType === "SECTION" && homeworkData.sectionId) {
+          targets.push({
+            targetType: "SECTION",
+            targetId: homeworkData.sectionId
+          });
+        } else if (homeworkData.targetType === "STUDENT" && homeworkData.studentId) {
+          // Handle multiple students if studentId is an array
+          const studentIds = Array.isArray(homeworkData.studentId)
+            ? homeworkData.studentId
+            : [homeworkData.studentId];
+
+          studentIds.forEach(id => {
+            targets.push({
+              targetType: "STUDENT",
+              targetId: id
+            });
+          });
+        }
+
         // Transform attachments (File objects to attachment metadata)
         // Note: Files should be uploaded first to get URLs
         const attachments = homeworkData.attachments.map(file => ({
@@ -322,7 +327,7 @@ export default function TeacherHomework() {
           fileSize: file.size,
           fileUrl: "" // TODO: Upload file first and get URL
         }));
-        
+
         // Prepare API payload
         const payload = {
           title: homeworkData.title,
@@ -334,21 +339,21 @@ export default function TeacherHomework() {
           publish: homeworkData.status === "PUBLISHED",
           ...(attachments.length > 0 && { attachments })
         };
-        
+
         // Call API
         const response = await createHomework(payload);
         console.log("Homework created successfully:", response);
-        
+
         // Refresh homework list
         await fetchHomework();
-        
+
         // TODO: Show success notification
-        
+
         handleCloseModal();
       }
     } catch (error) {
       console.error("Error submitting homework:", error);
-      setSubmitError(error.message || "Failed to create homework. Please try again.");
+      setSubmitError(error.message || `Failed to ${editingHomework ? 'update' : 'create'} homework. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -359,11 +364,35 @@ export default function TeacherHomework() {
     setIsPublishModalOpen(true);
   };
 
-  const confirmPublish = () => {
-    console.log("Publishing homework:", homeworkToPublish.id);
-    // TODO: Call API to publish homework
-    setIsPublishModalOpen(false);
-    setHomeworkToPublish(null);
+  const confirmPublish = async () => {
+    if (!homeworkToPublish) return;
+    
+    setIsPublishing(true);
+    try {
+      const homeworkId = homeworkToPublish.id || homeworkToPublish.homework_id;
+      console.log("Publishing homework:", homeworkId);
+      
+      // Call publish API
+      const { publishHomework } = await import("../../api/homework.api");
+      await publishHomework(homeworkId, auth.userId);
+      
+      console.log("Homework published successfully");
+      
+      // Refresh homework list
+      await fetchHomework();
+      
+      // Close modal
+      setIsPublishModalOpen(false);
+      setHomeworkToPublish(null);
+      
+      // TODO: Show success toast notification
+    } catch (error) {
+      console.error("Error publishing homework:", error);
+      // TODO: Show error notification
+      alert(`Failed to publish homework: ${error.message || 'Please try again'}`);
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const cancelPublish = () => {
@@ -377,33 +406,33 @@ export default function TeacherHomework() {
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setSubjectFilter("");
-    setStatusFilterDropdown("");
+    setSubjectFilter(null);
+    setStatusFilterDropdown(null);
     setDateRangeStart("");
     setDateRangeEnd("");
-    setTargetType("SCHOOL");
-    setClassId("");
-    setSectionId("");
-    setStudentId("");
+    setTargetType(null);
+    setClassId(null);
+    setSectionId(null);
+    setStudentId(null);
   };
 
-  const hasActiveFilters = searchQuery || subjectFilter || statusFilterDropdown || dateRangeStart || dateRangeEnd || targetType !== "SCHOOL";
+  const hasActiveFilters = searchQuery || subjectFilter || statusFilterDropdown || dateRangeStart || dateRangeEnd || targetType?.value !== "SCHOOL";
 
   // Fetch homework list
   const fetchHomework = async () => {
     if (!auth.userId) return;
-    
+
     setIsLoading(true);
     setLoadError(null);
-    
+
     try {
       const params = {
         teacher_id: auth.userId,
       };
-      
+
       // Add optional filters
-      if (statusFilterDropdown) {
-        params.status = statusFilterDropdown;
+      if (statusFilterDropdown?.value) {
+        params.status = statusFilterDropdown.value;
       }
       if (dateRangeStart) {
         params.start_date = dateRangeStart;
@@ -411,7 +440,7 @@ export default function TeacherHomework() {
       if (dateRangeEnd) {
         params.end_date = dateRangeEnd;
       }
-      
+
       const data = await getTeacherHomeworkAll(params);
       // Ensure data is an array - API might return { data: [] } or just []
       const homeworkArray = Array.isArray(data) ? data : (data?.data || []);
@@ -440,7 +469,7 @@ export default function TeacherHomework() {
           {/* Title and Create Button Row */}
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-900">My Homework</h1>
-            
+
             <Button onClick={handleCreateHomework}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -551,17 +580,17 @@ export default function TeacherHomework() {
               <Dropdown
                 label="Target Type"
                 selected={targetType}
-                onChange={(newTargetType) => {
-                  setTargetType(newTargetType);
+                onChange={(option) => {
+                  setTargetType(option);
                   const targetOption = [
                     { value: "SCHOOL", label: "Entire School" },
                     { value: "CLASS", label: "Class", multiple: false },
                     { value: "SECTION", label: "Section", multiple: false },
                     { value: "STUDENT", label: "Student", multiple: true },
-                  ].find((opt) => opt.value === newTargetType);
-                  setClassId(targetOption?.multiple ? [] : "");
-                  setSectionId(targetOption?.multiple ? [] : "");
-                  setStudentId(targetOption?.multiple ? [] : "");
+                  ].find((opt) => opt.value === option?.value);
+                  setClassId(targetOption?.multiple ? [] : null);
+                  setSectionId(targetOption?.multiple ? [] : null);
+                  setStudentId(targetOption?.multiple ? [] : null);
                 }}
                 options={[
                   { value: "SCHOOL", label: "Entire School" },
@@ -574,7 +603,7 @@ export default function TeacherHomework() {
             </div>
 
             {/* Class Filter */}
-            {targetType !== "SCHOOL" && (
+            {targetType?.value !== "SCHOOL" && (
               <div className="col-span-3">
                 <Dropdown
                   label="Class"
@@ -587,20 +616,20 @@ export default function TeacherHomework() {
             )}
 
             {/* Section Filter */}
-            {(targetType === "SECTION" || targetType === "STUDENT") && (
+            {(targetType?.value === "SECTION" || targetType?.value === "STUDENT") && (
               <div className="col-span-3">
                 <Dropdown
                   label="Section"
                   selected={sectionId}
                   onChange={setSectionId}
-                  options={sections.map((s) => ({ value: s.id, label: s.name }))}
+                  options={sections.map((s) => ({ value: s.value, label: s.label }))}
                   placeholder="Select section"
                 />
               </div>
             )}
 
             {/* Student Filter */}
-            {targetType === "STUDENT" && (
+            {targetType?.value === "STUDENT" && (
               <div className="col-span-3">
                 <Dropdown
                   label="Student"
@@ -647,11 +676,10 @@ export default function TeacherHomework() {
             {/* Filter Button */}
             <button
               onClick={() => setIsFilterModalOpen(true)}
-              className={`relative p-2 rounded-lg border transition-colors ${
-                hasActiveFilters
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              }`}
+              className={`relative p-2 rounded-lg border transition-colors ${hasActiveFilters
+                ? "bg-blue-500 text-white border-blue-500"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
               aria-label="Open filters"
             >
               <svg
@@ -722,8 +750,8 @@ export default function TeacherHomework() {
       {/* Desktop Listing */}
       {!isLoading && !loadError && (
         <div className="hidden md:block flex-1 overflow-y-auto">
-          <DesktopListing 
-            homeworkList={filteredHomework} 
+          <DesktopListing
+            homeworkList={filteredHomework}
             onEdit={handleEditHomework}
             onPublish={handlePublishHomework}
           />
@@ -733,7 +761,7 @@ export default function TeacherHomework() {
       {/* Mobile Listing */}
       {!isLoading && !loadError && (
         <div className="md:hidden flex-1 overflow-hidden">
-          <MobileListing 
+          <MobileListing
             homeworkList={filteredHomework}
             onEdit={handleEditHomework}
             onPublish={handlePublishHomework}
@@ -873,6 +901,10 @@ export default function TeacherHomework() {
                   setClassId={setClassId}
                   setSectionId={setSectionId}
                   setStudentId={setStudentId}
+                  TARGET_OPTIONS={[
+                    { value: "SECTION", label: "Section", multiple: true },
+                    { value: "STUDENT", label: "Student", multiple: true },
+                  ]}
                 />
               </div>
             </div>
@@ -928,11 +960,18 @@ export default function TeacherHomework() {
 
             {/* Modal Footer */}
             <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
-              <Button variant="secondary" onClick={cancelPublish}>
+              <Button 
+                variant="secondary" 
+                onClick={cancelPublish}
+                disabled={isPublishing}
+              >
                 Cancel
               </Button>
-              <Button onClick={confirmPublish}>
-                Publish
+              <Button 
+                onClick={confirmPublish}
+                disabled={isPublishing}
+              >
+                {isPublishing ? "Publishing..." : "Publish"}
               </Button>
             </div>
           </div>

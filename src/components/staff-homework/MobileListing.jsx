@@ -129,13 +129,13 @@ export default function MobileListing({ homeworkList, onEdit, onPublish }) {
                 </div>
               </div>
 
-              {/* Status Badge */}
+              {/* Status Badge
               <div>
                 <StatusBadge status={homework.status} dueDate={homework.dueDate} />
-              </div>
+              </div> */}
 
               {/* Submission Progress */}
-              <div className="space-y-1">
+              {/* <div className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Submissions</span>
                   <span className="font-medium text-gray-900">
@@ -150,16 +150,13 @@ export default function MobileListing({ homeworkList, onEdit, onPublish }) {
                     }}
                   />
                 </div>
-              </div>
+              </div> */}
 
               {/* Details Grid */}
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-                <div>
-                  <div className="text-xs text-gray-500">Class / Section</div>
-                  <div className="text-sm font-medium text-gray-900 mt-0.5">
-                    {homework.class} - {homework.section}
-                  </div>
-                </div>
+              <div>
+                <StatusBadge status={homework.status} dueDate={homework.dueDate} />
+              </div>
                 <div>
                   <div className="text-xs text-gray-500">Due Date</div>
                   <div className="text-sm font-medium text-gray-900 mt-0.5">

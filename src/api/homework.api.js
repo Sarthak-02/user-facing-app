@@ -43,7 +43,7 @@ export async function getStudentHomeworkAll(params) {
 export async function getHomeworkDetail(homeworkId) {
   try {
     const response = await api.get(`/homework/${homeworkId}`);
-    return response.data;
+    return response.data?.data || response.data;
   } catch (err) {
     console.error("Error fetching homework detail:", err.response?.data);
     throw err.response?.data || err;
@@ -187,19 +187,33 @@ export async function createHomework(homeworkData) {
 /**
  * Update an existing homework assignment
  * @param {string} homeworkId - The ID of the homework assignment
- * @param {FormData} formData - Form data containing updated homework details
+ * @param {Object} homeworkData - Homework data object (same structure as createHomework)
  * @returns {Promise<Object>} Updated homework object
  */
-export async function updateHomework(homeworkId, formData) {
+export async function updateHomework(homeworkId, homeworkData) {
   try {
-    const response = await api.put(`/staff/homework/${homeworkId}`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.patch(`/homework/${homeworkId}`, homeworkData);
     return response.data;
   } catch (err) {
     console.error("Error updating homework:", err.response?.data);
+    throw err.response?.data || err;
+  }
+}
+
+/**
+ * Publish a homework assignment
+ * @param {string} homeworkId - The ID of the homework assignment
+ * @param {string} teacherId - The ID of the teacher publishing the homework
+ * @returns {Promise<Object>} Publish response
+ */
+export async function publishHomework(homeworkId, teacherId) {
+  try {
+    const response = await api.post(`/homework/${homeworkId}/publish`, {
+      teacher_id: teacherId,
+    });
+    return response.data;
+  } catch (err) {
+    console.error("Error publishing homework:", err.response?.data);
     throw err.response?.data || err;
   }
 }

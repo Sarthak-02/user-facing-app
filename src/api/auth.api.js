@@ -25,3 +25,15 @@ export async function logoutApi() {
         throw err.response.data
     }
 }
+
+export async function fetchTeacherPermissions(teacher_id) {
+    try {
+        const resp = await api.get(`/teacher/permissions`, {
+            params: { teacher_id }
+        });
+        return resp.data;
+    } catch (err) {
+        console.log(err.response?.data);
+        throw err.response?.data || err;
+    }
+}
