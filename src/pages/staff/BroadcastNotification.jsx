@@ -3,6 +3,8 @@ import BroadcastForm from "../../components/broadcast/BroadcastForm";
 import TargetSelector from "../../components/TargetSelector";
 import DesktopView from "../../components/broadcast/DesktopView";
 import MobileView from "../../components/broadcast/MobileView";
+import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA } from "../../utils/target.schema";
+import { updateSchema } from "../../utils/update.schema";
 
 export default function BroadcastPage({
   classes = [
@@ -23,23 +25,76 @@ export default function BroadcastPage({
   },
 }) {
   /* ---------------- state ---------------- */
-  const [targetType, setTargetType] = useState("SCHOOL");
-  const [classId, setClassId] = useState("");
-  const [sectionId, setSectionId] = useState("");
-  const [studentId, setStudentId] = useState("");
+  const [targetType, setTargetType] = useState({ value: "SCHOOL", label: "Entire School" });
+  const [classId, setClassId] = useState(null);
+  const [sectionId, setSectionId] = useState(null);
+  const [studentId, setStudentId] = useState([]);
 
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
 
   const [showTargetModal, setShowTargetModal] = useState(false);
 
+  const TARGET_OPTIONS = [
+    { value: "SCHOOL", label: "Entire School" },
+    { value: "CLASS", label: "Class" },
+    { value: "SECTION", label: "Section" },
+    { value: "STUDENT", label: "Student" },
+  ];
+
   /* ---------------- derived ---------------- */
-  const sections = useMemo(() => sectionsByClassId[classId] || [], [classId]);
+  const sections = useMemo(() => sectionsByClassId[classId?.value] || [], [classId, sectionsByClassId]);
 
   const students = useMemo(
-    () => studentsBySectionId[sectionId] || [],
-    [sectionId]
+    () => studentsBySectionId[sectionId?.value] || [],
+    [sectionId, studentsBySectionId]
   );
+
+  const targetSchema = useMemo(() => {
+    let data = {
+      "class": {
+        selected: classId,
+        options: classes.map(({ id, name }) => ({
+          value: id,
+          label: name
+        })),
+        onChange: (option) => {
+          setClassId(option);
+          setSectionId(null);
+          setStudentId([]);
+        },
+      },
+      "section": {
+        selected: sectionId,
+        options: sections.map(({ id, name }) => ({
+          value: id,
+          label: name
+        })),
+        onChange: (option) => {
+          setSectionId(option);
+          setStudentId([]);
+        },
+      }
+    }
+    if (targetType?.value === "CLASS") {
+      return updateSchema(CLASS_TARGET_SCHEMA, data);
+    } else if (targetType?.value === "SECTION") {
+      return updateSchema(SECTION_TARGET_SCHEMA, data);
+    } else if (targetType?.value === "STUDENT") {
+      data['student'] = {
+        selected: studentId,
+        options: students.map(({ id, name }) => ({
+          value: id,
+          label: name,
+        })),
+        onChange: (options) => {
+          setStudentId(options);
+        },
+      };
+      return updateSchema(STUDENT_TARGET_SCHEMA, data);
+    }
+    return [];
+  }, [targetType, sectionId, classId, studentId, sections, students, classes]);
 
   /* ---------------- helpers ---------------- */
   const canSubmit = title.trim() && message.trim();
@@ -49,20 +104,11 @@ export default function BroadcastPage({
     setTitle,
     targetType,
     setTargetType,
-    studentId,
-    setStudentId,
-    classId,
-    setClassId,
-    sectionId,
-    setSectionId,
-    sections,
-    students,
     message,
     setMessage,
     canSubmit,
-    classes,
-    sectionsByClassId,
-    studentsBySectionId,
+    TARGET_OPTIONS,
+    schema: targetSchema,
   };
 
   const propsMobile = { ...props, showTargetModal, setShowTargetModal };

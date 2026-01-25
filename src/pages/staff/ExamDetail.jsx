@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Badge, Button } from "../../ui-components";
 import { getExamDetail } from "../../api/exam.api";
+import { usePermissions } from "../../store/permissions.store";
 import Loader from "../../ui-components/Loader";
 
 function formatDate(date) {
@@ -56,6 +57,7 @@ function getGradingTypeLabel(type) {
 export default function ExamDetail() {
   const { examId } = useParams();
   const navigate = useNavigate();
+  const { permissions } = usePermissions();
 
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,49 +69,11 @@ export default function ExamDetail() {
       setError(null);
 
       try {
-        const data = await getExamDetail(examId);
+        const data = await getExamDetail(examId, permissions);
         setExam(data);
       } catch (err) {
         console.error("Error fetching exam detail:", err);
-        // Use mock data if API fails
-        console.log("Using mock exam data for detail view");
-        const mockExam = {
-          id: examId,
-          examType: "MID_TERM",
-          customExamType: "",
-          class: "Class 10",
-          section: "Section A",
-          status: "COMPLETED",
-          subjects: [
-            {
-              subjectId: "sub1",
-              subjectName: "Mathematics",
-              examDate: "2026-01-10",
-              startTime: "09:00",
-              endTime: "11:00",
-            },
-            {
-              subjectId: "sub7",
-              subjectName: "Physics",
-              examDate: "2026-01-12",
-              startTime: "09:00",
-              endTime: "11:00",
-            },
-            {
-              subjectId: "sub8",
-              subjectName: "Chemistry",
-              examDate: "2026-01-14",
-              startTime: "09:00",
-              endTime: "11:00",
-            },
-          ],
-          startDate: "2026-01-10",
-          endDate: "2026-01-14",
-          gradingType: "PERCENTAGE",
-          passingValue: "40",
-          maxValue: "100",
-        };
-        setExam(mockExam);
+        setError(err.message || "Failed to load exam details. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -252,7 +216,7 @@ export default function ExamDetail() {
                 key={index}
                 className="p-4 border border-gray-200 rounded-lg bg-gray-50"
               >
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <p className="text-xs text-gray-600 mb-1">Subject</p>
                     <p className="text-sm font-semibold text-gray-900">
@@ -271,12 +235,14 @@ export default function ExamDetail() {
                       {formatTime(subject.startTime)} - {formatTime(subject.endTime)}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-600 mb-1">Total Marks</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {subject.totalMarks}
-                    </p>
-                  </div>
+                  {subject.totalMarks && (
+                    <div>
+                      <p className="text-xs text-gray-600 mb-1">Total Marks</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {subject.totalMarks}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ))

@@ -3,17 +3,14 @@ import { Card, Button, DateRange } from "../../ui-components";
 import DesktopListing from "../../components/staff-homework/DesktopListing";
 import MobileListing from "../../components/staff-homework/MobileListing";
 import HomeworkFormModal from "../../components/staff-homework/HomeworkFormModal";
-import TargetSelector from "../../components/TargetSelector";
 import Dropdown from "../../ui-components/Dropdown";
 import { createHomework, getTeacherHomeworkAll } from "../../api/homework.api";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
 
 
-
 export default function TeacherHomework() {
   const { auth } = useAuth();
-  const { permissions, getSectionsByClass, getStudentsBySection } = usePermissions();
   const [statusFilter] = useState("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState(null);
@@ -30,10 +27,7 @@ export default function TeacherHomework() {
   const [statusFilterDropdown, setStatusFilterDropdown] = useState(null);
   const [dateRangeStart, setDateRangeStart] = useState("");
   const [dateRangeEnd, setDateRangeEnd] = useState("");
-  const [targetType, setTargetType] = useState(null);
-  const [classId, setClassId] = useState(null);
-  const [sectionId, setSectionId] = useState(null);
-  const [studentId, setStudentId] = useState(null);
+
 
   // Loading and error states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,62 +38,13 @@ export default function TeacherHomework() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
-  // Get classes, sections, and students from permissions store
-  // Map to format expected by dropdowns: { id, name }
-  const classes = useMemo(() => {
-    return (permissions.classes || []).map(cls => ({
-      id: cls.class_id,
-      name: cls.class_name
-    }));
-  }, [permissions.classes]);
-  
-  // Get sections based on selected class
-  // Map to format expected by dropdowns: { value, label }
-  const sections = useMemo(() => {
-    if (classId?.value) {
-      const filteredSections = getSectionsByClass(classId.value);
-      return filteredSections.map(sec => ({
-        value: sec.section_id,
-        label: sec.section_name
-      }));
-    }
-    return (permissions.sections || []).map(sec => ({
-      value: sec.section_id,
-      label: sec.section_name
-    }));
-  }, [classId, permissions.sections, getSectionsByClass]);
+  const { permissions } = usePermissions();
 
-  // Get students based on selected section
-  // Map to format expected by dropdowns: { id, name }
-  const students = useMemo(() => {
-    if (sectionId?.value) {
-      const filteredStudents = getStudentsBySection(sectionId.value);
-      return filteredStudents.map(student => ({
-        id: student.student_id,
-        name: student.student_name
-      }));
-    }
-    return (permissions.students || []).map(student => ({
-      id: student.student_id,
-      name: student.student_name
+  const subjects = useMemo(() => {return permissions.teacher_subjects.map((subject) => ({
+      value: subject,
+      label: subject
     }));
-  }, [sectionId, permissions.students, getStudentsBySection]);
-
-  // Reset dependent selections when classId changes
-  useEffect(() => {
-    if (targetType?.value !== "SCHOOL") {
-      setSectionId(null);
-      setStudentId(null);
-    }
-  }, [classId, targetType]);
-
-  const subjects = [
-    { value: "", label: "All Subjects" },
-    { value: "Mathematics", label: "Mathematics" },
-    { value: "Physics", label: "Physics" },
-    { value: "Chemistry", label: "Chemistry" },
-    { value: "Biology", label: "Biology" },
-  ];
+  }, [permissions.teacher_subjects]);
 
   const statusOptions = [
     { value: "", label: "All Status" },
@@ -156,21 +101,11 @@ export default function TeacherHomework() {
       filtered = filtered.filter((hw) => new Date(hw.dueDate) <= new Date(dateRangeEnd));
     }
 
-    // Class filter
-    if (targetType?.value !== "SCHOOL" && classId?.value) {
-      filtered = filtered.filter((hw) => hw.class.includes(classId.value));
-    }
-
-    // Section filter
-    if ((targetType?.value === "SECTION" || targetType?.value === "STUDENT") && sectionId?.value) {
-      filtered = filtered.filter((hw) => hw.section.includes(sectionId.value));
-    }
-
     // Sort by due date (earliest first)
     filtered.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
     return filtered;
-  }, [homeworkList, statusFilter, searchQuery, subjectFilter, statusFilterDropdown, dateRangeStart, dateRangeEnd, targetType, classId, sectionId]);
+  }, [homeworkList, statusFilter, searchQuery, subjectFilter, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
 
   // Calculate summary statistics
   const _summary = useMemo(() => {
@@ -232,7 +167,7 @@ export default function TeacherHomework() {
         // Update existing homework
         const homeworkId = editingHomework.id || editingHomework.homework_id;
         console.log("Updating homework:", homeworkId, homeworkData);
-        
+
         // Transform form data to API schema for update
         const targets = [];
 
@@ -366,25 +301,25 @@ export default function TeacherHomework() {
 
   const confirmPublish = async () => {
     if (!homeworkToPublish) return;
-    
+
     setIsPublishing(true);
     try {
       const homeworkId = homeworkToPublish.id || homeworkToPublish.homework_id;
       console.log("Publishing homework:", homeworkId);
-      
+
       // Call publish API
       const { publishHomework } = await import("../../api/homework.api");
       await publishHomework(homeworkId, auth.userId);
-      
+
       console.log("Homework published successfully");
-      
+
       // Refresh homework list
       await fetchHomework();
-      
+
       // Close modal
       setIsPublishModalOpen(false);
       setHomeworkToPublish(null);
-      
+
       // TODO: Show success toast notification
     } catch (error) {
       console.error("Error publishing homework:", error);
@@ -410,13 +345,10 @@ export default function TeacherHomework() {
     setStatusFilterDropdown(null);
     setDateRangeStart("");
     setDateRangeEnd("");
-    setTargetType(null);
-    setClassId(null);
-    setSectionId(null);
-    setStudentId(null);
+
   };
 
-  const hasActiveFilters = searchQuery || subjectFilter || statusFilterDropdown || dateRangeStart || dateRangeEnd || targetType?.value !== "SCHOOL";
+  const hasActiveFilters = searchQuery || subjectFilter || statusFilterDropdown || dateRangeStart || dateRangeEnd;
 
   // Fetch homework list
   const fetchHomework = async () => {
@@ -573,74 +505,8 @@ export default function TeacherHomework() {
             </div>
           </div>
 
-          {/* Target Selector Row */}
-          <div className="grid grid-cols-12 gap-4">
-            {/* Target Type */}
-            <div className="col-span-3">
-              <Dropdown
-                label="Target Type"
-                selected={targetType}
-                onChange={(option) => {
-                  setTargetType(option);
-                  const targetOption = [
-                    { value: "SCHOOL", label: "Entire School" },
-                    { value: "CLASS", label: "Class", multiple: false },
-                    { value: "SECTION", label: "Section", multiple: false },
-                    { value: "STUDENT", label: "Student", multiple: true },
-                  ].find((opt) => opt.value === option?.value);
-                  setClassId(targetOption?.multiple ? [] : null);
-                  setSectionId(targetOption?.multiple ? [] : null);
-                  setStudentId(targetOption?.multiple ? [] : null);
-                }}
-                options={[
-                  { value: "SCHOOL", label: "Entire School" },
-                  { value: "CLASS", label: "Class" },
-                  { value: "SECTION", label: "Section" },
-                  { value: "STUDENT", label: "Student" },
-                ]}
-                placeholder="Select target type"
-              />
-            </div>
 
-            {/* Class Filter */}
-            {targetType?.value !== "SCHOOL" && (
-              <div className="col-span-3">
-                <Dropdown
-                  label="Class"
-                  selected={classId}
-                  onChange={setClassId}
-                  options={classes.map((c) => ({ value: c.id, label: c.name }))}
-                  placeholder="Select class"
-                />
-              </div>
-            )}
 
-            {/* Section Filter */}
-            {(targetType?.value === "SECTION" || targetType?.value === "STUDENT") && (
-              <div className="col-span-3">
-                <Dropdown
-                  label="Section"
-                  selected={sectionId}
-                  onChange={setSectionId}
-                  options={sections.map((s) => ({ value: s.value, label: s.label }))}
-                  placeholder="Select section"
-                />
-              </div>
-            )}
-
-            {/* Student Filter */}
-            {targetType?.value === "STUDENT" && (
-              <div className="col-span-3">
-                <Dropdown
-                  label="Student"
-                  selected={studentId}
-                  onChange={setStudentId}
-                  options={students.map((s) => ({ value: s.id, label: s.name }))}
-                  placeholder="Select student"
-                />
-              </div>
-            )}
-          </div>
         </div>
       </Card>
 
@@ -886,27 +752,7 @@ export default function TeacherHomework() {
                 onStartDateChange={setDateRangeStart}
                 onEndDateChange={setDateRangeEnd}
               />
-              {/* Target Selector */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Filter by Target</h3>
-                <TargetSelector
-                  targetType={targetType}
-                  setTargetType={setTargetType}
-                  classId={classId}
-                  sectionId={sectionId}
-                  studentId={studentId}
-                  classes={classes}
-                  sections={sections}
-                  students={students}
-                  setClassId={setClassId}
-                  setSectionId={setSectionId}
-                  setStudentId={setStudentId}
-                  TARGET_OPTIONS={[
-                    { value: "SECTION", label: "Section", multiple: true },
-                    { value: "STUDENT", label: "Student", multiple: true },
-                  ]}
-                />
-              </div>
+
             </div>
 
             {/* Modal Footer */}
@@ -960,14 +806,14 @@ export default function TeacherHomework() {
 
             {/* Modal Footer */}
             <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="secondary"
                 onClick={cancelPublish}
                 disabled={isPublishing}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={confirmPublish}
                 disabled={isPublishing}
               >

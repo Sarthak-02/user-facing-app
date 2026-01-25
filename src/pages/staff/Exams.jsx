@@ -4,8 +4,9 @@ import DesktopListing from "../../components/staff-exam/DesktopListing";
 import MobileListing from "../../components/staff-exam/MobileListing";
 import ExamFormModal from "../../components/staff-exam/ExamFormModal";
 import Dropdown from "../../ui-components/Dropdown";
-import { createExam, getTeacherExamsAll } from "../../api/exam.api";
+import { createExam, getTeacherExamsAll, publishExam } from "../../api/exam.api";
 import { useAuth } from "../../store/auth.store";
+import { usePermissions } from "../../store/permissions.store";
 import { useNavigate } from "react-router-dom";
 
 // Mock data - Replace with actual API call
@@ -101,6 +102,7 @@ const MOCK_EXAMS = [
 
 export default function Exams() {
   const { auth } = useAuth();
+  const { permissions } = usePermissions();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState(null);
@@ -144,11 +146,11 @@ export default function Exams() {
     { value: "COMPLETED", label: "Completed" },
   ];
 
-  // Filter exams based on filters
+  // Filter exams based on filters (frontend-only filters)
   const filteredExams = useMemo(() => {
     let filtered = [...examList];
 
-    // Search query filter
+    // Search query filter (frontend only)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -160,27 +162,12 @@ export default function Exams() {
       );
     }
 
-    // Exam type filter
+    // Exam type filter (frontend only)
     if (examTypeFilter) {
       filtered = filtered.filter((exam) => exam.examType === examTypeFilter);
     }
 
-    // Status filter
-    if (statusFilterDropdown) {
-      filtered = filtered.filter((exam) => exam.status === statusFilterDropdown);
-    }
-
-    // Date range filter
-    if (dateRangeStart) {
-      filtered = filtered.filter(
-        (exam) => exam.startDate && new Date(exam.startDate) >= new Date(dateRangeStart)
-      );
-    }
-    if (dateRangeEnd) {
-      filtered = filtered.filter(
-        (exam) => exam.endDate && new Date(exam.endDate) <= new Date(dateRangeEnd)
-      );
-    }
+    // Note: Status and date range filters are handled by the API
 
     // Sort by start date (earliest first)
     filtered.sort((a, b) => {
@@ -190,7 +177,7 @@ export default function Exams() {
     });
 
     return filtered;
-  }, [examList, searchQuery, examTypeFilter, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
+  }, [examList, searchQuery, examTypeFilter]);
 
   const handleCreateExam = () => {
     setEditingExam(null);
@@ -225,52 +212,75 @@ export default function Exams() {
         const targets = [];
 
         // Build targets array based on targetType
-        if (examData.targetType === "CLASS" && examData.classId) {
+        if (examData.targetType?.value === "CLASS" && examData.classId?.value) {
           targets.push({
             targetType: "CLASS",
-            targetId: examData.classId,
+            targetId: examData.classId.value,
           });
-        } else if (examData.targetType === "SECTION" && examData.sectionId) {
+        } else if (examData.targetType?.value === "SECTION" && examData.sectionId?.value) {
           targets.push({
             targetType: "SECTION",
-            targetId: examData.sectionId,
+            targetId: examData.sectionId.value,
           });
-        } else if (examData.targetType === "STUDENT" && examData.studentId) {
+        } else if (examData.targetType?.value === "STUDENT" && examData.studentId) {
           const studentIds = Array.isArray(examData.studentId)
             ? examData.studentId
             : [examData.studentId];
 
-          studentIds.forEach((id) => {
+          studentIds.forEach((student) => {
             targets.push({
               targetType: "STUDENT",
-              targetId: id,
+              targetId: student.value,
             });
           });
         }
 
+        // Prepare grading_extras based on grading type
+        let grading_extras = {};
+        if (examData.gradingType === "PERCENTAGE" || examData.gradingType === "GPA") {
+          grading_extras = {
+            passing_value: examData.passingValue ? Number(examData.passingValue) : null,
+            max_value: examData.maxValue ? Number(examData.maxValue) : null,
+          };
+        } else if (examData.gradingType === "LETTER_GRADE") {
+          grading_extras = {
+            passing_value: examData.passingValue || null,
+            max_value: examData.maxValue || null,
+            grade_ranges: examData.gradeRanges || [],
+          };
+        }
+
+        // Helper function to format time to HH:MM:SS
+        const formatTime = (timeString) => {
+          if (!timeString) return "";
+          // If already has seconds (HH:MM:SS), return as is
+          if (timeString.split(':').length === 3) {
+            return timeString;
+          }
+          // Otherwise add :00 for seconds (HH:MM -> HH:MM:00)
+          return timeString + ":00";
+        };
+
         // Prepare API payload
         const payload = {
-          exam_type: examData.examType,
-          custom_exam_type: examData.customExamType || null,
+          exam_type: examData.customExamType || examData.examType,
+          target: examData.targetType?.value || "CLASS",
           teacher_id: auth.userId,
-          targets: targets,
+          campus_id: auth.campus_id,
           subjects: examData.subjects.map((sub) => ({
-            subject_id: sub.subjectId,
-            subject_name: sub.subjectName,
-            exam_date: sub.examDate,
-            start_time: sub.startTime,
-            end_time: sub.endTime,
-            total_marks: Number(sub.totalMarks),
+            subjectName: sub.subjectName,
+            examDate: sub.examDate,
+            examStartTime: formatTime(sub.startTime),
+            examEndTime: formatTime(sub.endTime),
+            extras: {},
           })),
-          grading_config: {
-            grading_type: examData.gradingType,
-            passing_marks: examData.passingMarks ? Number(examData.passingMarks) : null,
-            max_marks: examData.maxMarks ? Number(examData.maxMarks) : null,
-            include_grades: examData.includeGrades,
-            grade_ranges: examData.includeGrades ? examData.gradeRanges : [],
-          },
+          targets: targets,
+          grading_type: examData.gradingType,
+          grading_extras: grading_extras,
           publish: examData.status === "PUBLISHED",
         };
+
+        console.log("Creating exam with payload:", JSON.stringify(payload, null, 2));
 
         // Call API
         const response = await createExam(payload);
@@ -294,11 +304,21 @@ export default function Exams() {
     setIsPublishModalOpen(true);
   };
 
-  const confirmPublish = () => {
-    console.log("Publishing exam:", examToPublish.id);
-    // TODO: Call API to publish exam
-    setIsPublishModalOpen(false);
-    setExamToPublish(null);
+  const confirmPublish = async () => {
+    try {
+      console.log("Publishing exam:", examToPublish.id);
+      await publishExam(examToPublish.id);
+      
+      // Refresh exam list after publishing
+      await fetchExams();
+      
+      setIsPublishModalOpen(false);
+      setExamToPublish(null);
+    } catch (error) {
+      console.error("Error publishing exam:", error);
+      // You might want to show an error message to the user here
+      alert(error.message || "Failed to publish exam. Please try again.");
+    }
   };
 
   const cancelPublish = () => {
@@ -331,6 +351,8 @@ export default function Exams() {
     try {
       const params = {
         teacher_id: auth.userId,
+        limit: 100, // Fetch up to 100 records
+        offset: 0,  // Start from beginning
       };
 
       // Add optional filters
@@ -344,13 +366,12 @@ export default function Exams() {
         params.end_date = dateRangeEnd;
       }
 
-      const data = await getTeacherExamsAll(params);
+      const data = await getTeacherExamsAll(params, permissions);
       setExamList(data);
     } catch (error) {
       console.error("Error fetching exams:", error);
-      // Use mock data for now
-      setExamList(MOCK_EXAMS);
-      // setLoadError(error.message || "Failed to load exams. Please try again.");
+      setLoadError(error.message || "Failed to load exams. Please try again.");
+      setExamList([]);
     } finally {
       setIsLoading(false);
     }

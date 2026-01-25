@@ -6,24 +6,41 @@ export default function MobileView({
   setTitle,
   targetType,
   setTargetType,
-  studentId,
-  setStudentId,
-  classId,
-  setClassId,
-  sectionId,
-  setSectionId,
-  sections,
-  students,
   message,
   setMessage,
   canSubmit,
-  classes,
-  sectionsByClassId,
-  studentsBySectionId,
   showTargetModal,
   setShowTargetModal,
-  TARGET_OPTIONS
+  TARGET_OPTIONS,
+  schema
 }) {
+  
+  const formatTargetLabel = () => {
+    if (targetType?.value === "SCHOOL") return "Entire School";
+    
+    // Get the selected values from schema
+    let parts = [targetType?.label || ""];
+    
+    // Look through schema items to find selected values
+    if (schema && Array.isArray(schema)) {
+      schema.forEach(item => {
+        if (item.selected) {
+          if (Array.isArray(item.selected)) {
+            if (item.selected.length === 1) {
+              parts.push(item.selected[0].label);
+            } else if (item.selected.length > 1) {
+              parts.push(`${item.selected.length} ${item.type}s`);
+            }
+          } else if (item.selected.label) {
+            parts.push(item.selected.label);
+          }
+        }
+      });
+    }
+    
+    return parts.filter(Boolean).join(" • ") || "Select Target";
+  };
+
   return (
     <div className="flex flex-col h-full gap-4">
       <div>
@@ -34,15 +51,7 @@ export default function MobileView({
           <div className="text-left">
             <p className="text-xs text-slate-500">Target audience</p>
             <p className="text-sm font-semibold">
-              {formatTargetLabel({
-                targetType,
-                classId,
-                sectionId,
-                studentId,
-                classes,
-                sectionsByClassId,
-                studentsBySectionId,
-              })}
+              {formatTargetLabel()}
             </p>
           </div>
           <span className="text-xs px-2 py-1 border rounded-lg">Change</span>
@@ -68,20 +77,10 @@ export default function MobileView({
 
             <div className="p-4">
               <TargetSelector
-                {...{
-                  targetType,
-                  setTargetType,
-                  classId,
-                  sectionId,
-                  studentId,
-                  classes,
-                  sections,
-                  students,
-                  setClassId,
-                  setSectionId,
-                  setStudentId,
-                  TARGET_OPTIONS,
-                }}
+                targetType={targetType}
+                handleTargetTypeChange={setTargetType}
+                TARGET_OPTIONS={TARGET_OPTIONS}
+                schema={schema}
               />
             </div>
           </div>
@@ -96,22 +95,4 @@ export default function MobileView({
       />
     </div>
   );
-}
-
-function formatTargetLabel({
-  targetType,
-  classId,
-  sectionId,
-  studentId,
-  classes,
-  sectionsByClassId,
-  studentsBySectionId,
-}) {
-  if (targetType === "SCHOOL") return "Entire School";
-  const c = classes.find((x) => x.id === classId)?.name;
-  const s = sectionsByClassId[classId]?.find((x) => x.id === sectionId)?.name;
-  const st = studentsBySectionId[sectionId]?.find(
-    (x) => x.id === studentId
-  )?.name;
-  return [c, s, st].filter(Boolean).join(" • ");
 }

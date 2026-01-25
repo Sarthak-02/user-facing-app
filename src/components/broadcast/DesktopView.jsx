@@ -1,43 +1,27 @@
 import BroadcastForm from "./BroadcastForm";
 import TargetSelector from "../TargetSelector";
 
-export default function DesktopView({title,
-    setTitle,
-    targetType,
-    setTargetType,
-    TARGET_OPTIONS,
-    studentId,
-    setStudentId,
-    classId,
-    setClassId,
-    sectionId,
-    setSectionId,
-    sections,
-    students,
-    message,
-    setMessage,
-    canSubmit,
-    classes}) {
+export default function DesktopView({
+  title,
+  setTitle,
+  targetType,
+  setTargetType,
+  TARGET_OPTIONS,
+  message,
+  setMessage,
+  canSubmit,
+  schema
+}) {
    
   return (
     <div className="grid md:grid-cols-12 gap-4 overflow-hidden h-full md:h-[calc(100vh-6rem)]">
       {/* ---- Desktop Target Panel ---- */}
       <aside className="h-1/2 col-span-4 border rounded-xl p-4 bg-[var(--color-surface)]">
         <TargetSelector
-          {...{
-            targetType,
-            setTargetType,
-            classId,
-            sectionId,
-            studentId,
-            classes,
-            sections,
-            students,
-            setClassId,
-            setSectionId,
-            setStudentId,
-            TARGET_OPTIONS,
-          }}
+          targetType={targetType}
+          handleTargetTypeChange={setTargetType}
+          TARGET_OPTIONS={TARGET_OPTIONS}
+          schema={schema}
         />
       </aside>
 

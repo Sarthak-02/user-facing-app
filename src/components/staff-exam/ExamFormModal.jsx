@@ -1,114 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
-import { Button } from "../../ui-components";
+import { Button, Dropdown } from "../../ui-components";
 import TargetSelector from "../TargetSelector";
+import { usePermissions } from "../../store/permissions.store";
+import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA } from "../../utils/target.schema";
+import { updateSchema } from "../../utils/update.schema";
 
 // Mock data - Replace with actual API calls
-const CLASSES = [
-  { id: "c1", name: "Class 9" },
-  { id: "c2", name: "Class 10" },
-  { id: "c3", name: "Class 11" },
-];
 
-const SECTIONS_BY_CLASS_ID = {
-  c1: [
-    { id: "s1", name: "Section A" },
-    { id: "s2", name: "Section B" },
-  ],
-  c2: [
-    { id: "s3", name: "Section A" },
-    { id: "s4", name: "Section B" },
-  ],
-  c3: [{ id: "s5", name: "Section A" }],
-};
-
-const STUDENTS_BY_SECTION_ID = {
-  s1: [
-    { id: "st1", name: "Aarav Sharma" },
-    { id: "st2", name: "Diya Singh" },
-  ],
-  s2: [
-    { id: "st3", name: "Kabir Verma" },
-    { id: "st4", name: "Ananya Patel" },
-  ],
-  s3: [
-    { id: "st5", name: "Rohan Kumar" },
-    { id: "st6", name: "Priya Gupta" },
-  ],
-  s4: [
-    { id: "st7", name: "Arjun Mehta" },
-    { id: "st8", name: "Ishita Reddy" },
-  ],
-  s5: [
-    { id: "st9", name: "Vikram Singh" },
-    { id: "st10", name: "Sneha Iyer" },
-  ],
-};
-
-const SUBJECTS_BY_CLASS_ID = {
-  c1: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub2", name: "Science" },
-    { id: "sub3", name: "English" },
-    { id: "sub4", name: "Hindi" },
-    { id: "sub5", name: "Social Studies" },
-  ],
-  c2: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub7", name: "Physics" },
-    { id: "sub8", name: "Chemistry" },
-    { id: "sub9", name: "Biology" },
-    { id: "sub3", name: "English" },
-  ],
-  c3: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub7", name: "Physics" },
-    { id: "sub8", name: "Chemistry" },
-    { id: "sub10", name: "Computer Science" },
-    { id: "sub3", name: "English" },
-  ],
-};
-
-const SUBJECTS_BY_SECTION_ID = {
-  s1: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub2", name: "Science" },
-    { id: "sub3", name: "English" },
-    { id: "sub4", name: "Hindi" },
-    { id: "sub5", name: "Social Studies" },
-  ],
-  s2: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub2", name: "Science" },
-    { id: "sub3", name: "English" },
-    { id: "sub6", name: "Computer Science" },
-  ],
-  s3: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub7", name: "Physics" },
-    { id: "sub8", name: "Chemistry" },
-    { id: "sub9", name: "Biology" },
-    { id: "sub3", name: "English" },
-  ],
-  s4: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub7", name: "Physics" },
-    { id: "sub8", name: "Chemistry" },
-    { id: "sub9", name: "Biology" },
-    { id: "sub3", name: "English" },
-  ],
-  s5: [
-    { id: "sub1", name: "Mathematics" },
-    { id: "sub7", name: "Physics" },
-    { id: "sub8", name: "Chemistry" },
-    { id: "sub10", name: "Computer Science" },
-    { id: "sub3", name: "English" },
-  ],
-};
 
 const TARGET_OPTIONS = [
   { value: "CLASS", label: "Class" },
   { value: "SECTION", label: "Section" },
-  { value: "STUDENT", label: "Student", multiple: true },
+  { value: "STUDENT", label: "Student" },
 ];
 
 const EXAM_TYPES = [
@@ -146,18 +49,20 @@ const LETTER_GRADES = [
 
 export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmitting, submitError }) {
   const isEditing = !!exam;
-  
+
+  const { permissions } = usePermissions();
+
   // Current step in the form (1-4)
   const [currentStep, setCurrentStep] = useState(1);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     examType: "",
     customExamType: "",
-    targetType: "SECTION",
-    classId: "",
-    sectionId: "",
-    studentId: "",
+    targetType: { value: "CLASS", label: "Class" },
+    classId: null,
+    sectionId: null,
+    studentId: [],
     subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
     gradingType: "PERCENTAGE",
     passingValue: "",
@@ -172,25 +77,71 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     status: "DRAFT",
   });
 
-  const sections = useMemo(
-    () => SECTIONS_BY_CLASS_ID[formData.classId] || [],
-    [formData.classId]
-  );
 
-  const students = useMemo(
-    () => STUDENTS_BY_SECTION_ID[formData.sectionId] || [],
-    [formData.sectionId]
-  );
 
   const subjects = useMemo(() => {
-    if (formData.targetType === "CLASS" && formData.classId) {
-      return SUBJECTS_BY_CLASS_ID[formData.classId] || [];
+    return permissions.teacher_subjects.map((subject) => ({
+      value: subject,
+      label: subject
+    }));
+  }, [permissions.teacher_subjects]);
+
+  const targetSchema = useMemo(() => {
+    let data = {
+      "class": {
+        selected: formData.classId,
+        options: permissions.classes.map(({ class_id, class_name }) => ({
+          value: class_id,
+          label: class_name
+        })),
+        onChange: (option) => {
+          setFormData((prev) => ({
+            ...prev,
+            classId: option,
+            sectionId: null,
+            studentId: [],
+            subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
+          }));
+        },
+      },
+      "section": {
+        selected: formData.sectionId,
+        options: permissions.sections.map(({ section_id, section_name }) => ({
+          value: section_id,
+          label: section_name
+        })),
+        onChange: (option) => {
+          setFormData((prev) => ({
+            ...prev,
+            sectionId: option,
+            studentId: [],
+            subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
+          }));
+        },
+      }
     }
-    if (formData.sectionId) {
-      return SUBJECTS_BY_SECTION_ID[formData.sectionId] || [];
+    if (formData.targetType?.value === "CLASS") {
+      return updateSchema(CLASS_TARGET_SCHEMA, data);
+    } else if (formData.targetType?.value === "SECTION") {
+      return updateSchema(SECTION_TARGET_SCHEMA, data);
+    } else if (formData.targetType?.value === "STUDENT") {
+      data['student'] = {
+        selected: formData.studentId,
+        options: permissions.students.map(({ student_id, student_name, section_id }) => ({
+          value: student_id,
+          label: student_name,
+          section_id: section_id,
+        })),
+        onChange: (options) => {
+          setFormData((prev) => ({
+            ...prev,
+            studentId: options,
+          }));
+        },
+      }
+      return updateSchema(STUDENT_TARGET_SCHEMA, data);
     }
-    return [];
-  }, [formData.targetType, formData.classId, formData.sectionId]);
+  }, [formData.targetType, formData.sectionId, formData.classId, formData.studentId, permissions.classes, permissions.sections, permissions.students]);
 
   // Initialize form when exam changes
   useEffect(() => {
@@ -199,10 +150,10 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
       setFormData({
         examType: exam.examType || "",
         customExamType: exam.customExamType || "",
-        targetType: "SECTION",
-        classId: "",
-        sectionId: "",
-        studentId: "",
+        targetType: { value: "CLASS", label: "Class" },
+        classId: null,
+        sectionId: null,
+        studentId: [],
         subjects: exam.subjects || [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
         gradingType: exam.gradingType || "PERCENTAGE",
         passingValue: exam.passingValue || "",
@@ -221,10 +172,10 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
       setFormData({
         examType: "",
         customExamType: "",
-        targetType: "SECTION",
-        classId: "",
-        sectionId: "",
-        studentId: "",
+        targetType: { value: "ClASS", label: "Class" },
+        classId: null,
+        sectionId: null,
+        studentId: [],
         subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
         gradingType: "PERCENTAGE",
         passingValue: "",
@@ -244,9 +195,9 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({ 
-      ...prev, 
-      [name]: type === "checkbox" ? checked : value 
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value
     }));
   };
 
@@ -254,45 +205,24 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     setFormData((prev) => ({
       ...prev,
       targetType: type,
-    }));
-  };
-
-  const setClassId = (classId) => {
-    setFormData((prev) => ({
-      ...prev,
-      classId,
-      sectionId: "",
-      studentId: "",
+      classId: null,
+      sectionId: null,
+      studentId: [],
       subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
-    }));
-  };
-
-  const setSectionId = (sectionId) => {
-    setFormData((prev) => ({
-      ...prev,
-      sectionId,
-      studentId: "",
-      subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
-    }));
-  };
-
-  const setStudentId = (studentId) => {
-    setFormData((prev) => ({
-      ...prev,
-      studentId,
     }));
   };
 
   const handleSubjectChange = (index, field, value) => {
     const updatedSubjects = [...formData.subjects];
-    updatedSubjects[index][field] = value;
     
-    // If subject is selected, update subject name
+    // If subject dropdown is changed, store the entire option object and update subjectName
     if (field === "subjectId") {
-      const subject = subjects.find(s => s.id === value);
-      updatedSubjects[index].subjectName = subject?.name || "";
+      updatedSubjects[index].subjectId = value; // Store the entire option object {value, label}
+      updatedSubjects[index].subjectName = value?.label || value?.value || "";
+    } else {
+      updatedSubjects[index][field] = value;
     }
-    
+
     setFormData(prev => ({ ...prev, subjects: updatedSubjects }));
   };
 
@@ -312,34 +242,22 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     }
   };
 
-  const handleGradeRangeChange = (index, field, value) => {
-    const updatedRanges = [...formData.gradeRanges];
-    updatedRanges[index][field] = field === "grade" ? value : Number(value);
-    setFormData(prev => ({ ...prev, gradeRanges: updatedRanges }));
-  };
-
-  const addGradeRange = () => {
-    setFormData(prev => ({
-      ...prev,
-      gradeRanges: [...prev.gradeRanges, { grade: "", minMarks: 0, maxMarks: 0 }]
-    }));
-  };
-
-  const removeGradeRange = (index) => {
-    if (formData.gradeRanges.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        gradeRanges: prev.gradeRanges.filter((_, i) => i !== index)
-      }));
-    }
-  };
 
   const formatTargetLabel = () => {
-    const targetTypeLabel = TARGET_OPTIONS.find(opt => opt.value === formData.targetType)?.label || "";
-    const c = CLASSES.find((x) => x.id === formData.classId)?.name;
-    const s = sections.find((x) => x.id === formData.sectionId)?.name;
-    const st = students.find((x) => x.id === formData.studentId)?.name;
-    
+    const targetTypeLabel = TARGET_OPTIONS.find(opt => opt.value === formData.targetType?.value)?.label || "";
+    const c = permissions.classes.find((x) => x.class_id === formData.classId?.value)?.class_name;
+    const s = permissions.sections.find((x) => x.section_id === formData.sectionId?.value)?.section_name;
+
+    // Handle student selection (can be array for multiple students)
+    let st = "";
+    if (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0) {
+      if (formData.studentId.length === 1) {
+        st = formData.studentId[0].label;
+      } else {
+        st = `${formData.studentId.length} students`;
+      }
+    }
+
     const parts = [targetTypeLabel, c, s, st].filter(Boolean);
     return parts.length > 0 ? parts.join(" • ") : "Select Target";
   };
@@ -362,15 +280,15 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
 
   // Validation for each step
   const canProceedStep1 = formData.examType && (formData.examType !== "OTHER" || formData.customExamType);
-  const canProceedStep2 = 
-    (formData.targetType === "CLASS" && formData.classId) ||
-    (formData.targetType === "SECTION" && formData.sectionId) ||
-    (formData.targetType === "STUDENT" && formData.studentId);
+  const canProceedStep2 =
+    (formData.targetType?.value === "CLASS" && formData.classId?.value) ||
+    (formData.targetType?.value === "SECTION" && formData.sectionId?.value) ||
+    (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0);
   const canProceedStep3 = formData.subjects.every(
-    sub => sub.subjectId && sub.examDate && sub.startTime && sub.endTime
+    sub => sub.subjectId?.value && sub.examDate && sub.startTime && sub.endTime
   );
   const canProceedStep4 = formData.gradingType && (
-    formData.gradingType === "PASS_FAIL" || 
+    formData.gradingType === "PASS_FAIL" ||
     (formData.passingValue && formData.maxValue)
   );
 
@@ -414,13 +332,12 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
               <div key={step} className="flex items-center flex-1">
                 <div className="flex flex-col items-center flex-1">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${
-                      step === currentStep
-                        ? "bg-blue-500 text-white"
-                        : step < currentStep
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${step === currentStep
+                      ? "bg-blue-500 text-white"
+                      : step < currentStep
                         ? "bg-green-500 text-white"
                         : "bg-gray-200 text-gray-600"
-                    }`}
+                      }`}
                   >
                     {step < currentStep ? (
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -443,9 +360,8 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                 </div>
                 {step < 4 && (
                   <div
-                    className={`h-1 flex-1 mx-2 transition-colors ${
-                      step < currentStep ? "bg-green-500" : "bg-gray-200"
-                    }`}
+                    className={`h-1 flex-1 mx-2 transition-colors ${step < currentStep ? "bg-green-500" : "bg-gray-200"
+                      }`}
                   />
                 )}
               </div>
@@ -466,19 +382,17 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                       key={type.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, examType: type.value }))}
-                      className={`p-4 rounded-lg border-2 text-left transition-all ${
-                        formData.examType === type.value
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${formData.examType === type.value
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            formData.examType === type.value
-                              ? "border-blue-500 bg-blue-500"
-                              : "border-gray-300"
-                          }`}
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.examType === type.value
+                            ? "border-blue-500 bg-blue-500"
+                            : "border-gray-300"
+                            }`}
                         >
                           {formData.examType === type.value && (
                             <div className="w-2 h-2 bg-white rounded-full" />
@@ -524,17 +438,9 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                 </div>
                 <TargetSelector
                   targetType={formData.targetType}
-                  setTargetType={setTargetType}
-                  classId={formData.classId}
-                  sectionId={formData.sectionId}
-                  studentId={formData.studentId}
-                  classes={CLASSES}
-                  sections={sections}
-                  students={students}
-                  setClassId={setClassId}
-                  setSectionId={setSectionId}
-                  setStudentId={setStudentId}
+                  handleTargetTypeChange={setTargetType}
                   TARGET_OPTIONS={TARGET_OPTIONS}
+                  schema={targetSchema}
                 />
               </div>
             </div>
@@ -598,26 +504,15 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Subject <span className="text-red-500">*</span>
                         </label>
-                        <select
-                          value={subject.subjectId}
-                          onChange={(e) => handleSubjectChange(index, "subjectId", e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+
+                        <Dropdown
+                          label="Subject"
+                          options={subjects}
+                          selected={subject.subjectId}
+                          onChange={(option) => handleSubjectChange(index, "subjectId", option)}
                           disabled={subjects.length === 0}
                           required
-                        >
-                          <option value="">
-                            {subjects.length > 0
-                              ? "Select a subject"
-                              : formData.targetType === "CLASS"
-                              ? "Please select a class first"
-                              : "Please select a section first"}
-                          </option>
-                          {subjects.map((sub) => (
-                            <option key={sub.id} value={sub.id}>
-                              {sub.name}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </div>
 
                       <div>
