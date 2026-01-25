@@ -40,15 +40,15 @@ export default function LoginPage() {
         username: data.username || "",
         role: data.role || "",
         campus_id: data.details?.campus_id || "",
-        section_id: data.details?.student_section_id || "",
+        sections: data.details?.sections || [],
         details: data.details || {},
       };
       localStorage.setItem("token", true);
 
       setAuth(authData);
     
-      navigate("/attendance");
-      // navigate("/");
+      // navigate("/attendance");
+      navigate("/");
     } catch (err) {
       const message =
         err?.message ||

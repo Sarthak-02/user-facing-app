@@ -5,8 +5,9 @@ export default function ConfirmationModal({
   showConfirmation,
   setShowConfirmation,
   handleSubmit,
-  presentCount = 10,
-  absentCount = 20,
+  presentCount = 0,
+  absentCount = 0,
+  totalCount = 0,
 }) {
   return (
     <Modal open={showConfirmation} >
@@ -15,7 +16,7 @@ export default function ConfirmationModal({
         <h2 className="text-lg font-semibold">Confirm Attendance</h2>
 
         {/* Summary */}
-        <AttendanceSummary total={50} present={presentCount} absent={absentCount}/>
+        <AttendanceSummary total={totalCount} present={presentCount} absent={absentCount}/>
 
         {/* Info text */}
         <p className="text-sm text-gray-500">

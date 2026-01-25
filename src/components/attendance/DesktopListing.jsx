@@ -7,7 +7,7 @@ function StudentCell({ student }) {
 
       <div className="leading-tight">
         <div className="font-medium">{student.name}</div>
-        <div className="text-xs text-gray-500">Roll No: {student.roll}</div>
+        <div className="text-xs text-gray-500">Roll No: {student.roll_number}</div>
       </div>
     </div>
   );
@@ -29,7 +29,7 @@ export default function DesktopListing({
       key: "status",
       label: "Status",
       render: (row) => {
-        const status = attendance[row.id];
+        const status = attendance[row.student_id];
 
         return status ? (
           <Badge variant={status === "PRESENT" ? "success" : "error"}>
@@ -46,14 +46,14 @@ export default function DesktopListing({
             key: "action",
             label: "Action",
             render: (row) => {
-              const status = attendance[row.id];
+              const status = attendance[row.student_id];
               
               return (
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     variant={status === "PRESENT" ? "success" : "secondary"}
-                    onClick={() => markAttendance(row.id, "PRESENT")}
+                    onClick={() => markAttendance(row.student_id, "PRESENT")}
                   >
                     {status === "PRESENT" && "✓ "}Present
                   </Button>

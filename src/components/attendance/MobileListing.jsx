@@ -9,10 +9,10 @@ export default function MobileListing({
   return (
     <div className="h-full overflow-y-auto space-y-3 pb-32">
       {STUDENTS.map((student) => {
-        const status = attendance[student.id];
+        const status = attendance[student.student_id];
 
         return (
-          <Card key={student.id}>
+          <Card key={student.student_id}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar src={student.photoUrl} name={student.name} />
@@ -20,7 +20,7 @@ export default function MobileListing({
                 <div>
                   <div className="font-medium">{student.name}</div>
                   <div className="text-sm text-gray-500">
-                    Roll No: {student.roll}
+                    Roll No: {student.roll_number}
                   </div>
                 </div>
               </div>
@@ -38,7 +38,7 @@ export default function MobileListing({
                 <Button
                   variant={status === "PRESENT" ? "success" : "secondary"}
                   className="flex-1"
-                  onClick={() => markAttendance(student.id, "PRESENT")}
+                  onClick={() => markAttendance(student.student_id, "PRESENT")}
                 >
                   {status === "PRESENT" && "✓ "}Present
                 </Button>
@@ -46,7 +46,7 @@ export default function MobileListing({
                 <Button
                   variant={status === "ABSENT" ? "danger" : "secondary"}
                   className="flex-1"
-                  onClick={() => markAttendance(student.id, "ABSENT")}
+                  onClick={() => markAttendance(student.student_id, "ABSENT")}
                 >
                   {status === "ABSENT" && "✓ "}Absent
                 </Button>

@@ -3,6 +3,7 @@ import { Button, Card, Select } from "../../ui-components";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 import FiltersModal from "./FiltersModal";
+import { useAuth } from "../../store/auth.store";
 
 function formatDate(date) {
   if (!date) return "";
@@ -29,7 +30,10 @@ export default function Header({
 }) {
   const [showCalendar, setShowCalendar] = useState(false);
   const calendarRef = useRef(null);
+  const { auth : { sections=[] } } = useAuth();
 
+  // Transform sections array from auth store to Select options format
+  
   // Close calendar on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -51,13 +55,12 @@ export default function Header({
         {/* Top row: Class, Date, Filters button (mobile) */}
         <div className="flex items-center gap-2 sm:gap-3 relative flex-wrap">
           {/* Class Selector */}
+          
           <Select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
-            options={[
-              { label: "10-A", value: "10-A" },
-              { label: "10-B", value: "10-B" },
-            ]}
+            options={sections}
+            disabled={sections.length === 1}
           />
 
           {/* Date trigger */}

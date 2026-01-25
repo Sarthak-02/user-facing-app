@@ -413,10 +413,14 @@ export default function TeacherHomework() {
       }
       
       const data = await getTeacherHomeworkAll(params);
-      setHomeworkList(data);
+      // Ensure data is an array - API might return { data: [] } or just []
+      const homeworkArray = Array.isArray(data) ? data : (data?.data || []);
+      setHomeworkList(homeworkArray);
     } catch (error) {
       console.error("Error fetching homework:", error);
       setLoadError(error.message || "Failed to load homework. Please try again.");
+      // Set empty array on error to prevent iteration errors
+      setHomeworkList([]);
     } finally {
       setIsLoading(false);
     }

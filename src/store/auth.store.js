@@ -7,7 +7,7 @@ const initialValue = {
   username: "",
   role: "student",
   campus_id:"",
-  section_id:"",
+  sections:[],
   details: {},
 };
 

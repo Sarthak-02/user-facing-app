@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, Button } from "../../ui-components";
+import { Card, Button, Table } from "../../ui-components";
 import { getExamDetail, getExamStudents, bulkSubmitExamMarks } from "../../api/exam.api";
 import Loader from "../../ui-components/Loader";
 
@@ -172,7 +172,7 @@ export default function EnterMarks() {
     }));
   };
 
-  const validateSubjectMarks = (subjectId) => {
+  const validateSubjectMarks = useCallback((subjectId) => {
     const errors = [];
     
     students.forEach((student) => {
@@ -214,9 +214,9 @@ export default function EnterMarks() {
     });
 
     return errors;
-  };
+  }, [students, marksData, exam]);
 
-  const handleSubmitSubject = async (subjectId) => {
+  const handleSubmitSubject = useCallback(async (subjectId) => {
     setSubmitError(null);
     setSuccessMessage("");
 
@@ -259,7 +259,7 @@ export default function EnterMarks() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [exam, students, marksData, examId, validateSubjectMarks]);
 
   const handleGoBack = () => {
     navigate(`/staff/exams/${examId}`);
@@ -291,7 +291,7 @@ export default function EnterMarks() {
   };
 
   // Calculate completion percentage for a specific subject
-  const getSubjectCompletionPercentage = (subjectId) => {
+  const getSubjectCompletionPercentage = useCallback((subjectId) => {
     if (!exam || students.length === 0) return 0;
     
     let filledCount = 0;
@@ -303,12 +303,149 @@ export default function EnterMarks() {
     });
 
     return Math.round((filledCount / students.length) * 100);
-  };
+  }, [exam, students, marksData]);
 
   // Check if subject is fully filled
-  const isSubjectComplete = (subjectId) => {
+  const isSubjectComplete = useCallback((subjectId) => {
     return getSubjectCompletionPercentage(subjectId) === 100;
-  };
+  }, [getSubjectCompletionPercentage]);
+
+  // Define table columns using useMemo to avoid recreating on every render
+  const tableColumns = useMemo(() => {
+    if (!exam || !selectedSubject) return [];
+
+    const subject = exam.subjects?.find((s) => s.subjectId === selectedSubject);
+    if (!subject) return [];
+
+    return [
+      {
+        key: "rollNumber",
+        label: "Roll No.",
+        render: (student) => (
+          <span className="font-medium text-gray-900">{student.rollNumber}</span>
+        ),
+      },
+      {
+        key: "name",
+        label: "Student Name",
+        render: (student) => (
+          <span className="text-gray-900">{student.name}</span>
+        ),
+      },
+      {
+        key: "marks",
+        label: (
+          <div className="flex flex-col gap-2 items-center">
+            <div>
+              <div className="flex items-center justify-center gap-2">
+                <span>Marks</span>
+                {submittedSubjects.has(subject.subjectId) && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 text-green-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                )}
+              </div>
+              <div className="text-xs text-gray-400 normal-case mt-1">
+                {getSubjectCompletionPercentage(subject.subjectId)}% Complete
+              </div>
+            </div>
+            <button
+              onClick={() => handleSubmitSubject(subject.subjectId)}
+              disabled={!isSubjectComplete(subject.subjectId) || isSubmitting}
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                submittedSubjects.has(subject.subjectId)
+                  ? "bg-green-100 text-green-700 hover:bg-green-200"
+                  : isSubjectComplete(subject.subjectId)
+                  ? "bg-blue-500 text-white hover:bg-blue-600"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              {submittedSubjects.has(subject.subjectId)
+                ? "Submitted"
+                : isSubmitting
+                ? "..."
+                : "Submit"}
+            </button>
+          </div>
+        ),
+        render: (student) => (
+          <div className="space-y-2 flex justify-center">
+            {exam.gradingType === "PERCENTAGE" && (
+              <input
+                type="number"
+                value={marksData[student.id]?.[subject.subjectId]?.value || ""}
+                onChange={(e) =>
+                  handleMarkChange(student.id, subject.subjectId, e.target.value)
+                }
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                placeholder={`/${exam.maxValue}`}
+                min="0"
+                max={exam.maxValue}
+              />
+            )}
+
+            {exam.gradingType === "GPA" && (
+              <input
+                type="number"
+                step="0.1"
+                value={marksData[student.id]?.[subject.subjectId]?.value || ""}
+                onChange={(e) =>
+                  handleMarkChange(student.id, subject.subjectId, e.target.value)
+                }
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                placeholder={`/${exam.maxValue}`}
+                min="0"
+                max={exam.maxValue}
+              />
+            )}
+
+            {exam.gradingType === "LETTER_GRADE" && (
+              <select
+                value={marksData[student.id]?.[subject.subjectId]?.value || ""}
+                onChange={(e) =>
+                  handleMarkChange(student.id, subject.subjectId, e.target.value)
+                }
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+              >
+                <option value="">--</option>
+                {LETTER_GRADES.map((grade) => (
+                  <option key={grade} value={grade}>
+                    {grade}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {exam.gradingType === "PASS_FAIL" && (
+              <select
+                value={marksData[student.id]?.[subject.subjectId]?.value || ""}
+                onChange={(e) =>
+                  handleMarkChange(student.id, subject.subjectId, e.target.value)
+                }
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+              >
+                <option value="">--</option>
+                <option value="PASS">Pass</option>
+                <option value="FAIL">Fail</option>
+              </select>
+            )}
+          </div>
+        ),
+      },
+    ];
+  }, [exam, selectedSubject, marksData, submittedSubjects, isSubmitting, getSubjectCompletionPercentage, isSubjectComplete, handleSubmitSubject]);
+
 
   if (loading) {
     return (
@@ -508,155 +645,8 @@ export default function EnterMarks() {
       </div>
 
       {/* Desktop: Table View */}
-      <div className="hidden md:block flex-1 overflow-y-auto min-h-0 pb-20">
-        <Card>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
-                    Roll No.
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-20 bg-gray-50 z-10">
-                    Student Name
-                  </th>
-                  {exam.subjects
-                    ?.filter((subject) => subject.subjectId === selectedSubject)
-                    .map((subject) => (
-                      <th
-                        key={subject.subjectId}
-                        className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        <div className="flex flex-col gap-2">
-                          <div>
-                            <div className="flex items-center justify-center gap-2">
-                              <span>Marks</span>
-                              {submittedSubjects.has(subject.subjectId) && (
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-4 w-4 text-green-500"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  />
-                                </svg>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-400 normal-case mt-1">
-                              {getSubjectCompletionPercentage(subject.subjectId)}% Complete
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleSubmitSubject(subject.subjectId)}
-                            disabled={!isSubjectComplete(subject.subjectId) || isSubmitting}
-                            className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
-                              submittedSubjects.has(subject.subjectId)
-                                ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                : isSubjectComplete(subject.subjectId)
-                                ? "bg-blue-500 text-white hover:bg-blue-600"
-                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            }`}
-                          >
-                            {submittedSubjects.has(subject.subjectId) 
-                              ? "Submitted" 
-                              : isSubmitting 
-                              ? "..." 
-                              : "Submit"}
-                          </button>
-                        </div>
-                      </th>
-                    ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredStudents.map((student) => (
-                  <tr key={student.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900 font-medium sticky left-0 bg-white">
-                      {student.rollNumber}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 sticky left-20 bg-white">
-                      {student.name}
-                    </td>
-                    {exam.subjects
-                      ?.filter((subject) => subject.subjectId === selectedSubject)
-                      .map((subject) => (
-                        <td key={subject.subjectId} className="px-4 py-3">
-                          <div className="space-y-2">
-                            {/* Marks/Grade Input */}
-                            {exam.gradingType === "PERCENTAGE" && (
-                              <input
-                                type="number"
-                                value={marksData[student.id]?.[subject.subjectId]?.value || ""}
-                                onChange={(e) =>
-                                  handleMarkChange(student.id, subject.subjectId, e.target.value)
-                                }
-                                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
-                                placeholder={`/${exam.maxValue}`}
-                                min="0"
-                                max={exam.maxValue}
-                              />
-                            )}
-
-                            {exam.gradingType === "GPA" && (
-                              <input
-                                type="number"
-                                step="0.1"
-                                value={marksData[student.id]?.[subject.subjectId]?.value || ""}
-                                onChange={(e) =>
-                                  handleMarkChange(student.id, subject.subjectId, e.target.value)
-                                }
-                                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
-                                placeholder={`/${exam.maxValue}`}
-                                min="0"
-                                max={exam.maxValue}
-                              />
-                            )}
-
-                            {exam.gradingType === "LETTER_GRADE" && (
-                              <select
-                                value={marksData[student.id]?.[subject.subjectId]?.value || ""}
-                                onChange={(e) =>
-                                  handleMarkChange(student.id, subject.subjectId, e.target.value)
-                                }
-                                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
-                              >
-                                <option value="">--</option>
-                                {LETTER_GRADES.map((grade) => (
-                                  <option key={grade} value={grade}>
-                                    {grade}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-
-                            {exam.gradingType === "PASS_FAIL" && (
-                              <select
-                                value={marksData[student.id]?.[subject.subjectId]?.value || ""}
-                                onChange={(e) =>
-                                  handleMarkChange(student.id, subject.subjectId, e.target.value)
-                                }
-                                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
-                              >
-                                <option value="">--</option>
-                                <option value="PASS">Pass</option>
-                                <option value="FAIL">Fail</option>
-                              </select>
-                            )}
-                          </div>
-                        </td>
-                      ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+      <div className="hidden md:block  pb-20">
+        <Table columns={tableColumns} data={filteredStudents} maxHeight="50vh" />
       </div>
 
       {/* Mobile: Card View */}

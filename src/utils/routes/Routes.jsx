@@ -9,6 +9,8 @@ import Home from "../../pages/staff/Home";
 import StudentAttendance from "../../pages/student/Attendance";
 import Homework from "../../pages/student/Homework";
 import HomeworkDetail from "../../pages/student/HomeworkDetail";
+import StudentExams from "../../pages/student/Exams";
+import StudentExamDetail from "../../pages/student/ExamDetail";
 import TeacherHomework from "../../pages/staff/Homework";
 import TeacherHomeworkDetail from "../../pages/staff/HomeworkDetail";
 import Exams from "../../pages/staff/Exams";
@@ -38,7 +40,7 @@ export const routes = [
       { 
         path: "staff/attendance", 
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff","student"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
             <Attendance />
           </RoleBasedRoute>
         )
@@ -46,7 +48,7 @@ export const routes = [
       { 
         path: "staff/homework", 
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff","student"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
             <TeacherHomework />
           </RoleBasedRoute>
         )
@@ -62,7 +64,7 @@ export const routes = [
       { 
         path: "staff/exams", 
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff","student"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
             <Exams />
           </RoleBasedRoute>
         )
@@ -70,7 +72,7 @@ export const routes = [
       { 
         path: "staff/exams/:examId", 
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff","student"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
             <ExamDetail />
           </RoleBasedRoute>
         )
@@ -78,7 +80,7 @@ export const routes = [
       { 
         path: "staff/exams/:examId/enter-marks", 
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff","student"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
             <EnterMarks />
           </RoleBasedRoute>
         )
@@ -86,7 +88,7 @@ export const routes = [
       { 
         path: "broadcast", 
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["admin"]}>
             <BroadcastNotification />
           </RoleBasedRoute>
         )
@@ -114,6 +116,22 @@ export const routes = [
         element: (
           <RoleBasedRoute allowedRoles={["student"]}>
             <HomeworkDetail />
+          </RoleBasedRoute>
+        )
+      },
+      { 
+        path: "student/exams", 
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentExams />
+          </RoleBasedRoute>
+        )
+      },
+      { 
+        path: "student/exams/:examId", 
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentExamDetail />
           </RoleBasedRoute>
         )
       },

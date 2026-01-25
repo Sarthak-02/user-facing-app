@@ -165,3 +165,42 @@ export async function completeExam(examId) {
     throw err.response?.data || err;
   }
 }
+
+// ==================== STUDENT EXAM API ====================
+
+/**
+ * Fetch all exams for a specific student with filters
+ * @param {Object} params - Query parameters
+ * @param {string} params.student_id - Student ID (required)
+ * @param {string} [params.status] - Filter by exam status (DRAFT, PUBLISHED, COMPLETED)
+ * @param {string} [params.start_date] - Start date for exam date filter (YYYY-MM-DD)
+ * @param {string} [params.end_date] - End date for exam date filter (YYYY-MM-DD)
+ * @param {number} [params.limit] - Number of records to return (default: 50, max: 100)
+ * @param {number} [params.offset] - Number of records to skip (default: 0)
+ * @returns {Promise<Object>} Exams response with data array and metadata
+ */
+export async function getStudentExamsAll(params) {
+  try {
+    const response = await api.get("/exams/student/all", { params });
+    return response.data;
+  } catch (err) {
+    console.error("Error fetching student exams:", err.response?.data);
+    throw err.response?.data || err;
+  }
+}
+
+/**
+ * Get student's marks for a specific exam
+ * @param {string} examId - The ID of the exam
+ * @param {string} studentId - The ID of the student
+ * @returns {Promise<Object>} Student's exam marks and details
+ */
+export async function getStudentExamMarks(examId, studentId) {
+  try {
+    const response = await api.get(`/exams/${examId}/students/${studentId}/marks`);
+    return response.data;
+  } catch (err) {
+    console.error("Error fetching student exam marks:", err.response?.data);
+    throw err.response?.data || err;
+  }
+}
