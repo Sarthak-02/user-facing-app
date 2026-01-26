@@ -2,6 +2,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from "vite-plugin-pwa";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [
@@ -10,7 +14,7 @@ export default defineConfig({
     VitePWA({
       strategies: "injectManifest",
       injectManifest: {
-        swSrc: "src/sw.js", // ✅ source service worker (module)
+        swSrc: path.resolve(__dirname, "src/sw.js"), // ✅ source service worker (module)
         swDest: "sw.js", // output service worker name
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
       },
