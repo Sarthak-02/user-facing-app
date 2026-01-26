@@ -7,6 +7,7 @@ import MobileListing from "../../components/student-attendance/MobileListing";
 import { getStudentAttendance } from "../../api/attendance.api";
 import { useAttendance } from "../../store/attendance.store";
 import { useAuth } from "../../store/auth.store";
+import { getFormattedDate, toLocalISOString } from "../../utils/common-functions";
 
 export default function StudentAttendance() {
   const [period, setPeriod] = useState("ALL");
@@ -19,7 +20,7 @@ export default function StudentAttendance() {
 
   // Get auth and attendance store
   const { auth } = useAuth();
-  const { summary, records, loading, error, setAttendanceData, setLoading, setError } = useAttendance();
+  const { records, loading, error, setAttendanceData, setLoading, setError } = useAttendance();
 
   // Calculate date range
   const { startDate, endDate } = useMemo(() => {
@@ -70,10 +71,10 @@ export default function StudentAttendance() {
     return options;
   }, [records]);
 
-  // Fetch attendance data
+  // Fetch attendance data once on mount
   useEffect(() => {
     const fetchAttendance = async () => {
-      if (!auth.userId || !auth.section_id) {
+      if (!auth.userId || !auth.sections[0]?.value) {
         console.warn("Missing required data: student_id or section_id");
         return;
       }
@@ -84,10 +85,12 @@ export default function StudentAttendance() {
       try {
         const params = {
           student_id: auth.userId,
-          section_id: auth.section_id,
+          section_id: auth.sections[0]?.value,
+          start_date: auth.campus.term_start_date,
+          end_date: auth.campus.term_end_date,
         };
 
-        // Fetch all attendance records without date filters
+        // Fetch all attendance records for the term
         const response = await getStudentAttendance(params);
         
         if (response.success && response.data) {
@@ -124,11 +127,19 @@ export default function StudentAttendance() {
     };
 
     fetchAttendance();
-  }, [auth.userId, auth.section_id, startDate, endDate, setAttendanceData, setLoading, setError]);
+  }, [auth.userId, auth.sections, auth.campus, setAttendanceData, setLoading, setError]);
 
-  // Filter attendance records based on filters
+  // Filter attendance records based on all filters (frontend only)
   const filteredRecords = useMemo(() => {
     let filtered = [...records];
+
+    // Filter by date range
+    if (startDate && endDate) {
+      filtered = filtered.filter((record) => {
+        const recordDate = new Date(record.date);
+        return getFormattedDate(recordDate) >= getFormattedDate(startDate) && getFormattedDate(recordDate) <= toLocalISOString(endDate);
+      });
+    }
 
     // Filter by period
     if (period !== "ALL") {
@@ -147,20 +158,23 @@ export default function StudentAttendance() {
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     return filtered;
-  }, [records, period, statusFilter]);
+  }, [records, period, statusFilter, startDate, endDate]);
 
-  // Calculate summary statistics from filtered records
+  // Calculate summary statistics from filtered records (frontend calculation)
   const displaySummary = useMemo(() => {
-    // Use API summary but calculate onLeave from filtered records
+    // Calculate all stats from filtered records
+    const total = filteredRecords.length;
+    const present = filteredRecords.filter((r) => r.status === "PRESENT").length;
+    const absent = filteredRecords.filter((r) => r.status === "ABSENT").length;
     const onLeave = filteredRecords.filter((r) => r.status === "ON_LEAVE" || r.status === "EXCUSED").length;
     
     return {
-      total: summary.total,
-      present: summary.present,
-      absent: summary.absent,
-      onLeave: summary.excused || onLeave,
+      total,
+      present,
+      absent,
+      onLeave,
     };
-  }, [summary, filteredRecords]);
+  }, [filteredRecords]);
 
   return (
     <div className="h-screen md:min-h-screen flex flex-col  p-4 gap-6">

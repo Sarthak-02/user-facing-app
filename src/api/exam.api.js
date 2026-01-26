@@ -278,11 +278,11 @@ export async function publishExam(examId, teacherId) {
 /**
  * Get students and their marks for a specific exam
  * @param {string} examId - The ID of the exam
- * @returns {Promise<Object>} Students list with their marks
+ * @returns {Promise<Object>} Students list with their details
  */
 export async function getExamStudents(examId) {
   try {
-    const response = await api.get(`/exams/${examId}/students`);
+    const response = await api.get(`/exam/${examId}/students`);
     return response.data;
   } catch (err) {
     console.error("Error fetching exam students:", err.response?.data);
@@ -309,13 +309,18 @@ export async function submitExamMarks(examId, studentId, marksData) {
 
 /**
  * Bulk submit marks for multiple students
- * @param {string} examId - The ID of the exam
- * @param {Array} studentsMarks - Array of student marks data
+ * @param {Array} grades - Array of grade objects
+ * @param {string} grades[].exam_id - The ID of the exam
+ * @param {string} grades[].exam_subject_id - The ID of the exam subject
+ * @param {string} grades[].student_id - The ID of the student
+ * @param {string} grades[].grades_obtained - Grades obtained by the student
+ * @param {string} [grades[].remarks] - Optional teacher's remarks
+ * @param {string} [grades[].graded_by] - Optional teacher ID who graded
  * @returns {Promise<Object>} Bulk submission response
  */
-export async function bulkSubmitExamMarks(examId, studentsMarks) {
+export async function bulkSubmitExamMarks(grades) {
   try {
-    const response = await api.post(`/exams/${examId}/marks/bulk`, { students: studentsMarks });
+    const response = await api.post('/exam-grade/bulk', { grades });
     return response.data;
   } catch (err) {
     console.error("Error bulk submitting exam marks:", err.response?.data);

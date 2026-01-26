@@ -44,6 +44,7 @@ export default function LoginPage() {
         campus_id: data.details?.campus_id || "",
         sections: data.details?.sections || [],
         details: data.details || {},
+        campus: data.campus || {},
       };
       localStorage.setItem("token", true);
 

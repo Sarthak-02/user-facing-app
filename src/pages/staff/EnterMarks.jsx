@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Button, Table } from "../../ui-components";
-import { getExamDetail, getExamStudents, bulkSubmitExamMarks } from "../../api/exam.api";
+import { bulkSubmitExamMarks } from "../../api/exam.api";
+import { useExamDetail } from "../../store/examDetail.store";
+import { usePermissions } from "../../store/permissions.store";
 import Loader from "../../ui-components/Loader";
 
 // Mock students data for testing
@@ -34,6 +36,8 @@ function getExamTypeLabel(type) {
 export default function EnterMarks() {
   const { examId } = useParams();
   const navigate = useNavigate();
+  const { examDetail } = useExamDetail();
+  const { permissions } = usePermissions();
 
   const [exam, setExam] = useState(null);
   const [students, setStudents] = useState([]);
@@ -54,110 +58,63 @@ export default function EnterMarks() {
   const [selectedSubject, setSelectedSubject] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = () => {
       setLoading(true);
       setError(null);
 
       try {
-        // Try to fetch exam details - use mock data if fails
-        let examData;
-        try {
-          examData = await getExamDetail(examId);
-        } catch {
-          console.log("Using mock exam data");
-          // Mock exam data
-          examData = {
-            id: examId,
-            examType: "MID_TERM",
-            customExamType: "",
-            class: "Class 10",
-            section: "Section A",
-            status: "COMPLETED",
-            subjects: [
-              {
-                subjectId: "sub1",
-                subjectName: "Mathematics",
-                examDate: "2026-01-10",
-                startTime: "09:00",
-                endTime: "11:00",
-              },
-              {
-                subjectId: "sub7",
-                subjectName: "Physics",
-                examDate: "2026-01-12",
-                startTime: "09:00",
-                endTime: "11:00",
-              },
-              {
-                subjectId: "sub8",
-                subjectName: "Chemistry",
-                examDate: "2026-01-14",
-                startTime: "09:00",
-                endTime: "11:00",
-              },
-            ],
-            startDate: "2026-01-10",
-            endDate: "2026-01-14",
-            gradingType: "PERCENTAGE",
-            passingValue: "40",
-            maxValue: "100",
-          };
+        // Get exam and students from the store
+        const examData = examDetail.exam;
+        const studentsData = examDetail.students;
+
+        // Check if we have exam data in store
+        if (!examData) {
+          setError("Exam details not found. Please go back and select the exam again.");
+          setLoading(false);
+          return;
         }
-        
+
         setExam(examData);
+
+        // Transform students data
+        const transformedStudents = studentsData.map(student => ({
+          id: student.student_id,
+          name: student.student_name,
+          rollNumber: student.student_roll_no,
+          photoUrl: student.student_photo_url,
+          admissionNo: student.student_admission_no,
+        }));
+
+        setStudents(transformedStudents);
 
         // Set first subject as default selected
         if (examData.subjects && examData.subjects.length > 0) {
           setSelectedSubject(examData.subjects[0].subjectId);
         }
 
-        // Fetch students for this exam
-        try {
-          const studentsData = await getExamStudents(examId);
-          setStudents(studentsData);
-          
-          // Initialize marks data
-          const initialMarks = {};
-          studentsData.forEach((student) => {
-            initialMarks[student.id] = {};
-            examData.subjects.forEach((subject) => {
-              initialMarks[student.id][subject.subjectId] = {
-                value: student.marks?.[subject.subjectId]?.value || "",
-                remarks: student.marks?.[subject.subjectId]?.remarks || "",
-              };
-            });
+        // Initialize marks data
+        const initialMarks = {};
+        transformedStudents.forEach((student) => {
+          initialMarks[student.id] = {};
+          examData.subjects.forEach((subject) => {
+            initialMarks[student.id][subject.subjectId] = {
+              value: "",
+              remarks: "",
+            };
           });
-          setMarksData(initialMarks);
-        } catch {
-          // Use mock data if API fails
-          console.log("Using mock students data");
-          setStudents(MOCK_STUDENTS);
-          
-          // Initialize marks data with mock students
-          const initialMarks = {};
-          MOCK_STUDENTS.forEach((student) => {
-            initialMarks[student.id] = {};
-            examData.subjects.forEach((subject) => {
-              initialMarks[student.id][subject.subjectId] = {
-                value: "",
-                remarks: "",
-              };
-            });
-          });
-          setMarksData(initialMarks);
-        }
+        });
+        setMarksData(initialMarks);
+
+        setLoading(false);
       } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(err.message || "Failed to fetch exam details");
-      } finally {
+        console.error("Error loading data:", err);
+        setError("Failed to load exam details. Please try again.");
         setLoading(false);
       }
     };
 
-    if (examId) {
-      fetchData();
-    }
-  }, [examId]);
+    loadData();
+  }, [examDetail]);
 
   const handleMarkChange = (studentId, subjectId, value) => {
     setMarksData((prev) => ({
@@ -232,18 +189,18 @@ export default function EnterMarks() {
     setIsSubmitting(true);
 
     try {
-      // Prepare data for this subject only
-      const studentsMarks = students.map((student) => ({
-        studentId: student.id,
-        marks: [{
-          subjectId: subjectId,
-          value: marksData[student.id][subjectId].value,
-          remarks: marksData[student.id][subjectId].remarks,
-        }],
+      // Prepare data in the correct format for the API
+      const grades = students.map((student) => ({
+        exam_id: examId,
+        exam_subject_id: subjectId,
+        student_id: student.id,
+        grades_obtained: marksData[student.id][subjectId].value.toString(),
+        remarks: marksData[student.id][subjectId].remarks || "",
+        graded_by: permissions.teacher_id || "",
       }));
 
       // Submit marks for this subject
-      await bulkSubmitExamMarks(examId, studentsMarks);
+      await bulkSubmitExamMarks(grades);
       
       // Mark subject as submitted
       setSubmittedSubjects(prev => new Set([...prev, subjectId]));
@@ -259,7 +216,7 @@ export default function EnterMarks() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [exam, students, marksData, examId, validateSubjectMarks]);
+  }, [exam, students, marksData, examId, permissions.teacher_id, validateSubjectMarks]);
 
   const handleGoBack = () => {
     navigate(`/staff/exams/${examId}`);

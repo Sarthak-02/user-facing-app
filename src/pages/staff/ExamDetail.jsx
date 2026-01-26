@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Badge, Button } from "../../ui-components";
-import { getExamDetail } from "../../api/exam.api";
+import { getExamDetail, getExamStudents } from "../../api/exam.api";
 import { usePermissions } from "../../store/permissions.store";
+import { useExamDetail } from "../../store/examDetail.store";
 import Loader from "../../ui-components/Loader";
 
 function formatDate(date) {
@@ -58,10 +59,12 @@ export default function ExamDetail() {
   const { examId } = useParams();
   const navigate = useNavigate();
   const { permissions } = usePermissions();
+  const { setExamDetail, setExamStudents } = useExamDetail();
 
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [fetchingStudents, setFetchingStudents] = useState(false);
 
   useEffect(() => {
     const fetchExamDetail = async () => {
@@ -71,6 +74,8 @@ export default function ExamDetail() {
       try {
         const data = await getExamDetail(examId, permissions);
         setExam(data);
+        // Store exam detail in the store
+        setExamDetail(data);
       } catch (err) {
         console.error("Error fetching exam detail:", err);
         setError(err.message || "Failed to load exam details. Please try again.");
@@ -82,7 +87,7 @@ export default function ExamDetail() {
     if (examId) {
       fetchExamDetail();
     }
-  }, [examId]);
+  }, [examId, permissions, setExamDetail]);
 
   const handleGoBack = () => {
     navigate("/staff/exams");
@@ -93,8 +98,22 @@ export default function ExamDetail() {
     alert("View results functionality will be implemented");
   };
 
-  const handleEnterMarks = () => {
-    navigate(`/staff/exams/${examId}/enter-marks`);
+  const handleEnterMarks = async () => {
+    try {
+      setFetchingStudents(true);
+      const response = await getExamStudents(examId);
+      
+      // Store students in the store
+      setExamStudents(response.data || [], response.count || 0);
+      
+      // Navigate to enter marks page (no need to pass state)
+      navigate(`/staff/exams/${examId}/enter-marks`);
+    } catch (err) {
+      console.error("Error fetching students for exam:", err);
+      alert("Failed to fetch students. Please try again.");
+    } finally {
+      setFetchingStudents(false);
+    }
   };
 
   if (loading) {
@@ -136,7 +155,7 @@ export default function ExamDetail() {
   }
 
   return (
-    <div className="h-screen flex flex-col p-4 gap-6 overflow-hidden">
+    <div className="h-screen flex flex-col p-4 pb-30 gap-6 overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-4 flex-shrink-0">
         <button
@@ -312,22 +331,50 @@ export default function ExamDetail() {
       {(exam.status === "PUBLISHED" || exam.status === "COMPLETED") && (
         <Card>
           <div className="flex flex-col md:flex-row gap-3">
-            <Button onClick={handleEnterMarks} className="flex-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
-              {exam.status === "COMPLETED" ? "View/Edit Marks" : "Enter Marks"}
+            <Button onClick={handleEnterMarks} className="flex-1" disabled={fetchingStudents}>
+              {fetchingStudents ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5 mr-2"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Loading Students...
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  {exam.status === "COMPLETED" ? "View/Edit Marks" : "Enter Marks"}
+                </>
+              )}
             </Button>
             <Button onClick={handleViewResults} variant="secondary" className="flex-1">
               <svg

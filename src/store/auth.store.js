@@ -9,6 +9,7 @@ const initialValue = {
   campus_id:"",
   sections:[],
   details: {},
+  campus:{}
 };
 
 export const useAuth = create(

@@ -21,7 +21,7 @@ export function toLocalISOString(date = new Date()) {
   const min = pad(date.getMinutes());
   const ss = pad(date.getSeconds());
 
-  const offset = -date.getTimezoneOffset();
+  const offset = 0;
   const sign = offset >= 0 ? "+" : "-";
   const offH = pad(Math.floor(Math.abs(offset) / 60));
   const offM = pad(Math.abs(offset) % 60);
