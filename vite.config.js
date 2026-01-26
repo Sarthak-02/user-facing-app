@@ -72,8 +72,14 @@ export default defineConfig({
       strategies: "injectManifest",
       injectManifest: {
         swSrc: "src/sw.js", // ✅ source service worker (module)
+        swDest: "sw.js", // output service worker name
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
       },
       registerType: "autoUpdate",
+      devOptions: {
+        enabled: true, // Enable in dev mode for testing
+        type: 'module',
+      },
       includeAssets: [
         "favicon.svg",
         "apple-touch-icon.png",

@@ -37,3 +37,18 @@ export async function fetchTeacherPermissions(teacher_id) {
         throw err.response?.data || err;
     }
 }
+
+export async function saveFCMToken({ userId, role, token }) {
+    try {
+        const resp = await api.post("/device-token/register", {
+            user_id: userId,
+            role,
+            token,
+            platform: "web"
+        });
+        return resp.data;
+    } catch (err) {
+        console.log(err.response?.data);
+        throw err.response?.data || err;
+    }
+}
