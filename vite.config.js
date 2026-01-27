@@ -13,14 +13,17 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.js",
       injectManifest: {
-        swSrc: path.resolve(__dirname, "src/sw.js"), // ✅ source service worker (module)
-        swDest: "sw.js", // output service worker name
+        swSrc: path.resolve(__dirname, "src/sw.js"),
+        swDest: "sw.js",
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
+        injectionPoint: undefined,
       },
       registerType: "autoUpdate",
       devOptions: {
-        enabled: true, // Enable in dev mode for testing
+        enabled: true,
         type: 'module',
       },
       includeAssets: [
