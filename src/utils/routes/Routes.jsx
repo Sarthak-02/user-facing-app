@@ -16,6 +16,8 @@ import TeacherHomeworkDetail from "../../pages/staff/HomeworkDetail";
 import Exams from "../../pages/staff/Exams";
 import ExamDetail from "../../pages/staff/ExamDetail";
 import EnterMarks from "../../pages/staff/EnterMarks";
+import StudentProfile from "../../pages/student/Profile";
+import StaffProfile from "../../pages/staff/Profile";
 
 export const routes = [
   {
@@ -37,6 +39,14 @@ export const routes = [
       { index: true, element: <Home /> },
       
       // Teacher/Staff routes
+      { 
+        path: "staff/profile", 
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff", "admin"]}>
+            <StaffProfile />
+          </RoleBasedRoute>
+        )
+      },
       { 
         path: "staff/attendance", 
         element: (
@@ -95,6 +105,14 @@ export const routes = [
       },
       
       // Student routes
+      { 
+        path: "student/profile", 
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentProfile />
+          </RoleBasedRoute>
+        )
+      },
       { 
         path: "student/attendance", 
         element: (

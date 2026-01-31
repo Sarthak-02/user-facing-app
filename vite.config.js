@@ -19,7 +19,6 @@ export default defineConfig({
         swSrc: path.resolve(__dirname, "src/sw.js"),
         swDest: "sw.js",
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
-        injectionPoint: undefined,
       },
       registerType: "autoUpdate",
       devOptions: {
