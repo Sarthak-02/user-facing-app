@@ -172,26 +172,22 @@ export default function TeacherHomework() {
         const targets = [];
 
         // Build targets array based on targetType
-        if (homeworkData.targetType === "CLASS" && homeworkData.classId) {
+        if (homeworkData.targetType?.value === "CLASS" && homeworkData.classId?.value) {
           targets.push({
             targetType: "CLASS",
-            targetId: homeworkData.classId
+            targetId: homeworkData.classId.value
           });
-        } else if (homeworkData.targetType === "SECTION" && homeworkData.sectionId) {
+        } else if (homeworkData.targetType?.value === "SECTION" && homeworkData.sectionId?.value) {
           targets.push({
             targetType: "SECTION",
-            targetId: homeworkData.sectionId
+            targetId: homeworkData.sectionId.value
           });
-        } else if (homeworkData.targetType === "STUDENT" && homeworkData.studentId) {
-          // Handle multiple students if studentId is an array
-          const studentIds = Array.isArray(homeworkData.studentId)
-            ? homeworkData.studentId
-            : [homeworkData.studentId];
-
-          studentIds.forEach(id => {
+        } else if (homeworkData.targetType?.value === "STUDENT" && Array.isArray(homeworkData.studentId) && homeworkData.studentId.length > 0) {
+          // Handle multiple students - studentId is an array of objects
+          homeworkData.studentId.forEach(student => {
             targets.push({
               targetType: "STUDENT",
-              targetId: id
+              targetId: student.value
             });
           });
         }
@@ -209,11 +205,11 @@ export default function TeacherHomework() {
           title: homeworkData.title,
           description: homeworkData.description,
           due_date: new Date(homeworkData.dueDate).toISOString(),
-          subject: homeworkData.subject,
+          subject: homeworkData.subject?.value,
           teacher_id: auth.userId,
           targets: targets,
           publish: homeworkData.status === "PUBLISHED",
-          ...(attachments.length > 0 && { attachments })
+          attachments: attachments
         };
 
         // Call update API
@@ -230,26 +226,22 @@ export default function TeacherHomework() {
         const targets = [];
 
         // Build targets array based on targetType
-        if (homeworkData.targetType === "CLASS" && homeworkData.classId) {
+        if (homeworkData.targetType?.value === "CLASS" && homeworkData.classId?.value) {
           targets.push({
             targetType: "CLASS",
-            targetId: homeworkData.classId
+            targetId: homeworkData.classId.value
           });
-        } else if (homeworkData.targetType === "SECTION" && homeworkData.sectionId) {
+        } else if (homeworkData.targetType?.value === "SECTION" && homeworkData.sectionId?.value) {
           targets.push({
             targetType: "SECTION",
-            targetId: homeworkData.sectionId
+            targetId: homeworkData.sectionId.value
           });
-        } else if (homeworkData.targetType === "STUDENT" && homeworkData.studentId) {
-          // Handle multiple students if studentId is an array
-          const studentIds = Array.isArray(homeworkData.studentId)
-            ? homeworkData.studentId
-            : [homeworkData.studentId];
-
-          studentIds.forEach(id => {
+        } else if (homeworkData.targetType?.value === "STUDENT" && Array.isArray(homeworkData.studentId) && homeworkData.studentId.length > 0) {
+          // Handle multiple students - studentId is an array of objects
+          homeworkData.studentId.forEach(student => {
             targets.push({
               targetType: "STUDENT",
-              targetId: id
+              targetId: student.value
             });
           });
         }
@@ -268,11 +260,11 @@ export default function TeacherHomework() {
           title: homeworkData.title,
           description: homeworkData.description,
           due_date: new Date(homeworkData.dueDate).toISOString(),
-          subject: homeworkData.subject,
+          subject: homeworkData.subject?.value,
           teacher_id: auth.userId,
           targets: targets,
           publish: homeworkData.status === "PUBLISHED",
-          ...(attachments.length > 0 && { attachments })
+          attachments: attachments
         };
 
         // Call API

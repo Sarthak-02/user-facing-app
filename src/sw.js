@@ -16,13 +16,21 @@
 /* eslint-env serviceworker */
 /// <reference lib="webworker" />
 
-import { precacheAndRoute } from "workbox-precaching";
+import { precacheAndRoute, createHandlerBoundToURL } from "workbox-precaching";
+import { NavigationRoute, registerRoute } from "workbox-routing";
 import { initializeApp } from "firebase/app";
 import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 import { firebaseConfig } from "./firebase-config.js";
 
 // ⚠️ CRITICAL: This placeholder MUST be present for workbox-build to inject the manifest
 precacheAndRoute(self.__WB_MANIFEST);
+
+// Handle SPA navigation - return index.html for all navigation requests
+const handler = createHandlerBoundToURL("/index.html");
+const navigationRoute = new NavigationRoute(handler, {
+  denylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
+});
+registerRoute(navigationRoute);
 
 // Initialize Firebase in service worker context
 try {

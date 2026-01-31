@@ -166,11 +166,10 @@ export async function getTeacherHomeworkDetail(homeworkId) {
  * @param {Object} homeworkData - Homework data object
  * @param {string} homeworkData.title - Homework title
  * @param {string} homeworkData.description - Homework description
- * @param {string} homeworkData.due_date - Due date in ISO format
+ * @param {string} homeworkData.due_date - Due date in ISO format (e.g., "2026-01-28T00:00:00.000Z")
  * @param {string} homeworkData.subject - Subject name
  * @param {string} homeworkData.teacher_id - Teacher ID
- * @param {Array} homeworkData.attachments - Array of attachment objects (optional)
- * @param {Array} homeworkData.targets - Array of target objects
+ * @param {Array<{targetType: string, targetId: string}>} homeworkData.targets - Array of target objects with targetType (e.g., "SECTION") and targetId
  * @param {boolean} homeworkData.publish - Whether to publish immediately
  * @returns {Promise<Object>} Created homework object
  */
@@ -187,7 +186,14 @@ export async function createHomework(homeworkData) {
 /**
  * Update an existing homework assignment
  * @param {string} homeworkId - The ID of the homework assignment
- * @param {Object} homeworkData - Homework data object (same structure as createHomework)
+ * @param {Object} homeworkData - Homework data object
+ * @param {string} homeworkData.title - Homework title
+ * @param {string} homeworkData.description - Homework description
+ * @param {string} homeworkData.due_date - Due date in ISO format (e.g., "2026-01-28T00:00:00.000Z")
+ * @param {string} homeworkData.subject - Subject name
+ * @param {string} homeworkData.teacher_id - Teacher ID
+ * @param {Array<{targetType: string, targetId: string}>} homeworkData.targets - Array of target objects with targetType (e.g., "SECTION") and targetId
+ * @param {boolean} homeworkData.publish - Whether to publish immediately
  * @returns {Promise<Object>} Updated homework object
  */
 export async function updateHomework(homeworkId, homeworkData) {

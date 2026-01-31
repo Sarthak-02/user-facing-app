@@ -44,9 +44,18 @@ export const useAuth = create(
         finally {
           // Clear auth state
           set({ auth: initialValue });
-          localStorage.clear()
-          // Redirect to login
-          window.location.href = "/login";
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          // Clear service worker cache if available
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              names.forEach(name => caches.delete(name));
+            });
+          }
+          
+          // Redirect to login - use replace to avoid history issues
+          window.location.replace("/login");
         }
 
 
