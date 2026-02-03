@@ -6,11 +6,13 @@ import DesktopListing from "../../components/attendance/DesktopListing";
 import Header from "../../components/attendance/Header";
 import MobileListing from "../../components/attendance/MobileListing";
 import {
-  Button
+  Button,
+  Shimmer
 } from "../../ui-components";
 import { getFormattedDate, isToday, toLocalISOString } from "../../utils/common-functions";
 import { submitAttendance, getAttendanceDetails } from "../../api/attendance.api";
 import { useAuth } from "../../store/auth.store";
+import { useLoader } from "../../store/loader.store";
 
 
 
@@ -113,22 +115,61 @@ export default function AttendancePage() {
   }, [searchQuery, students]);
 
   async function handleSubmit() {
-    const payload = {
-      section_id: selectedClass,
-      teacher_id: userId, //this will be fetched from the logged in details
-      date: toLocalISOString(selectedDate), //today's date
-      campus_session: campusSession,
-      period: period,
-      records: Object.entries(attendance).map(([key, value]) => ({
-        student_id: key,
-        status: value,
-      })),
-    };
+    try {
+      const payload = {
+        section_id: selectedClass,
+        teacher_id: userId, //this will be fetched from the logged in details
+        date: toLocalISOString(selectedDate), //today's date
+        campus_session: campusSession,
+        period: period,
+        records: Object.entries(attendance).map(([key, value]) => ({
+          student_id: key,
+          status: value,
+        })),
+      };
 
-    console.log(payload);
-    const response = await submitAttendance(payload);
-    console.log(response);
-    setShowConfirmation(false);
+      console.log(payload);
+      const response = await submitAttendance(payload);
+      console.log(response);
+      
+      // Fetch updated attendance details after successful submission
+      if (response.success) {
+        const params = {
+          section_id: selectedClass,
+          date: getFormattedDate(selectedDate),
+          campus_session: campusSession,
+          period: period
+        };
+
+        const updatedData = await getAttendanceDetails(params);
+        
+        // Update the UI with the fetched data
+        if (updatedData.success === true && updatedData.data?.students) {
+          setStudents(updatedData.data.students);
+          
+          // Build attendance map
+          const attendanceMap = {};
+          updatedData.data.students.forEach(record => {
+            if (record?.attendance_status) {
+              attendanceMap[record.student_id] = record.attendance_status;
+            }
+          });
+          setAttendance(attendanceMap);
+          
+          // Update submitted attendance metadata
+          const { teacher_id = "", teacher_name = "", submitStatus = "", submittedAt = "", attendanceSessionId = "", section_id = "", section_name = "", is_attendance_taken = false } = updatedData.data || {};
+          setSubmittedAttendanceData({ teacher_id, teacher_name, submitStatus, submittedAt, attendanceSessionId, section_id, section_name, is_attendance_taken });
+          
+          setNoAttendanceFound(false);
+        }
+      }
+      
+      setShowConfirmation(false);
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      setShowConfirmation(false);
+      // You may want to show an error message to the user here
+    }
   }
 
   const markAttendance = (id, status) => {
@@ -193,12 +234,11 @@ export default function AttendancePage() {
         setPeriod={setPeriod}
       />
 
-      {/* Loading State */}
-      {isLoadingAttendance && (
-        <div className="flex justify-center items-center py-8">
-          <div className="text-gray-500">Loading attendance...</div>
-        </div>
-      )}
+      {
+        useLoader.getState().isLoadingByKey("getAttendanceDetails") && (
+          <Shimmer variant="card-list" count={10} />
+        )
+      }
 
       {/* No Students State */}
       {!isLoadingAttendance && students.length === 0 && (

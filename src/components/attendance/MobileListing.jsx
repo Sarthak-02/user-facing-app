@@ -35,13 +35,6 @@ export default function MobileListing({
             </div>
             {editMode && (
               <div className="mt-3 flex gap-2">
-                <Button
-                  variant={status === "PRESENT" ? "success" : "secondary"}
-                  className="flex-1"
-                  onClick={() => markAttendance(student.student_id, "PRESENT")}
-                >
-                  {status === "PRESENT" && "✓ "}Present
-                </Button>
 
                 <Button
                   variant={status === "ABSENT" ? "danger" : "secondary"}
@@ -50,6 +43,16 @@ export default function MobileListing({
                 >
                   {status === "ABSENT" && "✓ "}Absent
                 </Button>
+
+                <Button
+                  variant={status === "PRESENT" ? "success" : "secondary"}
+                  className="flex-1"
+                  onClick={() => markAttendance(student.student_id, "PRESENT")}
+                >
+                  {status === "PRESENT" && "✓ "}Present
+                </Button>
+
+
               </div>
             )}
           </Card>

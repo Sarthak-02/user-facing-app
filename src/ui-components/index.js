@@ -11,3 +11,4 @@ export { default as Avatar } from "./Avatar";
 export {default as Dropdown} from "./Dropdown";
 export {default as TextField} from "./TextField";
 export {default as DateRange} from "./DateRange";
+export {default as Shimmer, ShimmerLine, ShimmerCircle, ShimmerBlock} from "./Shimmer";

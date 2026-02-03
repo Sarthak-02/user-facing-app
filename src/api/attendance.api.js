@@ -1,3 +1,4 @@
+import { useLoader } from "../store/loader.store";
 import api from "./axios";
 
 /**
@@ -31,7 +32,9 @@ export async function getStudentsBySection(section_id){
 
 export async function submitAttendance(payload){
   try{
+    useLoader.getState().startLoading("submitAttendance", "spinner");
     const response = await api.post("attendance/bulk_create", payload);
+    useLoader.getState().stopLoading("submitAttendance");
     return response.data;
   } catch (err) {
     console.error("Error submitting attendance:", err.response?.data);
@@ -50,6 +53,8 @@ export async function submitAttendance(payload){
  */
 export async function getAttendanceDetails(params) {
   try {
+    useLoader.getState().startLoading("getAttendanceDetails", "shimmer", { variant: "card-list", count: 10 });
+
     const queryParams = new URLSearchParams();
     
     // Add required parameters
@@ -65,6 +70,7 @@ export async function getAttendanceDetails(params) {
     }
     
     const response = await api.get(`attendance/details?${queryParams.toString()}`);
+    useLoader.getState().stopLoading("getAttendanceDetails");
     return response.data;
   } catch (err) {
     console.error("Error fetching attendance details:", err.response?.data);

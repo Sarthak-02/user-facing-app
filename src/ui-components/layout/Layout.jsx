@@ -42,7 +42,7 @@ export default function Layout() {
   }, [userRole]);
 
   return (
-    <div className="flex bg-[var(--color-background)]">
+    <div className="flex h-screen bg-[var(--color-background)]">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <Sidebar 
@@ -53,7 +53,7 @@ export default function Layout() {
       </div>
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col ">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <div
           className={`${
@@ -64,7 +64,7 @@ export default function Layout() {
         </div>
 
         {/* Page Content */}
-        <main><Outlet /></main>
+        <main className="flex-1 overflow-y-auto"><Outlet /></main>
       </div>
 
       {/* Mobile Bottom Navigation */}

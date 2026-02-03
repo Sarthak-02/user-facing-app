@@ -34,7 +34,7 @@ export default function BottomNav({navItems, setActiveNav}) {
             }`}
             onClick={() => handleNavClick(label, path)}
           >
-            <Icon size={20} />
+            <Icon size={20} color={isActive(path) ? "var(--color-primary-600)":"black" }/>
             <span>{label}</span>
           </button>
         );
