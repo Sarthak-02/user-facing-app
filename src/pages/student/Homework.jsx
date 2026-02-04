@@ -65,7 +65,6 @@ export default function Homework() {
   const subjects = useMemo(() => {
     const uniqueSubjects = [...new Set(homeworkData.map(hw => hw.subject))];
     return [
-      { value: "", label: "All Subjects" },
       ...uniqueSubjects.map(subject => ({ value: subject, label: subject })),
     ];
   }, [homeworkData]);
@@ -86,7 +85,7 @@ export default function Homework() {
 
     // Subject filter (client-side)
     if (subjectFilter) {
-      filtered = filtered.filter((hw) => hw.subject === subjectFilter);
+      filtered = filtered.filter((hw) => hw.subject === subjectFilter?.value);
     }
 
     // Sort by due date (earliest first)
