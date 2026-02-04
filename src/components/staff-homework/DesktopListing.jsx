@@ -14,7 +14,7 @@ function formatDate(date) {
 function StatusBadge({ status, dueDate }) {
   const now = new Date();
   const due = new Date(dueDate);
-  
+
   if (status === "DRAFT") {
     return <Badge variant="warning">Draft</Badge>;
   } else if (status === "COMPLETED") {
@@ -29,7 +29,7 @@ function StatusBadge({ status, dueDate }) {
 
 function AttachmentIndicator({ count }) {
   if (count === 0) return null;
-  
+
   return (
     <div className="flex items-center gap-1 text-gray-600">
       <svg
@@ -82,24 +82,20 @@ export default function DesktopListing({ homeworkList, onEdit, onPublish }) {
           {homeworkList.map((homework) => (
             <Card
               key={homework.id}
-              className="cursor-pointer hover:shadow-md transition-shadow duration-200 relative"
+              className="cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => handleCardClick(homework.id)}
             >
-              <div className="space-y-3">
-                {/* Header with Subject and Status */}
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 pr-2">
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      {homework.subject}
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mt-1 line-clamp-2">
-                      {homework.title}
-                    </h3>
-                  </div>
-                  <StatusBadge status={homework.status} dueDate={homework.dueDate} />
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">
+                    {homework.title}
+                  </h3>
+                  <p className="text-sm text-gray-600">{homework.subject}</p>
                 </div>
+                <StatusBadge status={homework.status} dueDate={homework.dueDate} />
+              </div>
 
-                {/* Class/Section */}
+              <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -116,88 +112,70 @@ export default function DesktopListing({ homeworkList, onEdit, onPublish }) {
                     />
                   </svg>
                   <span>
-                    {homework.class} - {homework.section}
+                    {homework.className}
+                    {homework.section && ` - ${homework.section}`}
                   </span>
                 </div>
 
-                {/* Submission Progress */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Submissions</span>
-                    <span className="font-medium text-gray-900">
-                      {homework.submissionCount} / {homework.totalStudents}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{
-                        width: `${(homework.submissionCount / homework.totalStudents) * 100}%`,
-                      }}
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
-                  </div>
+                  </svg>
+                  <span>Due: {formatDate(homework.dueDate)}</span>
                 </div>
 
-                {/* Footer with Due Date and Actions */}
-                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                      <span>Due: {formatDate(homework.dueDate)}</span>
-                    </div>
-                    <AttachmentIndicator count={homework.attachmentCount} />
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    {/* Publish Button (only for drafts) */}
-                    {homework.status === "DRAFT" && (
-                      <button
-                        onClick={(e) => handlePublishClick(e, homework)}
-                        className="px-3 py-1.5 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
-                        title="Publish homework"
-                      >
-                        Publish
-                      </button>
-                    )}
-                    
-                    {/* Edit Button */}
-                    <button
-                      onClick={(e) => handleEditClick(e, homework)}
-                      className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Edit homework"
+                {homework.assignedDate && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
-                    </button>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <span>Assigned: {formatDate(homework.assignedDate)}</span>
                   </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <AttachmentIndicator count={homework.attachments?.length || 0} />
                 </div>
               </div>
+
+              {homework.status === "DRAFT" && (
+                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200">
+                  <button
+                    onClick={(e) => handleEditClick(e, homework)}
+                    className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={(e) => handlePublishClick(e, homework)}
+                    className="flex-1 px-3 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                  >
+                    Publish
+                  </button>
+                </div>
+              )}
             </Card>
           ))}
         </div>
