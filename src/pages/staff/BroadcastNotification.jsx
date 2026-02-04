@@ -476,8 +476,8 @@ export default function BroadcastPage() {
 
       {/* Filter Modal (Mobile Only) */}
       {isFilterModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:hidden">
-          <div className="bg-white w-full rounded-t-2xl max-h-[90vh] flex flex-col animate-slide-up">
+        <div className="fixed inset-0 z-50 flex items-end md:hidden">
+          <div className="bg-white w-full rounded-t-2xl max-h-[90vh] flex flex-col animate-slide-up shadow-2xl">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">Filters</h2>

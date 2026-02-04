@@ -304,8 +304,8 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">
@@ -360,11 +360,11 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
           {showTargetModal && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
               <div
-                className="absolute inset-0 bg-black/40"
+                className="absolute inset-0"
                 onClick={() => setShowTargetModal(false)}
               />
 
-              <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+              <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
                 {/* Modal Header */}
                 <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-gray-900">Select Target</h3>

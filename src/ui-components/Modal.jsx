@@ -9,10 +9,10 @@ export default function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
         className={clsx(
-          "w-full max-w-md rounded-xl bg-surface p-4 shadow-lg",
+          "w-full max-w-md rounded-xl bg-surface p-4 shadow-2xl",
           className
         )}
       >
