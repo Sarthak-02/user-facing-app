@@ -14,16 +14,6 @@ function formatDate(date) {
   return formattedDate;
 }
 
-function formatDateTime(date) {
-  if (!date) return "";
-  return new Date(date).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function StatusBadge({ status, dueDate }) {
   const now = new Date();
@@ -56,6 +46,7 @@ export default function HomeworkDetail() {
       
       try {
         const data = await getHomeworkDetail(homeworkId);
+        
         setHomework(data);
       } catch (err) {
         console.error("Error fetching homework detail:", err);
@@ -74,10 +65,7 @@ export default function HomeworkDetail() {
     navigate("/staff/homework");
   };
 
-  const handleViewSubmissions = () => {
-    // TODO: Implement view submissions functionality
-    alert("View submissions functionality will be implemented");
-  };
+
 
   if (loading) {
     return (
@@ -119,7 +107,7 @@ export default function HomeworkDetail() {
       </div>
     );
   }
-
+ 
   return (
     <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6 pb-30 md:pb-6 overflow-y-auto">
       {/* Back Button */}
@@ -217,12 +205,12 @@ export default function HomeworkDetail() {
 
       {/* Attachments */}
       {homework.attachments && homework.attachments.length > 0 && (
-        <Card title="Attachments">
+        <Card title="Attachments" >
           <div className="space-y-2">
             {homework.attachments.map((attachment, index) => (
               <a
                 key={attachment.id || index}
-                href={attachment.url}
+                href={attachment.fileUrl}
                 className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -246,9 +234,9 @@ export default function HomeworkDetail() {
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">
-                      {attachment.name || attachment.filename}
+                      {attachment.fileName}
                     </div>
-                    <div className="text-xs text-gray-500">{attachment.size}</div>
+                    <div className="text-xs text-gray-500">{attachment.fileSize}</div>
                   </div>
                 </div>
                 <svg
@@ -303,14 +291,7 @@ export default function HomeworkDetail() {
         </Card>
       )}
 
-      {/* Actions */}
-      <Card>
-        <div className="flex flex-col md:flex-row gap-4">
-          <Button onClick={handleViewSubmissions} className="flex-1">
-            View Submissions
-          </Button>
-        </div>
-      </Card>
+      
     </div>
   );
 }

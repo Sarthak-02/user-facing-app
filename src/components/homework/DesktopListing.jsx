@@ -84,10 +84,10 @@ export default function DesktopListing({ homeworkList }) {
                       {homework.title}
                     </h3>
                   </div>
-                  <StatusBadge status={homework.status} dueDate={homework.dueDate} />
+                  
                 </div>
 
-                {/* Class/Section */}
+                {/* Assigned By */}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -100,11 +100,11 @@ export default function DesktopListing({ homeworkList }) {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
                   <span>
-                    {homework.class} - {homework.section}
+                  {homework.teacher?.teacher_name ?? "Unknown"}
                   </span>
                 </div>
 
@@ -125,9 +125,9 @@ export default function DesktopListing({ homeworkList }) {
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    <span>Due: {formatDate(homework.dueDate)}</span>
+                    <span>Due: {formatDate(homework.dueDate || homework.due_date)}</span>
                   </div>
-                  <AttachmentIndicator count={homework.attachmentCount} />
+                  <AttachmentIndicator count={homework.attachmentCount || homework.attachments?.length || 0} />
                 </div>
               </div>
             </Card>

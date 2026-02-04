@@ -15,7 +15,7 @@ export default function Card({
       onClick={onClick}
     >
       {title && (
-        <h3 className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+        <h3 className="mb-3 text-lg font-bold ">
           {title}
         </h3>
       )}

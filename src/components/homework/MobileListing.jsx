@@ -83,33 +83,29 @@ export default function MobileListing({ homeworkList }) {
                 </h3>
               </div>
 
-              {/* Status Badge */}
-              <div>
-                <StatusBadge status={homework.status} dueDate={homework.dueDate} />
-              </div>
-
+        
               {/* Details Grid */}
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
                 <div>
-                  <div className="text-xs text-gray-500">Class / Section</div>
+                  <div className="text-xs text-gray-500">Assigned By</div>
                   <div className="text-sm font-medium text-gray-900 mt-0.5">
-                    {homework.class} - {homework.section}
+                    {homework.teacher?.teacher_name ?? "Unknown"}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">Due Date</div>
                   <div className="text-sm font-medium text-gray-900 mt-0.5">
-                    {formatDate(homework.dueDate)}
+                    {formatDate(homework.dueDate || homework.due_date)}
                   </div>
                 </div>
               </div>
 
               {/* Attachments */}
-              {homework.attachmentCount > 0 && (
+              {(homework.attachmentCount || homework.attachments?.length) > 0 && (
                 <div className="flex items-center gap-1 text-sm text-gray-600 pt-2 border-t border-gray-100">
-                  <AttachmentIndicator count={homework.attachmentCount} />
+                  <AttachmentIndicator count={homework.attachmentCount || homework.attachments?.length || 0} />
                   <span className="ml-1">
-                    {homework.attachmentCount === 1 ? "attachment" : "attachments"}
+                    {(homework.attachmentCount || homework.attachments?.length) === 1 ? "attachment" : "attachments"}
                   </span>
                 </div>
               )}

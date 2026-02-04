@@ -213,12 +213,12 @@ export default function HomeworkDetail() {
 
       {/* Attachments */}
       {homework.attachments && homework.attachments.length > 0 && (
-        <Card title="Attachments">
+        <Card title="Attachments" >
           <div className="space-y-2">
-            {homework.attachments.map((attachment) => (
+            {homework.attachments.map((attachment, index) => (
               <a
-                key={attachment.id}
-                href={attachment.url}
+                key={attachment.id || index}
+                href={attachment.fileUrl}
                 className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -242,9 +242,9 @@ export default function HomeworkDetail() {
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">
-                      {attachment.name}
+                      {attachment.fileName}
                     </div>
-                    <div className="text-xs text-gray-500">{attachment.size}</div>
+                    <div className="text-xs text-gray-500">{attachment.fileSize}</div>
                   </div>
                 </div>
                 <svg
