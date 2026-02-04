@@ -2,7 +2,7 @@ export const CLASS_TARGET_SCHEMA = [
     {
         label: "Select Class",
         value: [],
-        multiple: true,
+        multi: true,
         type: "class",
         required: true,
         options: [],
@@ -17,7 +17,7 @@ export const SECTION_TARGET_SCHEMA = [
     {
         label: "Select Class",
         value: "",
-        multiple: false,
+        multi: false,
         type: "class",
         required: true,
         options: [],
@@ -29,7 +29,7 @@ export const SECTION_TARGET_SCHEMA = [
     {
         label: "Select Section",
         value: [],
-        multiple: true,
+        multi: true,
         type: "section",
         required: true,
         options: [],
@@ -44,7 +44,7 @@ export const STUDENT_TARGET_SCHEMA = [
     {
         label: "Select Class",
         value: "",
-        multiple: false,
+        multi: false,
         type: "class",
         required: true,
         options: [],
@@ -56,7 +56,7 @@ export const STUDENT_TARGET_SCHEMA = [
     {
         label: "Select Section",
         value: "",
-        multiple: false,
+        multi: false,
         type: "section",
         required: true,
         options: [],
@@ -68,7 +68,7 @@ export const STUDENT_TARGET_SCHEMA = [
     {
         label: "Select Student",
         value: [],
-        multiple: true,
+        multi: true,
         type: "student",
         required: true,
         options: [],

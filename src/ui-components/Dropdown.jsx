@@ -52,6 +52,32 @@ export default function Dropdown({
     o.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleSelectAll = () => {
+    const allSelected = filteredOptions.every((opt) =>
+      selected?.some((item) => item.value === opt.value)
+    );
+
+    if (allSelected) {
+      // Deselect all filtered options
+      const remainingSelected = selected?.filter(
+        (item) => !filteredOptions.some((opt) => opt.value === item.value)
+      ) || [];
+      onChange(remainingSelected);
+    } else {
+      // Select all filtered options
+      const newSelections = [...(selected || [])];
+      filteredOptions.forEach((opt) => {
+        if (!newSelections.some((item) => item.value === opt.value)) {
+          newSelections.push(opt);
+        }
+      });
+      onChange(newSelections);
+    }
+  };
+
+  const allFilteredSelected = multi && filteredOptions.length > 0 &&
+    filteredOptions.every((opt) => selected?.some((item) => item.value === opt.value));
+
   return (
     <div className={`${width} relative`} ref={ref}>
       {label && (
@@ -102,6 +128,21 @@ export default function Dropdown({
               className="w-full px-2 py-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
             />
           </div>
+
+          {/* Select All Option (multi-select only) */}
+          {multi && filteredOptions.length > 0 && (
+            <div
+              onClick={handleSelectAll}
+              className="px-3 py-2 cursor-pointer flex items-center justify-between hover:bg-gray-100 border-b bg-gray-50 font-medium text-sm"
+            >
+              <span className="text-blue-600">
+                {allFilteredSelected ? "Deselect All" : "Select All"}
+              </span>
+              {allFilteredSelected && (
+                <span className="text-blue-600 text-sm font-bold">✓</span>
+              )}
+            </div>
+          )}
 
           {/* Options */}
           {filteredOptions.length > 0 ? (
