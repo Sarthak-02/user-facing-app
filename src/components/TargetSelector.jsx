@@ -25,6 +25,7 @@ export default function TargetSelector({
         onChange={handleTargetTypeChange}
         options={TARGET_OPTIONS}
         placeholder="Select target type"
+        
       />
       <div className="space-y-4 h-[20rem]">
         {schema?.map((item) => (

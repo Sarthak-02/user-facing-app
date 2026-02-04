@@ -4,6 +4,7 @@ import TargetSelector from "../../components/TargetSelector";
 import { usePermissions } from "../../store/permissions.store";
 import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
+import { generateHomeworkAttachmentSignedUrl } from "../../api/homework.api";
 
 const TARGET_OPTIONS = [
   { value: "SECTION", label: "Section"},
@@ -36,10 +37,11 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
     status: "DRAFT", // DRAFT or PUBLISHED
   });
 
+  console.log("homework", homework);
   console.log("formData", formData);
   // Error state for attachments
   const [attachmentError, setAttachmentError] = useState("");
-
+  
   // Target selector modal state
   const [showTargetModal, setShowTargetModal] = useState(false);
 
@@ -62,7 +64,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
           label: class_name
         })),
         onChange: (option) => {
-          console.log("option", option);
+         
           setFormData((prev) => ({
             ...prev,
             classId: option,
@@ -123,6 +125,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
     prevHomeworkIdRef.current = currentHomeworkId;
 
     if (homework) {
+      console.log("Loading homework for editing:", homework);
       // Parse homework data for editing
       let targetType = { value: "SECTION", label: "Section" };
       let sectionId = null;
@@ -176,6 +179,19 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
       if (homework.subject) {
         subjectOption = { value: homework.subject, label: homework.subject };
       }
+      let attachments = [];
+      if(homework?.attachments && homework.attachments.length > 0) {
+        console.log("Raw attachments from API:", homework.attachments);
+        attachments = homework.attachments.map(attachment => ({
+          ...attachment,
+          // Handle multiple possible field names from API
+          name: attachment.name || attachment.fileName || attachment.filename || "Unnamed file",
+          type: attachment.type || attachment.fileType || attachment.mimeType || attachment.mime_type || "",
+          size: attachment.size || attachment.fileSize || attachment.file_size || 0,
+          fileUrl: attachment.fileUrl || attachment.url || attachment.file_url || "",
+        }));
+        console.log("Mapped attachments for form:", attachments);
+      }
 
       // Form initialization from external data is valid use case
       // eslint-disable-next-line
@@ -188,7 +204,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
         sectionId: sectionId,
         studentId: studentId,
         classId: classId,
-        attachments: [],
+        attachments: attachments,
         status: homework.status || "DRAFT",
       });
     } else {
@@ -214,7 +230,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
   };
 
   const setTargetType = (type) => {
-    console.log("type", type);
+   
     setFormData((prev) => ({
       ...prev,
       targetType: type,
@@ -227,7 +243,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
 
   
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
     setAttachmentError("");
 
@@ -245,11 +261,41 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
       setAttachmentError("Each file must be less than 10MB");
       return;
     }
+ 
+    // Upload each file
+    const uploadedAttachments = [];
+    for (const file of files) {
+      try {
+        const publicUrl = await generateHomeworkAttachmentSignedUrl({ 
+          file: file,
+          homework_id: homework?.id || homework?.homework_id,
+          file_name: file.name, 
+          mime_type: file.type 
+        });
+        
+        if (publicUrl) {
+          uploadedAttachments.push({
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            fileUrl: publicUrl
+          });
+        }
+      } catch (error) {
+        console.error('Error uploading file:', file.name, error);
+        setAttachmentError(`Failed to upload ${file.name}`);
+      }
+    }
 
-    setFormData((prev) => ({
-      ...prev,
-      attachments: [...prev.attachments, ...files],
-    }));
+    if (uploadedAttachments.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        attachments: [...prev.attachments, ...uploadedAttachments],
+      }));
+    }
+    
+    // Clear the input so the same file can be selected again if needed
+    e.target.value = '';
   };
 
   const handleRemoveAttachment = (index) => {
@@ -260,8 +306,27 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
     }));
   };
 
+  const handleDownloadAttachment = (file) => {
+    if (!file.fileUrl) {
+      console.error("No file URL available for download");
+      return;
+    }
+
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement('a');
+    link.href = file.fileUrl;
+    link.download = file.name || 'download';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    
+    // Append to body, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return "0 Bytes";
+    if (!bytes || bytes === 0) return "0 Bytes";
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -482,21 +547,68 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
             )}
 
             {/* Attachment list */}
-            {formData.attachments.length > 0 && (
+            {formData.attachments && formData.attachments.length > 0 && (
               <div className="mt-3 space-y-2">
+                <p className="text-xs text-gray-600 mb-2">
+                  {formData.attachments.length} file{formData.attachments.length > 1 ? 's' : ''} attached
+                </p>
                 {formData.attachments.map((file, index) => (
                   <div
-                    key={index}
-                    className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg"
+                    key={file.id || index}
+                    className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-700 truncate">{file.name}</p>
-                      <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadAttachment(file)}
+                      disabled={!file.fileUrl}
+                      className="flex-1 min-w-0 flex items-center gap-3 text-left disabled:cursor-not-allowed"
+                    >
+                      {/* File icon */}
+                      <div className="flex-shrink-0 w-8 h-8 rounded bg-blue-100 flex items-center justify-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 text-blue-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                      {/* File info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-700 truncate font-medium">{file.name || "Unnamed file"}</p>
+                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                      </div>
+                      {/* Download icon - only show if file has URL */}
+                      {file.fileUrl && (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 text-gray-400 flex-shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                    {/* Remove button */}
                     <button
                       type="button"
                       onClick={() => handleRemoveAttachment(index)}
-                      className="ml-3 text-red-500 hover:text-red-700 flex-shrink-0"
+                      className="ml-3 text-red-500 hover:text-red-700 flex-shrink-0 p-1"
+                      title="Remove attachment"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

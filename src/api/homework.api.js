@@ -1,5 +1,5 @@
 import api from "./axios";
-
+import axios from "axios";
 /**
  * Fetch all homework assignments for the logged-in student
  * @returns {Promise<Array>} Array of homework assignments
@@ -285,5 +285,45 @@ export async function gradeHomeworkSubmission(homeworkId, submissionId, gradeDat
   } catch (err) {
     console.error("Error grading homework submission:", err.response?.data);
     throw err.response?.data || err;
+  }
+}
+
+
+export async function generateHomeworkAttachmentSignedUrl(data) {
+  const { file, ...payload } = data;
+
+  console.log("payload", payload);
+  try {
+    // 1️⃣ Get signed URL from backend
+    const resp = await api.post("/homework/attachment/upload-url", payload);
+
+    const { uploadUrl, publicUrl } = resp?.data?.data || {};
+    if (!uploadUrl || !publicUrl) {
+      throw new Error("Failed to generate signed URL");
+    }
+
+    // 2️⃣ Upload image directly to GCS
+    await uploadImage(uploadUrl, file);
+
+    // 3️⃣ Return optimized image URLs
+    return publicUrl;
+  } catch (err) {
+    console.error("Image upload failed:", err);
+    throw err;
+  }
+}
+
+export async function uploadImage(uploadUrl, file) {
+  try {
+    await axios.put(uploadUrl, file, {
+      headers: {
+        "Content-Type": file.type,
+      },
+    });
+
+    return true;
+  } catch (err) {
+    console.error("GCS upload failed:", err);
+    throw err;
   }
 }

@@ -4,7 +4,7 @@ import DesktopListing from "../../components/staff-homework/DesktopListing";
 import MobileListing from "../../components/staff-homework/MobileListing";
 import HomeworkFormModal from "../../components/staff-homework/HomeworkFormModal";
 import Dropdown from "../../ui-components/Dropdown";
-import { createHomework, getTeacherHomeworkAll } from "../../api/homework.api";
+import { createHomework, getHomeworkDetail, getTeacherHomeworkAll } from "../../api/homework.api";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
 
@@ -139,7 +139,6 @@ export default function TeacherHomework() {
   const handleEditHomework = async (homework) => {
     try {
       // Fetch full homework details including targets
-      const { getHomeworkDetail } = await import("../../api/homework.api");
       const homeworkId = homework.id || homework.homework_id;
       const fullHomeworkDetails = await getHomeworkDetail(homeworkId);
       setEditingHomework(fullHomeworkDetails);
@@ -197,7 +196,7 @@ export default function TeacherHomework() {
           fileName: file.name,
           fileType: file.type,
           fileSize: file.size,
-          fileUrl: "" // TODO: Upload file first and get URL
+          fileUrl: file?.fileUrl ?? ""
         }));
 
         // Prepare API payload for update
@@ -252,7 +251,7 @@ export default function TeacherHomework() {
           fileName: file.name,
           fileType: file.type,
           fileSize: file.size,
-          fileUrl: "" // TODO: Upload file first and get URL
+          fileUrl: file?.fileUrl 
         }));
 
         // Prepare API payload
