@@ -116,7 +116,14 @@ export default function EnterMarks() {
     loadData();
   }, [examDetail]);
 
-  const handleMarkChange = (studentId, subjectId, value) => {
+  const handleMarkChange = useCallback((studentId, subjectId, value) => {
+    // For numeric grading types, prevent negative numbers
+    if (exam?.gradingType === "PERCENTAGE" || exam?.gradingType === "GPA") {
+      if (value !== "" && Number(value) < 0) {
+        return; // Don't update if negative
+      }
+    }
+    
     setMarksData((prev) => ({
       ...prev,
       [studentId]: {
@@ -127,7 +134,7 @@ export default function EnterMarks() {
         },
       },
     }));
-  };
+  }, [exam?.gradingType]);
 
   const validateSubjectMarks = useCallback((subjectId) => {
     const errors = [];
@@ -228,25 +235,6 @@ export default function EnterMarks() {
     student.rollNumber?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Calculate completion percentage
-  const getCompletionPercentage = () => {
-    if (!exam || students.length === 0) return 0;
-    
-    let totalFields = 0;
-    let filledFields = 0;
-
-    students.forEach((student) => {
-      exam.subjects.forEach((subject) => {
-        totalFields++;
-        if (marksData[student.id]?.[subject.subjectId]?.value) {
-          filledFields++;
-        }
-      });
-    });
-
-    return Math.round((filledFields / totalFields) * 100);
-  };
-
   // Calculate completion percentage for a specific subject
   const getSubjectCompletionPercentage = useCallback((subjectId) => {
     if (!exam || students.length === 0) return 0;
@@ -345,6 +333,11 @@ export default function EnterMarks() {
                 onChange={(e) =>
                   handleMarkChange(student.id, subject.subjectId, e.target.value)
                 }
+                onKeyDown={(e) => {
+                  if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                  }
+                }}
                 className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                 placeholder={`/${exam.maxValue}`}
                 min="0"
@@ -360,6 +353,11 @@ export default function EnterMarks() {
                 onChange={(e) =>
                   handleMarkChange(student.id, subject.subjectId, e.target.value)
                 }
+                onKeyDown={(e) => {
+                  if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                  }
+                }}
                 className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                 placeholder={`/${exam.maxValue}`}
                 min="0"
@@ -401,7 +399,7 @@ export default function EnterMarks() {
         ),
       },
     ];
-  }, [exam, selectedSubject, marksData, submittedSubjects, isSubmitting, getSubjectCompletionPercentage, isSubjectComplete, handleSubmitSubject]);
+  }, [exam, selectedSubject, marksData, submittedSubjects, isSubmitting, getSubjectCompletionPercentage, isSubjectComplete, handleSubmitSubject, handleMarkChange]);
 
 
   if (loading) {
@@ -474,38 +472,6 @@ export default function EnterMarks() {
             </p>
           </div>
         </div>
-
-        {/* Progress Card */}
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Completion Progress</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {getCompletionPercentage()}%
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Students</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{students.length}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Subjects</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {exam.subjects?.length || 0}
-              </p>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${getCompletionPercentage()}%` }}
-              />
-            </div>
-          </div>
-        </Card>
 
         {/* Filters */}
         <Card className="mt-4">
@@ -602,12 +568,12 @@ export default function EnterMarks() {
       </div>
 
       {/* Desktop: Table View */}
-      <div className="hidden md:block  pb-20">
+      <div className="hidden md:block pb-20">
         <Table columns={tableColumns} data={filteredStudents} maxHeight="50vh" />
       </div>
 
       {/* Mobile: Card View */}
-      <div className="md:hidden flex-1 overflow-y-auto min-h-0 pb-30">
+      <div className="md:hidden flex-1 overflow-y-auto min-h-0 pb-32">
         <div className="space-y-4">
           {filteredStudents.map((student) => (
             <Card key={student.id}>
@@ -655,6 +621,11 @@ export default function EnterMarks() {
                           onChange={(e) =>
                             handleMarkChange(student.id, subject.subjectId, e.target.value)
                           }
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                              e.preventDefault();
+                            }
+                          }}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder={`Marks (out of ${exam.maxValue})`}
                           min="0"
@@ -670,6 +641,11 @@ export default function EnterMarks() {
                           onChange={(e) =>
                             handleMarkChange(student.id, subject.subjectId, e.target.value)
                           }
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                              e.preventDefault();
+                            }
+                          }}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder={`GPA (out of ${exam.maxValue})`}
                           min="0"
@@ -716,12 +692,71 @@ export default function EnterMarks() {
         </div>
       </div>
 
-      {/* Submit Button - Fixed at bottom for mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg z-10">
+      {/* Desktop: Inline progress & submit */}
+      <div className="hidden md:block pb-12">
+        {/* Progress Indicator */}
+        <div className="mb-4 max-w-2xl mx-auto">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-500">
+              Progress - {exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || 'Subject'}
+            </span>
+            <span className="text-sm font-medium text-gray-700">
+              {getSubjectCompletionPercentage(selectedSubject)}% Complete ({students.filter(s => marksData[s.id]?.[selectedSubject]?.value).length} / {students.length} students)
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
+              style={{
+                width: `${getSubjectCompletionPercentage(selectedSubject)}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex justify-center">
+          <Button
+            onClick={() => handleSubmitSubject(selectedSubject)}
+            disabled={!isSubjectComplete(selectedSubject) || isSubmitting}
+            className="w-full max-w-md"
+          >
+            {submittedSubjects.has(selectedSubject) 
+              ? "Submitted ✓" 
+              : isSubmitting 
+              ? "Submitting..." 
+              : `Submit ${exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || 'Marks'}`}
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile: Fixed bottom bar with progress & submit */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-200 p-3 sm:p-4 shadow-lg">
+        {/* Progress Indicator */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs sm:text-sm text-gray-500">
+              {exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || 'Subject'}
+            </span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700">
+              {getSubjectCompletionPercentage(selectedSubject)}% ({students.filter(s => marksData[s.id]?.[selectedSubject]?.value).length}/{students.length})
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
+              style={{
+                width: `${getSubjectCompletionPercentage(selectedSubject)}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Submit Button */}
         <Button
           onClick={() => handleSubmitSubject(selectedSubject)}
           disabled={!isSubjectComplete(selectedSubject) || isSubmitting}
-          className="w-full"
+          className="w-full max-w-md"
         >
           {submittedSubjects.has(selectedSubject) 
             ? "Submitted ✓" 

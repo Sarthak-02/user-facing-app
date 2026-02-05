@@ -197,8 +197,8 @@ export default function ExamDetail() {
               <StatusBadge status={exam.status} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">Target</p>
                 <p className="text-base font-semibold text-gray-900">
                   {exam.class}
@@ -206,14 +206,14 @@ export default function ExamDetail() {
                 </p>
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className=" bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">Subjects</p>
                 <p className="text-base font-semibold text-gray-900">
                   {exam.subjects?.length || 0} subject(s)
                 </p>
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">Date Range</p>
                 <p className="text-base font-semibold text-gray-900">
                   {exam.startDate && exam.endDate
@@ -235,7 +235,7 @@ export default function ExamDetail() {
                 key={index}
                 className="p-4 border border-gray-200 rounded-lg bg-gray-50"
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
                   <div>
                     <p className="text-xs text-gray-600 mb-1">Subject</p>
                     <p className="text-sm font-semibold text-gray-900">
@@ -276,9 +276,9 @@ export default function ExamDetail() {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Grading Configuration
         </h3>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-gray-50 rounded-lg">
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Grading Type</p>
               <p className="text-base font-semibold text-gray-900">
                 {getGradingTypeLabel(exam.gradingType)}
@@ -287,14 +287,14 @@ export default function ExamDetail() {
 
             {exam.gradingType !== "PASS_FAIL" && (
               <>
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Maximum Marks</p>
                   <p className="text-base font-semibold text-gray-900">
                     {exam.maxMarks || "N/A"}
                   </p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Passing Marks</p>
                   <p className="text-base font-semibold text-gray-900">
                     {exam.passingMarks || "N/A"}
