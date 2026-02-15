@@ -65,7 +65,7 @@ export default function Header() {
       <div className="flex items-center gap-2">
         {sections.length === 1 ? (
           <span className="text-sm md:text-base font-medium">
-            {sections[0].name || sections[0].section_name || "Section"}
+            {sections[0].label || sections[0].label || "Section"}
           </span>
         ) : sections.length > 1 ? (
           <select
