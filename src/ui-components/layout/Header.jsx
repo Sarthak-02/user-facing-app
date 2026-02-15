@@ -1,7 +1,8 @@
-import { Bell, LogOut, User, Phone, Mail, GraduationCap, UserCircle } from "lucide-react";
+import { LogOut, User, Phone, Mail, GraduationCap, UserCircle } from "lucide-react";
 import { useAuth } from "../../store/auth.store";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import NotificationDropdown from "../../components/NotificationDropdown";
 
 export default function Header() {
   const auth = useAuth((state) => state.auth);
@@ -94,16 +95,7 @@ export default function Header() {
       {/* Right: Actions */}
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <button className="relative">
-          <Bell size={20} />
-          <span
-            className="
-              absolute -top-1 -right-1
-              h-2 w-2 rounded-full
-              bg-red-500
-            "
-          />
-        </button>
+        <NotificationDropdown />
 
         {/* Profile */}
         <div className="relative" ref={dropdownRef}>
