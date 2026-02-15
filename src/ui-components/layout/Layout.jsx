@@ -25,6 +25,7 @@ export default function Layout() {
         ...baseNavItems,
         { label: "Attendance", icon: ClipboardCheck, path: "/student/attendance" },
         { label: "Homework", icon: BookOpen, path: "/student/homework" },
+        { label: "Exams", icon: FileText, path: "/student/exams" },
         { label: "Alerts", icon: Bell, path: "/alerts" },
       ];
     } else if (userRole === "teacher" || userRole === "staff") {

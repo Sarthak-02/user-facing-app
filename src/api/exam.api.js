@@ -375,7 +375,7 @@ export async function completeExam(examId) {
  */
 export async function getStudentExamsAll(params) {
   try {
-    const response = await api.get("/exams/student/all", { params });
+    const response = await api.get("/exam/student/all", { params });
     return response.data;
   } catch (err) {
     console.error("Error fetching student exams:", err.response?.data);
@@ -395,6 +395,28 @@ export async function getStudentExamMarks(examId, studentId) {
     return response.data;
   } catch (err) {
     console.error("Error fetching student exam marks:", err.response?.data);
+    throw err.response?.data || err;
+  }
+}
+
+/**
+ * Get complete exam details for a specific student including marks and statistics
+ * This is a comprehensive endpoint that returns exam info, subjects, marks, and statistics in one call
+ * @param {string} examId - The ID of the exam
+ * @param {string} studentId - The ID of the student
+ * @returns {Promise<Object>} Complete exam details with marks and statistics
+ */
+export async function getStudentExamDetail(examId, studentId) {
+  try {
+    const response = await api.get("/exam/student/details", {
+      params: {
+        exam_id: examId,
+        student_id: studentId
+      }
+    });
+    return response.data;
+  } catch (err) {
+    console.error("Error fetching student exam detail:", err.response?.data);
     throw err.response?.data || err;
   }
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Badge } from "../../ui-components";
-import { getExamDetail, getStudentExamMarks } from "../../api/exam.api";
+import { getStudentExamDetail } from "../../api/exam.api";
 import { useAuth } from "../../store/auth.store";
 import Loader from "../../ui-components/Loader";
 
@@ -52,16 +52,16 @@ function getGradingTypeLabel(type) {
   return labels[type] || type;
 }
 
-function MarksCard({ subject, marks, gradingType, maxValue, passingValue }) {
-  const hasMarks = marks && marks.value !== null && marks.value !== undefined && marks.value !== "";
+function MarksCard({ subject, gradingType, maxValue, passingValue }) {
+  const hasMarks = subject.is_graded && subject.grades_obtained !== null && subject.grades_obtained !== undefined;
   
   // Determine if passed (for percentage and GPA)
   let isPassing = null;
   if (hasMarks && passingValue) {
     if (gradingType === "PERCENTAGE" || gradingType === "GPA") {
-      isPassing = Number(marks.value) >= Number(passingValue);
+      isPassing = Number(subject.grades_obtained) >= Number(passingValue);
     } else if (gradingType === "PASS_FAIL") {
-      isPassing = marks.value === "PASS";
+      isPassing = subject.grades_obtained === "PASS";
     }
   }
 
@@ -69,7 +69,7 @@ function MarksCard({ subject, marks, gradingType, maxValue, passingValue }) {
     <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <h4 className="text-base font-semibold text-gray-900">{subject.subjectName}</h4>
+          <h4 className="text-base font-semibold text-gray-900">{subject.subject_name}</h4>
           <div className="flex items-center gap-2 mt-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -85,7 +85,7 @@ function MarksCard({ subject, marks, gradingType, maxValue, passingValue }) {
                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
-            <span className="text-sm text-gray-600">{formatDate(subject.examDate)}</span>
+            <span className="text-sm text-gray-600">{formatDate(subject.exam_date)}</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
             <svg
@@ -103,7 +103,7 @@ function MarksCard({ subject, marks, gradingType, maxValue, passingValue }) {
               />
             </svg>
             <span className="text-sm text-gray-600">
-              {formatTime(subject.startTime)} - {formatTime(subject.endTime)}
+              {formatTime(subject.exam_start_time)} - {formatTime(subject.exam_end_time)}
             </span>
           </div>
         </div>
@@ -111,7 +111,7 @@ function MarksCard({ subject, marks, gradingType, maxValue, passingValue }) {
         {hasMarks && (
           <div className="text-right">
             <div className="text-2xl font-bold text-gray-900">
-              {marks.value}
+              {subject.grades_obtained}
               {(gradingType === "PERCENTAGE" || gradingType === "GPA") && maxValue && (
                 <span className="text-base text-gray-500 ml-1">/ {maxValue}</span>
               )}
@@ -145,10 +145,10 @@ function MarksCard({ subject, marks, gradingType, maxValue, passingValue }) {
         </div>
       )}
 
-      {hasMarks && marks.remarks && (
+      {hasMarks && subject.remarks && (
         <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-100">
           <p className="text-xs font-medium text-blue-900 mb-1">Teacher's Remarks</p>
-          <p className="text-sm text-blue-800">{marks.remarks}</p>
+          <p className="text-sm text-blue-800">{subject.remarks}</p>
         </div>
       )}
     </div>
@@ -160,8 +160,7 @@ export default function StudentExamDetail() {
   const navigate = useNavigate();
   const { auth } = useAuth();
 
-  const [exam, setExam] = useState(null);
-  const [studentMarks, setStudentMarks] = useState(null);
+  const [examData, setExamData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -173,18 +172,13 @@ export default function StudentExamDetail() {
       setError(null);
 
       try {
-        // Fetch exam details
-        const examData = await getExamDetail(examId);
-        setExam(examData);
-
-        // Fetch student's marks for this exam
-        try {
-          const marksData = await getStudentExamMarks(examId, auth.userId);
-          setStudentMarks(marksData);
-        } catch (marksErr) {
-          console.log("Marks not available yet:", marksErr);
-          // It's okay if marks aren't available yet
-          setStudentMarks(null);
+        // Fetch complete exam details with marks using the new comprehensive API
+        const response = await getStudentExamDetail(examId, auth.userId);
+        
+        if (response.success && response.data) {
+          setExamData(response.data);
+        } else {
+          setError("Failed to load exam details");
         }
       } catch (err) {
         console.error("Error fetching exam detail:", err);
@@ -203,43 +197,47 @@ export default function StudentExamDetail() {
     navigate("/student/exams");
   };
 
-  // Calculate overall statistics
+  // Calculate overall statistics from the response data
   const calculateStats = () => {
-    if (!exam || !studentMarks || !studentMarks.marks) {
+    if (!examData || !examData.subjects || !examData.exam) {
       return null;
     }
 
-    const marks = studentMarks.marks;
-    const subjects = exam.subjects || [];
+    const { subjects, exam, statistics } = examData;
     
-    let totalMarks = 0;
-    let obtainedMarks = 0;
-    let marksCount = 0;
-
-    subjects.forEach((subject) => {
-      const mark = marks[subject.subjectId];
-      if (mark && mark.value !== null && mark.value !== undefined && mark.value !== "") {
-        marksCount++;
-        if (exam.gradingType === "PERCENTAGE" || exam.gradingType === "GPA") {
-          obtainedMarks += Number(mark.value);
-          totalMarks += Number(exam.maxValue || 100);
+    // Use statistics from API if available
+    if (statistics) {
+      let totalMarks = 0;
+      let obtainedMarks = 0;
+      
+      // Calculate total and obtained marks from graded subjects
+      subjects.forEach((subject) => {
+        if (subject.is_graded && subject.grades_obtained) {
+          if (exam.grading_type === "PERCENTAGE" || exam.grading_type === "GPA") {
+            obtainedMarks += Number(subject.grades_obtained);
+            totalMarks += Number(exam.grading_extras?.max_value || 100);
+          }
         }
-      }
-    });
+      });
 
-    if (marksCount === 0) return null;
+      if (statistics.graded_subjects === 0) return null;
 
-    const percentage = totalMarks > 0 ? ((obtainedMarks / totalMarks) * 100).toFixed(2) : 0;
-    const isPassing = exam.passingValue ? obtainedMarks >= Number(exam.passingValue) * marksCount : null;
+      const percentage = totalMarks > 0 ? ((obtainedMarks / totalMarks) * 100).toFixed(2) : 0;
+      const passingValue = exam.grading_extras?.passing_value;
+      const isPassing = passingValue ? obtainedMarks >= Number(passingValue) * statistics.graded_subjects : null;
 
-    return {
-      totalMarks,
-      obtainedMarks,
-      percentage,
-      isPassing,
-      marksCount,
-      totalSubjects: subjects.length,
-    };
+      return {
+        totalMarks,
+        obtainedMarks,
+        percentage,
+        isPassing,
+        gradedSubjects: statistics.graded_subjects,
+        totalSubjects: statistics.total_subjects,
+        completionPercentage: statistics.completion_percentage,
+      };
+    }
+
+    return null;
   };
 
   const stats = calculateStats();
@@ -252,7 +250,7 @@ export default function StudentExamDetail() {
     );
   }
 
-  if (error || !exam) {
+  if (error || !examData || !examData.exam) {
     return (
       <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6">
         <Card>
@@ -286,6 +284,8 @@ export default function StudentExamDetail() {
       </div>
     );
   }
+
+  const { exam, subjects, statistics } = examData;
 
   return (
     <div className="h-screen flex flex-col p-4 gap-6 overflow-hidden">
@@ -321,10 +321,10 @@ export default function StudentExamDetail() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  {getExamTypeLabel(exam.examType)}
+                  {getExamTypeLabel(exam.exam_type)}
                 </h2>
-                {exam.customExamType && (
-                  <p className="text-sm text-gray-600 mt-1">{exam.customExamType}</p>
+                {exam.custom_exam_type && (
+                  <p className="text-sm text-gray-600 mt-1">{exam.custom_exam_type}</p>
                 )}
               </div>
               <StatusBadge status={exam.status} />
@@ -332,33 +332,34 @@ export default function StudentExamDetail() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Class</p>
+                <p className="text-sm text-gray-600 mb-1">Grading Type</p>
                 <p className="text-base font-semibold text-gray-900">
-                  {exam.class}
-                  {exam.section && ` - ${exam.section}`}
+                  {getGradingTypeLabel(exam.grading_type)}
                 </p>
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Grading</p>
-                <p className="text-base font-semibold text-gray-900">
-                  {getGradingTypeLabel(exam.gradingType)}
-                </p>
-              </div>
+              {exam.grading_extras?.max_value && (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Maximum Marks</p>
+                  <p className="text-base font-semibold text-gray-900">
+                    {exam.grading_extras.max_value}
+                  </p>
+                </div>
+              )}
 
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Date Range</p>
-                <p className="text-base font-semibold text-gray-900">
-                  {exam.startDate && exam.endDate
-                    ? `${formatDate(exam.startDate)}`
-                    : "Not scheduled"}
-                </p>
-              </div>
+              {exam.grading_extras?.passing_value && (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Passing Marks</p>
+                  <p className="text-base font-semibold text-gray-900">
+                    {exam.grading_extras.passing_value}
+                  </p>
+                </div>
+              )}
 
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">Subjects</p>
                 <p className="text-base font-semibold text-gray-900">
-                  {exam.subjects?.length || 0} subject(s)
+                  {subjects?.length || 0} subject(s)
                 </p>
               </div>
             </div>
@@ -366,7 +367,7 @@ export default function StudentExamDetail() {
         </Card>
 
         {/* Overall Performance Card - Only show if marks are available */}
-        {stats && exam.status === "COMPLETED" && (
+        {stats && statistics?.graded_subjects > 0 && (
           <Card>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Overall Performance</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -385,7 +386,7 @@ export default function StudentExamDetail() {
               <div className="p-4 bg-purple-50 rounded-lg border border-purple-100">
                 <p className="text-sm text-purple-600 mb-1">Progress</p>
                 <p className="text-2xl font-bold text-purple-900">
-                  {stats.marksCount} / {stats.totalSubjects}
+                  {stats.gradedSubjects} / {stats.totalSubjects}
                 </p>
               </div>
 
@@ -405,15 +406,14 @@ export default function StudentExamDetail() {
         <Card>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Subject-wise Marks</h3>
           <div className="space-y-3">
-            {exam.subjects && exam.subjects.length > 0 ? (
-              exam.subjects.map((subject) => (
+            {subjects && subjects.length > 0 ? (
+              subjects.map((subject) => (
                 <MarksCard
-                  key={subject.subjectId}
+                  key={subject.subject_id}
                   subject={subject}
-                  marks={studentMarks?.marks?.[subject.subjectId] || null}
-                  gradingType={exam.gradingType}
-                  maxValue={exam.maxValue}
-                  passingValue={exam.passingValue}
+                  gradingType={exam.grading_type}
+                  maxValue={exam.grading_extras?.max_value}
+                  passingValue={exam.grading_extras?.passing_value}
                 />
               ))
             ) : (
@@ -422,8 +422,8 @@ export default function StudentExamDetail() {
           </div>
         </Card>
 
-        {/* Info message if exam is not completed yet */}
-        {exam.status === "PUBLISHED" && (
+        {/* Info message if exam is not completed yet or no marks available */}
+        {exam.status === "PUBLISHED" && statistics?.graded_subjects === 0 && (
           <Card>
             <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
               <svg
