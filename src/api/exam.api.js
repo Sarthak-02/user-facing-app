@@ -329,6 +329,23 @@ export async function bulkSubmitExamMarks(grades) {
 }
 
 /**
+ * Fetch all grades for a specific exam
+ * @param {string} examId - The ID of the exam
+ * @returns {Promise<Object>} Exam grades with all subjects and their student grades
+ */
+export async function getExamGradesAll(examId) {
+  try {
+    const response = await api.get('/exam/grades/all', {
+      params: { exam_id: examId }
+    });
+    return response.data;
+  } catch (err) {
+    console.error("Error fetching exam grades:", err.response?.data);
+    throw err.response?.data || err;
+  }
+}
+
+/**
  * Update exam status to completed
  * @param {string} examId - The ID of the exam
  * @returns {Promise<Object>} Updated exam object

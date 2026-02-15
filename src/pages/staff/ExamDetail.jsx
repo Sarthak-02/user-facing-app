@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Badge, Button } from "../../ui-components";
-import { getExamDetail, getExamStudents } from "../../api/exam.api";
+import { getExamDetail, getExamStudents, getExamGradesAll } from "../../api/exam.api";
 import { usePermissions } from "../../store/permissions.store";
 import { useExamDetail } from "../../store/examDetail.store";
 import Loader from "../../ui-components/Loader";
@@ -65,6 +65,7 @@ export default function ExamDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [fetchingStudents, setFetchingStudents] = useState(false);
+  const [allSubjectsGraded, setAllSubjectsGraded] = useState(false);
 
   useEffect(() => {
     const fetchExamDetail = async () => {
@@ -76,6 +77,21 @@ export default function ExamDetail() {
         setExam(data);
         // Store exam detail in the store
         setExamDetail(data);
+
+        // Fetch grades to check if all subjects are graded
+        try {
+          const gradesResponse = await getExamGradesAll(examId);
+          if (gradesResponse.success && gradesResponse.data?.subjects) {
+            const subjects = gradesResponse.data.subjects;
+            // Check if all subjects have grades marked
+            const allGraded = subjects.length > 0 && subjects.every(subject => subject.has_grades_marked === true);
+            setAllSubjectsGraded(allGraded);
+          }
+        } catch (gradesError) {
+          console.error("Error fetching grades status:", gradesError);
+          // Don't block if grades fetch fails
+          setAllSubjectsGraded(false);
+        }
       } catch (err) {
         console.error("Error fetching exam detail:", err);
         setError(err.message || "Failed to load exam details. Please try again.");
@@ -93,10 +109,10 @@ export default function ExamDetail() {
     navigate("/staff/exams");
   };
 
-  const handleViewResults = () => {
-    // TODO: Implement view results functionality
-    alert("View results functionality will be implemented");
-  };
+  // const handleViewResults = () => {
+  //   // TODO: Implement view results functionality
+  //   alert("View results functionality will be implemented");
+  // };
 
   const handleEnterMarks = async () => {
     try {
@@ -356,6 +372,24 @@ export default function ExamDetail() {
                   </svg>
                   Loading Students...
                 </>
+              ) : allSubjectsGraded ? (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                  View Results
+                </>
               ) : (
                 <>
                   <svg
@@ -372,11 +406,11 @@ export default function ExamDetail() {
                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                     />
                   </svg>
-                  {exam.status === "COMPLETED" ? "View/Edit Marks" : "Enter Marks"}
+                  Enter Marks
                 </>
               )}
             </Button>
-            <Button onClick={handleViewResults} variant="secondary" className="flex-1">
+            {/* <Button onClick={handleViewResults} variant="secondary" className="flex-1">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5 mr-2"
@@ -392,7 +426,7 @@ export default function ExamDetail() {
                 />
               </svg>
               View Results
-            </Button>
+            </Button> */}
           </div>
         </Card>
       )}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Button, Table } from "../../ui-components";
-import { bulkSubmitExamMarks } from "../../api/exam.api";
+import { bulkSubmitExamMarks, getExamGradesAll } from "../../api/exam.api";
 import { useExamDetail } from "../../store/examDetail.store";
 import { usePermissions } from "../../store/permissions.store";
 import Loader from "../../ui-components/Loader";
@@ -58,7 +58,7 @@ export default function EnterMarks() {
   const [selectedSubject, setSelectedSubject] = useState("");
 
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       setLoading(true);
       setError(null);
 
@@ -103,8 +103,47 @@ export default function EnterMarks() {
             };
           });
         });
-        setMarksData(initialMarks);
 
+        // Fetch existing grades from API
+        try {
+          const gradesResponse = await getExamGradesAll(examId);
+          
+          if (gradesResponse.success && gradesResponse.data) {
+            const apiData = gradesResponse.data;
+            const submittedSubjectIds = new Set();
+            
+            // Process each subject and its grades
+            if (apiData.subjects && Array.isArray(apiData.subjects)) {
+              apiData.subjects.forEach(subject => {
+                // Track subjects that have grades marked
+                if (subject.has_grades_marked) {
+                  submittedSubjectIds.add(subject.subject_id);
+                }
+                
+                // Pre-populate marks for students who have grades
+                if (subject.grades && Array.isArray(subject.grades)) {
+                  subject.grades.forEach(grade => {
+                    if (initialMarks[grade.student_id] && initialMarks[grade.student_id][subject.subject_id]) {
+                      initialMarks[grade.student_id][subject.subject_id] = {
+                        value: grade.grades_obtained || "",
+                        remarks: grade.remarks || "",
+                      };
+                    }
+                  });
+                }
+              });
+            }
+            
+            // Update submitted subjects set
+            setSubmittedSubjects(submittedSubjectIds);
+          }
+        } catch (gradesError) {
+          console.error("Error fetching existing grades:", gradesError);
+          // Don't block loading if grades fetch fails, just log the error
+          // User can still enter new marks
+        }
+
+        setMarksData(initialMarks);
         setLoading(false);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -114,7 +153,7 @@ export default function EnterMarks() {
     };
 
     loadData();
-  }, [examDetail]);
+  }, [examDetail, examId]);
 
   const handleMarkChange = useCallback((studentId, subjectId, value) => {
     // For numeric grading types, prevent negative numbers
@@ -338,7 +377,10 @@ export default function EnterMarks() {
                     e.preventDefault();
                   }
                 }}
-                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                disabled={submittedSubjects.has(subject.subjectId)}
+                className={`w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center ${
+                  submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
                 placeholder={`/${exam.maxValue}`}
                 min="0"
                 max={exam.maxValue}
@@ -358,7 +400,10 @@ export default function EnterMarks() {
                     e.preventDefault();
                   }
                 }}
-                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                disabled={submittedSubjects.has(subject.subjectId)}
+                className={`w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center ${
+                  submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
                 placeholder={`/${exam.maxValue}`}
                 min="0"
                 max={exam.maxValue}
@@ -371,7 +416,10 @@ export default function EnterMarks() {
                 onChange={(e) =>
                   handleMarkChange(student.id, subject.subjectId, e.target.value)
                 }
-                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                disabled={submittedSubjects.has(subject.subjectId)}
+                className={`w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center ${
+                  submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
               >
                 <option value="">--</option>
                 {LETTER_GRADES.map((grade) => (
@@ -388,7 +436,10 @@ export default function EnterMarks() {
                 onChange={(e) =>
                   handleMarkChange(student.id, subject.subjectId, e.target.value)
                 }
-                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                disabled={submittedSubjects.has(subject.subjectId)}
+                className={`w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center ${
+                  submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
               >
                 <option value="">--</option>
                 <option value="PASS">Pass</option>
@@ -626,7 +677,10 @@ export default function EnterMarks() {
                               e.preventDefault();
                             }
                           }}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          disabled={submittedSubjects.has(subject.subjectId)}
+                          className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                          }`}
                           placeholder={`Marks (out of ${exam.maxValue})`}
                           min="0"
                           max={exam.maxValue}
@@ -646,7 +700,10 @@ export default function EnterMarks() {
                               e.preventDefault();
                             }
                           }}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          disabled={submittedSubjects.has(subject.subjectId)}
+                          className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                          }`}
                           placeholder={`GPA (out of ${exam.maxValue})`}
                           min="0"
                           max={exam.maxValue}
@@ -659,7 +716,10 @@ export default function EnterMarks() {
                           onChange={(e) =>
                             handleMarkChange(student.id, subject.subjectId, e.target.value)
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          disabled={submittedSubjects.has(subject.subjectId)}
+                          className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                          }`}
                         >
                           <option value="">Select Grade</option>
                           {LETTER_GRADES.map((grade) => (
@@ -676,7 +736,10 @@ export default function EnterMarks() {
                           onChange={(e) =>
                             handleMarkChange(student.id, subject.subjectId, e.target.value)
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          disabled={submittedSubjects.has(subject.subjectId)}
+                          className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                          }`}
                         >
                           <option value="">Select Result</option>
                           <option value="PASS">Pass</option>
