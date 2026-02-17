@@ -26,7 +26,8 @@ import { firebaseConfig } from "./firebase-config.js";
 precacheAndRoute(self.__WB_MANIFEST);
 
 // Handle SPA navigation - return index.html for all navigation requests
-const handler = createHandlerBoundToURL("/index.html");
+// Must use /app/index.html to match the base path configured in vite.config.js
+const handler = createHandlerBoundToURL("/app/index.html");
 const navigationRoute = new NavigationRoute(handler, {
   denylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
 });

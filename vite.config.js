@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  base: '/app/',
   plugins: [
     react(),
     tailwindcss(),
@@ -36,12 +37,22 @@ export default defineConfig({
         theme_color: "#2563eb",
         background_color: "#ffffff",
         display: "standalone",
-        start_url: "/",
+        start_url: "/app/",
+        scope: "/app/",
         icons: [
-          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          { src: "/app/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "/app/pwa-512x512.png", sizes: "512x512", type: "image/png" },
         ],
       },
     }),
   ],
+  server: {
+    proxy: {
+      "/userfacing": {
+        target: "http://127.0.0.1:5001",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });

@@ -1,0 +1,12 @@
+dispatch:
+  # Route all /app/* requests to the user-facing-app service
+  - url: "*/app/*"
+    service: user-facing-app
+  
+  # Route /app/ (with trailing slash) to the user-facing-app service
+  - url: "*/app/"
+    service: user-facing-app
+  
+  # Route /app (without trailing slash) to the user-facing-app service
+  - url: "*/app"
+    service: user-facing-app

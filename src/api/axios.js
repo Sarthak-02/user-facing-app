@@ -2,7 +2,7 @@ import axios from "axios";
 import {useAuth} from "../store/auth.store"
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,   // MUST match backend host
+  baseURL: "/userfacing",   // Fallback to root for production API
   withCredentials: true,              // ⬅️ enables cookies globally
 });
 

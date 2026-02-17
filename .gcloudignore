@@ -1,0 +1,60 @@
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud. It follows the same syntax as .gitignore, with the addition of
+# "#!include" directives (which insert the entries of the given .gitignore-style
+# file at that point).
+#
+# For more information, run:
+#   $ gcloud topic gcloudignore
+#
+.gcloudignore
+# If you would like to upload your .git directory, .gitignore file or files
+# from your .gitignore file, remove the corresponding line below:
+.git
+.gitignore
+
+# Node.js dependencies:
+node_modules/
+
+# Build files (we only need dist/ for pre-built deployment)
+# If building on Cloud: comment out src/ and public/ lines below
+# If deploying pre-built: keep src/ and public/ excluded
+# src/
+# public/
+
+# Documentation
+*.md
+CHANGES_SUMMARY.md
+FIREBASE_SETUP.md
+HOMEWORK_EDIT_IMPROVEMENTS.md
+NOTIFICATION_ARCHITECTURE.md
+NOTIFICATION_TESTING_GUIDE.md
+NOTIFICATION_UI_IMPLEMENTATION.md
+PERMISSIONS_STORE_USAGE.md
+POST_LOGIN_NOTIFICATION_FLOW.md
+PUSH_NOTIFICATIONS_IMPLEMENTATION.md
+PWA_ICONS_README.md
+QUICK_FIX_GUIDE.md
+README.md
+SHIMMER_USAGE.md
+todo.md
+
+# Config files not needed in production
+.env
+.env.*
+eslint.config.js
+# vite.config.js (needed if building on Cloud)
+generate-icons.js
+generate-icons-sharp.js
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test files
+__tests__/
+*.test.js
+*.spec.js
