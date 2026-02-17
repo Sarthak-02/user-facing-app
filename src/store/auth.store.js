@@ -55,7 +55,7 @@ export const useAuth = create(
           }
           
           // Redirect to login - use replace to avoid history issues
-          window.location.replace("/login");
+          window.location.replace("/app/login");
         }
 
 

@@ -9,10 +9,22 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Serve static files from the dist directory at /app path
-app.use('/app', express.static(path.join(__dirname, 'dist')));
+app.use('/app', express.static(path.join(__dirname, 'dist'), {
+  setHeaders: (res, filepath) => {
+    // Ensure correct MIME types for module scripts
+    if (filepath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (filepath.endsWith('.mjs')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
 
 // Handle client-side routing - send all /app requests to index.html
+// This must come AFTER static file serving
 app.get('/app/*', (req, res) => {
+  // Only serve index.html if the request is not for a static file
+  // Static files should have been handled by express.static above
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
