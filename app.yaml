@@ -1,4 +1,4 @@
-runtime: nodejs20
+runtime: nodejs22
 service: user-facing-app
 
 instance_class: F1
@@ -11,10 +11,74 @@ automatic_scaling:
   max_concurrent_requests: 80
 
 handlers:
-  - url: /.*
+  # -----------------------------
+  # Static Assets (JS/CSS)
+  # -----------------------------
+  - url: /app/assets/(.*\.js)
+    static_files: dist/assets/\1
+    upload: dist/assets/.*\.js$
+    mime_type: application/javascript
     secure: always
-    redirect_http_response_code: 301
-    script: auto
+
+  - url: /app/assets/(.*\.mjs)
+    static_files: dist/assets/\1
+    upload: dist/assets/.*\.mjs$
+    mime_type: application/javascript
+    secure: always
+
+  - url: /app/assets/(.*\.css)
+    static_files: dist/assets/\1
+    upload: dist/assets/.*\.css$
+    mime_type: text/css
+    secure: always
+
+  # -----------------------------
+  # Images / Icons
+  # -----------------------------
+  - url: /app/(.*\.(png|jpg|jpeg|gif|svg|webp|ico))
+    static_files: dist/\1
+    upload: dist/.*\.(png|jpg|jpeg|gif|svg|webp|ico)$
+    secure: always
+
+  # -----------------------------
+  # Service Worker + Manifest
+  # -----------------------------
+  - url: /app/sw.js
+    static_files: dist/sw.js
+    upload: dist/sw.js
+    mime_type: application/javascript
+    secure: always
+
+  - url: /app/manifest.webmanifest
+    static_files: dist/manifest.webmanifest
+    upload: dist/manifest.webmanifest
+    mime_type: application/manifest+json
+    secure: always
+
+  # -----------------------------
+  # SPA Fallback → index.html
+  # -----------------------------
+  - url: /app/.*
+    static_files: dist/index.html
+    upload: dist/index.html
+    secure: always
 
 env_variables:
-  NODE_ENV: 'production'
+  NODE_ENV: "production"
+
+  # ✅ Replace with your real backend service URL
+  # Example: api service running in App Engine
+  VITE_API_URL: "https://vidyaarohan.in/userfacing"
+
+  # Firebase Config
+  VITE_FIREBASE_API_KEY: "AIzaSyD8RVvgS4x8mbQi3cvg9QzFNm1yXww2CeA"
+  VITE_FIREBASE_AUTH_DOMAIN: "vidyaarohan-notifications.firebaseapp.com"
+  VITE_FIREBASE_PROJECT_ID: "vidyaarohan-notifications"
+  VITE_FIREBASE_STORAGE_BUCKET: "vidyaarohan-notifications.firebasestorage.app"
+  VITE_FIREBASE_MESSAGING_SENDER_ID: "598436211376"
+  VITE_FIREBASE_APP_ID: "1:598436211376:web:d55ab72a5ce4405515e975"
+  VITE_FIREBASE_VAPID_KEY: "BD2x0SLmO19tQC6V6m5xKUWiCw54Eay2aF4rtt94xahqq5NG9wf-o6W994dhdRSGitmmp7ifcbU3TRwBdyph52Q"
+
+  # Service Worker Settings
+  VITE_SW_VERSION: "1.0.0"
+  VITE_FORCE_SW_UNREGISTER: "false"
