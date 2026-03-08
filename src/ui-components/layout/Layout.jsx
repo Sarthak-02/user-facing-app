@@ -17,7 +17,7 @@ export default function Layout() {
   // Define navigation items based on role
   const navItems = useMemo(() => {
     const baseNavItems = [
-      { label: "Home", icon: Home, path: "/" },
+      { label: "Home", icon: Home, path: "/home" },
     ];
 
     if (userRole === "student") {

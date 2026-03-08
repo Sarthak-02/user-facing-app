@@ -69,7 +69,7 @@ export default function LoginPage() {
       }
     
       // navigate("/attendance");
-      navigate("/");
+      navigate("/home");
     } catch (err) {
       const message =
         err?.message ||
@@ -114,7 +114,7 @@ export default function LoginPage() {
             "
             tabIndex={-1}
           >
-            {showPassword ? (
+            {!showPassword ? (
               <EyeOff className="h-5 w-5" />
             ) : (
               <Eye className="h-5 w-5" />
