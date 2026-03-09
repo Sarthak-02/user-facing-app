@@ -372,7 +372,7 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">
             {isEditing ? "Edit Homework" : "Create New Homework"}
           </h2>
@@ -461,7 +461,6 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
               Subject <span className="text-red-500">*</span>
             </label>
             <Dropdown
-              label="Subject"
               selected={formData.subject}
               onChange={(option) => setFormData((prev) => ({ ...prev, subject: option }))}
               options={subjects}
