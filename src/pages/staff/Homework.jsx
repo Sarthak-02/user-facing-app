@@ -23,6 +23,14 @@ export default function TeacherHomework() {
   // Mobile filter states
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Temporary filter states (for user selection before apply)
+  const [tempSubjectFilter, setTempSubjectFilter] = useState(null);
+  const [tempStatusFilterDropdown, setTempStatusFilterDropdown] = useState(null);
+  const [tempDateRangeStart, setTempDateRangeStart] = useState("");
+  const [tempDateRangeEnd, setTempDateRangeEnd] = useState("");
+  
+  // Active filter states (actually applied filters)
   const [subjectFilter, setSubjectFilter] = useState(null);
   const [statusFilterDropdown, setStatusFilterDropdown] = useState(null);
   const [dateRangeStart, setDateRangeStart] = useState("");
@@ -327,16 +335,25 @@ export default function TeacherHomework() {
   };
 
   const handleApplyFilters = () => {
+    // Copy temporary filter states to active filter states
+    setSubjectFilter(tempSubjectFilter);
+    setStatusFilterDropdown(tempStatusFilterDropdown);
+    setDateRangeStart(tempDateRangeStart);
+    setDateRangeEnd(tempDateRangeEnd);
     setIsFilterModalOpen(false);
   };
 
   const handleClearFilters = () => {
+    // Clear both temporary and active filters
     setSearchQuery("");
+    setTempSubjectFilter(null);
+    setTempStatusFilterDropdown(null);
+    setTempDateRangeStart("");
+    setTempDateRangeEnd("");
     setSubjectFilter(null);
     setStatusFilterDropdown(null);
     setDateRangeStart("");
     setDateRangeEnd("");
-
   };
 
   const hasActiveFilters = searchQuery || subjectFilter || statusFilterDropdown || dateRangeStart || dateRangeEnd;
@@ -383,6 +400,16 @@ export default function TeacherHomework() {
     fetchHomework();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.userId, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
+
+  // Sync temporary filters with active filters when modal opens
+  useEffect(() => {
+    if (isFilterModalOpen) {
+      setTempSubjectFilter(subjectFilter);
+      setTempStatusFilterDropdown(statusFilterDropdown);
+      setTempDateRangeStart(dateRangeStart);
+      setTempDateRangeEnd(dateRangeEnd);
+    }
+  }, [isFilterModalOpen, subjectFilter, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
 
   return (
     <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6">
@@ -444,8 +471,8 @@ export default function TeacherHomework() {
             {/* Subject Filter */}
             <div className="col-span-2">
               <Dropdown
-                selected={subjectFilter}
-                onChange={setSubjectFilter}
+                selected={tempSubjectFilter}
+                onChange={setTempSubjectFilter}
                 options={subjects}
                 placeholder="Subject"
               />
@@ -454,8 +481,8 @@ export default function TeacherHomework() {
             {/* Status Filter */}
             <div className="col-span-2">
               <Dropdown
-                selected={statusFilterDropdown}
-                onChange={setStatusFilterDropdown}
+                selected={tempStatusFilterDropdown}
+                onChange={setTempStatusFilterDropdown}
                 options={statusOptions}
                 placeholder="Status"
               />
@@ -465,8 +492,8 @@ export default function TeacherHomework() {
             <div className="col-span-2">
               <input
                 type="date"
-                value={dateRangeStart}
-                onChange={(e) => setDateRangeStart(e.target.value)}
+                value={tempDateRangeStart}
+                onChange={(e) => setTempDateRangeStart(e.target.value)}
                 placeholder="From Date"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -476,27 +503,36 @@ export default function TeacherHomework() {
             <div className="col-span-2">
               <input
                 type="date"
-                value={dateRangeEnd}
-                onChange={(e) => setDateRangeEnd(e.target.value)}
+                value={tempDateRangeEnd}
+                onChange={(e) => setTempDateRangeEnd(e.target.value)}
                 placeholder="To Date"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
-            {/* Clear Filters Button */}
-            <div className="col-span-1">
-              {hasActiveFilters && (
-                <button
-                  onClick={handleClearFilters}
-                  className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                >
-                  Clear
-                </button>
-              )}
+            {/* Apply/Clear Filters Buttons */}
+            <div className="col-span-1 flex gap-2">
+              <button
+                onClick={handleApplyFilters}
+                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                title="Apply Filters"
+              >
+                Apply
+              </button>
             </div>
           </div>
 
-
+          {/* Clear Filters Row */}
+          {hasActiveFilters && (
+            <div className="flex justify-end">
+              <button
+                onClick={handleClearFilters}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          )}
 
         </div>
       </Card>
@@ -693,10 +729,11 @@ export default function TeacherHomework() {
               <div>
                 <Dropdown
                   label="Subject"
-                  selected={subjectFilter}
-                  onChange={setSubjectFilter}
+                  selected={tempSubjectFilter}
+                  onChange={setTempSubjectFilter}
                   options={subjects}
                   placeholder="Select subject"
+                  maxHeight="max-h-50"
                 />
               </div>
 
@@ -704,19 +741,20 @@ export default function TeacherHomework() {
               <div>
                 <Dropdown
                   label="Status"
-                  selected={statusFilterDropdown}
-                  onChange={setStatusFilterDropdown}
+                  selected={tempStatusFilterDropdown}
+                  onChange={setTempStatusFilterDropdown}
                   options={statusOptions}
                   placeholder="Select status"
+                 
                 />
               </div>
 
               <DateRange
                 label="Due Date Range"
-                startDate={dateRangeStart}
-                endDate={dateRangeEnd}
-                onStartDateChange={setDateRangeStart}
-                onEndDateChange={setDateRangeEnd}
+                startDate={tempDateRangeStart}
+                endDate={tempDateRangeEnd}
+                onStartDateChange={setTempDateRangeStart}
+                onEndDateChange={setTempDateRangeEnd}
               />
 
             </div>

@@ -12,19 +12,24 @@ function formatDate(date) {
 }
 
 function StatusBadge({ status, dueDate }) {
-  const now = new Date();
-  const due = new Date(dueDate);
+  // const now = new Date();
+  // const due = new Date(dueDate);
   
   if (status === "DRAFT") {
     return <Badge variant="warning">Draft</Badge>;
-  } else if (status === "COMPLETED") {
-    return <Badge variant="success">Completed</Badge>;
-  } else if (due < now && status !== "COMPLETED" && status !== "DRAFT") {
-    return <Badge variant="error">Overdue</Badge>;
-  } else if (status === "PUBLISHED" || status === "ACTIVE") {
-    return <Badge variant="info">Active</Badge>;
+  } else{
+    return <Badge variant="success">Published</Badge>;
   }
-  return <Badge variant="default">{status}</Badge>;
+  
+  
+  // else if (status === "COMPLETED") {
+  //   return <Badge variant="success">Completed</Badge>;
+  // } else if (due < now && status !== "COMPLETED" && status !== "DRAFT") {
+  //   return <Badge variant="error">Overdue</Badge>;
+  // } else if (status === "PUBLISHED" || status === "ACTIVE") {
+  //   return <Badge variant="info">Active</Badge>;
+  // }
+  // return <Badge variant="default">{status}</Badge>;
 }
 
 function AttachmentIndicator({ count }) {

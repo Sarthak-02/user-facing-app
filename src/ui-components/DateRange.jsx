@@ -21,14 +21,11 @@ const DateRange = ({
     return dayjs(date).format('YYYY-MM-DD');
   };
 
-  // Get today's date as default
-  const today = dayjs().format('YYYY-MM-DD');
-
   const [validationError, setValidationError] = useState('');
 
-  // Use controlled props if provided, otherwise use today as default
-  const startDate = externalStartDate ? formatDate(externalStartDate) : today;
-  const endDate = externalEndDate ? formatDate(externalEndDate) : today;
+  // Use controlled props if provided, otherwise show blank
+  const startDate = externalStartDate ? formatDate(externalStartDate) : '';
+  const endDate = externalEndDate ? formatDate(externalEndDate) : '';
 
   // Validate dates
   const validateDates = (start, end) => {

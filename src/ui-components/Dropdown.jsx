@@ -8,6 +8,7 @@ export default function Dropdown({
   selected,
   onChange,
   width = "w-full",
+  maxHeight = "max-h-72",
   error = false,
 }) {
   const [open, setOpen] = useState(false);
@@ -115,7 +116,7 @@ export default function Dropdown({
 
       {/* Dropdown List */}
       {open && (
-        <div className="absolute z-20 mt-2 w-full bg-white shadow-lg border rounded-lg max-h-72 overflow-y-auto">
+        <div className={`absolute z-20 mt-2 w-full bg-white shadow-lg border rounded-lg ${maxHeight} overflow-y-auto`}>
           
           {/* Search Bar */}
           <div className="p-2 border-b">
