@@ -102,3 +102,16 @@ export async function updateStaffProfile(staff_id, profileData) {
         throw err.response?.data || err;
     }
 }
+
+export async function changePassword({ currentPassword, newPassword }) {
+    try {
+        const resp = await api.post(`/change-password`, {
+            currentPassword,
+            newPassword
+        });
+        return resp.data;
+    } catch (err) {
+        console.log(err.response?.data);
+        throw err.response?.data || err;
+    }
+}

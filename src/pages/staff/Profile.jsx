@@ -1,14 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card } from "../../ui-components";
 import { useAuth } from "../../store/auth.store";
 import { 
   User, Mail, Phone, Briefcase, Calendar, 
   MapPin, Users, BookOpen, Award, Shield,
-  CheckCircle, Droplet, Heart, AlertCircle
+  CheckCircle, Droplet, Heart, AlertCircle, Key
 } from "lucide-react";
+import ChangePasswordModal from "../../components/ChangePasswordModal";
 
 export default function StaffProfile() {
   const { auth } = useAuth();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   
   const staffData = useMemo(() => {
     console.log("Staff Profile - Auth data:", auth);
@@ -140,6 +142,17 @@ export default function StaffProfile() {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Change Password Button */}
+          <div className="flex justify-center md:justify-end items-start">
+            <button
+              onClick={() => setChangePasswordOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:opacity-90 transition text-sm font-medium"
+            >
+              <Key size={18} />
+              Change Password
+            </button>
           </div>
         </div>
       </Card>
@@ -376,6 +389,12 @@ export default function StaffProfile() {
         </div>
 
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal 
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </div>
   );
 }

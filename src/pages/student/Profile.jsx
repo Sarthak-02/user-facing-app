@@ -1,14 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card } from "../../ui-components";
 import { useAuth } from "../../store/auth.store";
 import { 
   User, Mail, Phone, GraduationCap, Calendar, 
   MapPin, Users, BookOpen, TrendingUp, Award,
-  Heart, AlertCircle, Droplet
+  Heart, AlertCircle, Droplet, Key
 } from "lucide-react";
+import ChangePasswordModal from "../../components/ChangePasswordModal";
 
 export default function StudentProfile() {
   const { auth } = useAuth();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   
   const studentData = useMemo(() => {
     console.log("Student Profile - Auth data:", auth);
@@ -139,6 +141,17 @@ export default function StudentProfile() {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Change Password Button */}
+          <div className="flex justify-center md:justify-end items-start">
+            <button
+              onClick={() => setChangePasswordOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:opacity-90 transition text-sm font-medium"
+            >
+              <Key size={18} />
+              Change Password
+            </button>
           </div>
         </div>
       </Card>
@@ -344,6 +357,12 @@ export default function StudentProfile() {
         </div>
 
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal 
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </div>
   );
 }
