@@ -1,37 +1,102 @@
-import { useState, useEffect } from "react";
-import { Card, Loader } from "../../ui-components";
+import { useMemo } from "react";
+import { Card } from "../../ui-components";
 import { useAuth } from "../../store/auth.store";
 import { 
   User, Mail, Phone, GraduationCap, Calendar, 
   MapPin, Users, BookOpen, TrendingUp, Award,
-  Edit2
+  Heart, AlertCircle, Droplet
 } from "lucide-react";
 
 export default function StudentProfile() {
   const { auth } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [studentData, setStudentData] = useState(null);
-
-  useEffect(() => {
-    // In a real app, you'd fetch detailed profile data from API
-    // For now, we'll use the data from auth store
+  
+  const studentData = useMemo(() => {
     console.log("Student Profile - Auth data:", auth);
-    setStudentData({
-      ...auth.details,
-      userId: auth.userId,
+    
+    const details = auth.details || {};
+    const extras = details.extras || {};
+    
+    return {
+      // Basic Info
+      student_id: details.student_id,
+      admission_no: details.student_admission_no,
+      roll_no: details.student_roll_no,
+      photo_url: details.student_photo_url,
+      first_name: details.student_first_name,
+      middle_name: details.student_middle_name,
+      last_name: details.student_last_name,
+      full_name: `${details.student_first_name || ''} ${details.student_middle_name || ''} ${details.student_last_name || ''}`.trim(),
+      gender: details.student_gender,
+      dob: details.student_dob,
+      current_status: details.student_current_status,
+      
+      // Contact Info (from extras)
+      email: extras.student_email,
+      phone: extras.student_phone,
+      
+      // Academic Info
+      section: details.sections?.[0]?.label || 'Not assigned',
+      section_id: details.student_section_id,
+      admission_date: extras.student_admission_date,
+      category: extras.student_category,
+      
+      // Guardian Info (from extras)
+      father_name: extras.student_father_name,
+      mother_name: extras.student_mother_name,
+      guardian_name: extras.student_guardian_name,
+      guardian_relation: extras.student_guardian_relation,
+      primary_contact: extras.student_primary_contact,
+      guardian_phone: extras.student_guardian_phone,
+      guardian_email: extras.student_guardian_email,
+      guardian_address: extras.student_guardian_address,
+      guardian_city: extras.student_guardian_city,
+      guardian_state: extras.student_guardian_state,
+      guardian_country: extras.student_guardian_country,
+      guardian_pincode: extras.student_guardian_pincode,
+      
+      // Emergency Contact
+      emergency_contact_name: extras.student_emergency_contact_name,
+      emergency_contact_phone: extras.student_emergency_contact_phone,
+      
+      // Medical Info
+      blood_group: extras.student_blood_group,
+      medical_conditions: extras.student_medical_conditions,
+      
+      // Other
+      remarks: extras.student_remarks,
+      campus_id: details.campus_id,
+      campus: auth.campus,
       username: auth.username,
       role: auth.role,
-      campus: auth.campus,
-    });
+    };
   }, [auth]);
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <Loader />
-      </div>
-    );
-  }
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not provided";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  const formatBloodGroup = (bloodGroup) => {
+    if (!bloodGroup) return "Not provided";
+    const bloodGroupMap = {
+      'a_plus': 'A+',
+      'a_minus': 'A-',
+      'b_plus': 'B+',
+      'b_minus': 'B-',
+      'o_plus': 'O+',
+      'o_minus': 'O-',
+      'ab_plus': 'AB+',
+      'ab_minus': 'AB-'
+    };
+    return bloodGroupMap[bloodGroup] || bloodGroup;
+  };
+
+  const getStatusColor = (status) => {
+    if (status === 'active') return 'bg-green-100 text-green-700';
+    if (status === 'inactive') return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-700';
+  };
 
   return (
     <div className="min-h-full bg-gray-50 p-4 md:p-6 space-y-6 pb-20 md:pb-6">
@@ -40,31 +105,37 @@ export default function StudentProfile() {
         <div className="flex flex-col md:flex-row gap-6">
           {/* Profile Picture */}
           <div className="flex justify-center md:justify-start">
-            <div className="h-24 w-24 md:h-32 md:w-32 rounded-full bg-primary-600 text-white flex items-center justify-center text-3xl md:text-4xl font-bold">
-              {studentData?.name?.charAt(0) || auth.username?.charAt(0) || "S"}
-            </div>
+            {studentData?.photo_url ? (
+              <img 
+                src={studentData.photo_url} 
+                alt="Profile" 
+                className="h-24 w-24 md:h-32 md:w-32 rounded-full object-cover"
+              />
+            ) : (
+              <div className="h-24 w-24 md:h-32 md:w-32 rounded-full bg-primary-600 text-white flex items-center justify-center text-3xl md:text-4xl font-bold">
+                {studentData?.first_name?.charAt(0) || "S"}
+              </div>
+            )}
           </div>
 
           {/* Profile Info */}
           <div className="flex-1 text-center md:text-left">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                {studentData?.name || "Student Name"}
-              </h1>
-              <button className="mt-2 md:mt-0 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2 mx-auto md:mx-0">
-                <Edit2 size={16} />
-                <span>Edit Profile</span>
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-4 justify-center md:justify-start text-sm text-gray-600 mt-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+              {studentData?.full_name || "Student Name"}
+            </h1>
+            <div className="flex flex-wrap gap-4 justify-center md:justify-start text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <User size={16} />
-                <span>Student ID: {studentData?.userId || studentData?.student_id || "N/A"}</span>
+                <span>Admission No: <strong>{studentData?.admission_no || "N/A"}</strong></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Award size={16} />
+                <span>Roll No: <strong>{studentData?.roll_no || "N/A"}</strong></span>
               </div>
               <div className="flex items-center gap-2">
                 <GraduationCap size={16} />
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md font-medium">
-                  {studentData?.role?.toUpperCase() || "STUDENT"}
+                <span className={`px-2 py-1 rounded-md font-medium ${getStatusColor(studentData?.current_status)}`}>
+                  {studentData?.current_status?.toUpperCase() || "N/A"}
                 </span>
               </div>
             </div>
@@ -72,7 +143,7 @@ export default function StudentProfile() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1  gap-6">
         {/* Left Column - Personal Information */}
         <div className="lg:col-span-2 space-y-6">
           {/* Personal Details */}
@@ -82,6 +153,36 @@ export default function StudentProfile() {
               Personal Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoItem
+                icon={<User size={18} />}
+                label="First Name"
+                value={studentData?.first_name || "Not provided"}
+              />
+              <InfoItem
+                icon={<User size={18} />}
+                label="Middle Name"
+                value={studentData?.middle_name || "Not provided"}
+              />
+              <InfoItem
+                icon={<User size={18} />}
+                label="Last Name"
+                value={studentData?.last_name || "Not provided"}
+              />
+              <InfoItem
+                icon={<User size={18} />}
+                label="Gender"
+                value={studentData?.gender || "Not provided"}
+              />
+              <InfoItem
+                icon={<Calendar size={18} />}
+                label="Date of Birth"
+                value={formatDate(studentData?.dob)}
+              />
+              <InfoItem
+                icon={<Droplet size={18} />}
+                label="Blood Group"
+                value={formatBloodGroup(studentData?.blood_group)}
+              />
               <InfoItem
                 icon={<Mail size={18} />}
                 label="Email"
@@ -93,20 +194,9 @@ export default function StudentProfile() {
                 value={studentData?.phone || "Not provided"}
               />
               <InfoItem
-                icon={<Calendar size={18} />}
-                label="Date of Birth"
-                value={studentData?.dob || studentData?.date_of_birth || "Not provided"}
-              />
-              <InfoItem
                 icon={<User size={18} />}
-                label="Gender"
-                value={studentData?.gender || "Not provided"}
-              />
-              <InfoItem
-                icon={<MapPin size={18} />}
-                label="Address"
-                value={studentData?.address || "Not provided"}
-                className="md:col-span-2"
+                label="Category"
+                value={studentData?.category?.toUpperCase() || "Not provided"}
               />
             </div>
           </Card>
@@ -119,34 +209,38 @@ export default function StudentProfile() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InfoItem
-                icon={<GraduationCap size={18} />}
-                label="Class"
-                value={studentData?.class || "Not assigned"}
+                icon={<Award size={18} />}
+                label="Student ID"
+                value={studentData?.student_id || "N/A"}
               />
               <InfoItem
-                icon={<Users size={18} />}
-                label="Section"
-                value={studentData?.section || "Not assigned"}
-              />
-              <InfoItem
-                icon={<Calendar size={18} />}
-                label="Academic Year"
-                value={studentData?.academic_year || "2024-2025"}
-              />
-              <InfoItem
-                icon={<Calendar size={18} />}
-                label="Admission Date"
-                value={studentData?.admission_date || "Not provided"}
+                icon={<User size={18} />}
+                label="Admission Number"
+                value={studentData?.admission_no || "Not assigned"}
               />
               <InfoItem
                 icon={<User size={18} />}
                 label="Roll Number"
-                value={studentData?.roll_number || studentData?.roll_no || "Not assigned"}
+                value={studentData?.roll_no || "Not assigned"}
               />
               <InfoItem
-                icon={<Award size={18} />}
-                label="Student ID"
-                value={studentData?.student_id || studentData?.userId || "N/A"}
+                icon={<GraduationCap size={18} />}
+                label="Class/Section"
+                value={studentData?.section || "Not assigned"}
+              />
+              <InfoItem
+                icon={<Calendar size={18} />}
+                label="Admission Date"
+                value={formatDate(studentData?.admission_date)}
+              />
+              <InfoItem
+                icon={<User size={18} />}
+                label="Current Status"
+                value={
+                  <span className={`px-2 py-1 rounded-md text-sm font-medium ${getStatusColor(studentData?.current_status)}`}>
+                    {studentData?.current_status?.toUpperCase() || "N/A"}
+                  </span>
+                }
               />
             </div>
           </Card>
@@ -160,102 +254,95 @@ export default function StudentProfile() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InfoItem
                 icon={<User size={18} />}
-                label="Parent Name"
-                value={studentData?.parent_name || studentData?.guardian_name || "Not provided"}
+                label="Father's Name"
+                value={studentData?.father_name || "Not provided"}
+              />
+              <InfoItem
+                icon={<User size={18} />}
+                label="Mother's Name"
+                value={studentData?.mother_name || "Not provided"}
+              />
+              <InfoItem
+                icon={<User size={18} />}
+                label="Guardian Name"
+                value={studentData?.guardian_name || "Not provided"}
+              />
+              <InfoItem
+                icon={<User size={18} />}
+                label="Guardian Relationship"
+                value={studentData?.guardian_relation || "Not provided"}
+              />
+              <InfoItem
+                icon={<User size={18} />}
+                label="Primary Contact"
+                value={studentData?.primary_contact?.toUpperCase() || "Not provided"}
               />
               <InfoItem
                 icon={<Phone size={18} />}
-                label="Parent Phone"
-                value={studentData?.parent_phone || studentData?.guardian_phone || "Not provided"}
+                label="Guardian Phone"
+                value={studentData?.guardian_phone || "Not provided"}
               />
               <InfoItem
                 icon={<Mail size={18} />}
-                label="Parent Email"
-                value={studentData?.parent_email || studentData?.guardian_email || "Not provided"}
+                label="Guardian Email"
+                value={studentData?.guardian_email || "Not provided"}
               />
               <InfoItem
+                icon={<MapPin size={18} />}
+                label="Address"
+                value={studentData?.guardian_address || "Not provided"}
+                className="md:col-span-2"
+              />
+              <InfoItem
+                icon={<MapPin size={18} />}
+                label="City"
+                value={studentData?.guardian_city || "Not provided"}
+              />
+              <InfoItem
+                icon={<MapPin size={18} />}
+                label="State"
+                value={studentData?.guardian_state || "Not provided"}
+              />
+              <InfoItem
+                icon={<MapPin size={18} />}
+                label="Country"
+                value={studentData?.guardian_country || "Not provided"}
+              />
+              <InfoItem
+                icon={<MapPin size={18} />}
+                label="Pincode"
+                value={studentData?.guardian_pincode || "Not provided"}
+              />
+            </div>
+          </Card>
+
+          {/* Emergency Contact & Medical Information */}
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <AlertCircle size={20} className="text-primary-600" />
+              Emergency Contact & Medical Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoItem
                 icon={<User size={18} />}
-                label="Relationship"
-                value={studentData?.guardian_relation || "Parent"}
+                label="Emergency Contact Name"
+                value={studentData?.emergency_contact_name || "Not provided"}
+              />
+              <InfoItem
+                icon={<Phone size={18} />}
+                label="Emergency Contact Phone"
+                value={studentData?.emergency_contact_phone || "Not provided"}
+              />
+              <InfoItem
+                icon={<Heart size={18} />}
+                label="Medical Conditions"
+                value={studentData?.medical_conditions || "None"}
+                className="md:col-span-2"
               />
             </div>
           </Card>
         </div>
 
-        {/* Right Column - Quick Stats & Campus Info */}
-        <div className="space-y-6">
-          {/* Quick Stats */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <TrendingUp size={20} className="text-primary-600" />
-              Quick Stats
-            </h2>
-            <div className="space-y-4">
-              <StatCard
-                label="Overall Attendance"
-                value={studentData?.attendance_percentage || "N/A"}
-                icon={<Calendar size={24} />}
-                color="bg-green-100 text-green-600"
-              />
-              <StatCard
-                label="Pending Homework"
-                value={studentData?.pending_homework || "0"}
-                icon={<BookOpen size={24} />}
-                color="bg-orange-100 text-orange-600"
-              />
-              <StatCard
-                label="Upcoming Exams"
-                value={studentData?.upcoming_exams || "0"}
-                icon={<Award size={24} />}
-                color="bg-blue-100 text-blue-600"
-              />
-            </div>
-          </Card>
-
-          {/* Campus Information */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <MapPin size={20} className="text-primary-600" />
-              Campus Information
-            </h2>
-            <div className="space-y-3">
-              <InfoItem
-                icon={<MapPin size={18} />}
-                label="Campus"
-                value={studentData?.campus?.name || auth.campus?.name || "Not assigned"}
-              />
-              <InfoItem
-                icon={<MapPin size={18} />}
-                label="Campus ID"
-                value={studentData?.campus_id || auth.campus_id || "N/A"}
-              />
-            </div>
-          </Card>
-
-          {/* Account Information */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <User size={20} className="text-primary-600" />
-              Account Info
-            </h2>
-            <div className="space-y-3">
-              <InfoItem
-                icon={<User size={18} />}
-                label="Username"
-                value={studentData?.username || "N/A"}
-              />
-              <InfoItem
-                icon={<Calendar size={18} />}
-                label="Account Status"
-                value={
-                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">
-                    Active
-                  </span>
-                }
-              />
-            </div>
-          </Card>
-        </div>
       </div>
     </div>
   );
@@ -271,18 +358,6 @@ function InfoItem({ icon, label, value, className = "" }) {
         <p className="text-sm font-medium text-gray-900 break-words">
           {typeof value === "string" ? value : value}
         </p>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, icon, color }) {
-  return (
-    <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-      <div className={`p-3 rounded-lg ${color}`}>{icon}</div>
-      <div>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-sm text-gray-600">{label}</p>
       </div>
     </div>
   );
