@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Dropdown } from "../../ui-components";
 import TargetSelector from "../TargetSelector";
 import { usePermissions } from "../../store/permissions.store";
+import { useAuth } from "../../store/auth.store";
 import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
 
@@ -12,16 +13,6 @@ const TARGET_OPTIONS = [
   { value: "CLASS", label: "Class" },
   { value: "SECTION", label: "Section" },
   { value: "STUDENT", label: "Student" },
-];
-
-const EXAM_TYPES = [
-  { value: "UNIT_TEST", label: "Unit Test" },
-  { value: "MID_TERM", label: "Mid Term" },
-  { value: "FINAL", label: "Final Exam" },
-  { value: "QUARTERLY", label: "Quarterly" },
-  { value: "HALF_YEARLY", label: "Half Yearly" },
-  { value: "ANNUAL", label: "Annual" },
-  { value: "OTHER", label: "Other" },
 ];
 
 const GRADING_TYPES = [
@@ -52,6 +43,15 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
 
   const { permissions } = usePermissions();
 
+
+  const {auth : {campus:{campus_exam_types}}} = useAuth();
+  // Get EXAM_TYPES from auth store
+  const EXAM_TYPES = campus_exam_types.map((examType) => ({
+    value: examType,
+    label: examType
+  }));
+
+  
   // Current step in the form (1-4)
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -285,7 +285,19 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
 
   const formatTargetLabel = () => {
     const targetTypeLabel = TARGET_OPTIONS.find(opt => opt.value === formData.targetType?.value)?.label || "";
-    const c = permissions.classes.find((x) => x.class_id === formData.classId?.value)?.class_name;
+    
+    // Handle class selection (can be array when target type is CLASS)
+    let c = "";
+    if (formData.targetType?.value === "CLASS" && Array.isArray(formData.classId) && formData.classId.length > 0) {
+      if (formData.classId.length === 1) {
+        c = formData.classId[0].label;
+      } else {
+        c = `${formData.classId.length} classes`;
+      }
+    } else if (formData.classId?.value) {
+      c = permissions.classes.find((x) => x.class_id === formData.classId?.value)?.class_name;
+    }
+    
     const s = permissions.sections.find((x) => x.section_id === formData.sectionId?.value)?.section_name;
 
     // Handle student selection (can be array for multiple students)
@@ -321,7 +333,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
   // Validation for each step
   const canProceedStep1 = formData.examType && (formData.examType !== "OTHER" || formData.customExamType);
   const canProceedStep2 =
-    (formData.targetType?.value === "CLASS" && formData.classId?.value) ||
+    (formData.targetType?.value === "CLASS" && Array.isArray(formData.classId) && formData.classId.length > 0) ||
     (formData.targetType?.value === "SECTION" && formData.sectionId?.value) ||
     (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0);
   const canProceedStep3 = formData.subjects.every(
