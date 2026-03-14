@@ -15,42 +15,21 @@ const TARGET_OPTIONS = [
   { value: "STUDENT", label: "Student" },
 ];
 
-const GRADING_TYPES = [
-  { value: "PERCENTAGE", label: "Percentage (0-100)" },
-  { value: "GPA", label: "GPA (0-4.0)" },
-  { value: "LETTER_GRADE", label: "Letter Grade (A-F)" },
-  { value: "PASS_FAIL", label: "Pass/Fail" },
-];
-
-const LETTER_GRADES = [
-  { value: "A+", label: "A+" },
-  { value: "A", label: "A" },
-  { value: "A-", label: "A-" },
-  { value: "B+", label: "B+" },
-  { value: "B", label: "B" },
-  { value: "B-", label: "B-" },
-  { value: "C+", label: "C+" },
-  { value: "C", label: "C" },
-  { value: "C-", label: "C-" },
-  { value: "D+", label: "D+" },
-  { value: "D", label: "D" },
-  { value: "D-", label: "D-" },
-  { value: "F", label: "F" },
-];
-
 export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmitting, submitError }) {
   const isEditing = !!exam;
 
   const { permissions } = usePermissions();
 
 
-  const {auth : {campus:{campus_exam_types}}} = useAuth();
+  const {auth : {campus:{campus_exam_types,class_grading_config}}} = useAuth();
   // Get EXAM_TYPES from auth store
   const EXAM_TYPES = campus_exam_types.map((examType) => ({
     value: examType,
     label: examType
   }));
 
+  const GRADING_TYPES = class_grading_config?.GRADING_TYPES || [];
+  const LETTER_GRADES = class_grading_config?.LETTER_GRADES || [];
   
   // Current step in the form (1-4)
   const [currentStep, setCurrentStep] = useState(1);
@@ -60,7 +39,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     examType: "",
     customExamType: "",
     targetType: { value: "CLASS", label: "Class" },
-    classId: null,
+    classId: [],
     sectionId: null,
     studentId: [],
     subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
@@ -148,7 +127,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     if (exam) {
       // Determine target type and extract target IDs from the targets array
       let targetType = { value: "CLASS", label: "Class" };
-      let classId = null;
+      let classId = [];
       let sectionId = null;
       let studentId = [];
 
@@ -213,7 +192,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
         examType: "",
         customExamType: "",
         targetType: { value: "CLASS", label: "Class" },
-        classId: null,
+        classId: [],
         sectionId: null,
         studentId: [],
         subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
@@ -245,7 +224,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     setFormData((prev) => ({
       ...prev,
       targetType: type,
-      classId: null,
+      classId: [],
       sectionId: null,
       studentId: [],
       subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],

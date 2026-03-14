@@ -25,16 +25,21 @@ export default function StudentExams() {
   const [dateRangeStart, setDateRangeStart] = useState("");
   const [dateRangeEnd, setDateRangeEnd] = useState("");
 
-  const examTypeOptions = [
-    { value: "", label: "All Types" },
-    { value: "UNIT_TEST", label: "Unit Test" },
-    { value: "MID_TERM", label: "Mid Term" },
-    { value: "FINAL", label: "Final Exam" },
-    { value: "QUARTERLY", label: "Quarterly" },
-    { value: "HALF_YEARLY", label: "Half Yearly" },
-    { value: "ANNUAL", label: "Annual" },
-    { value: "OTHER", label: "Other" },
-  ];
+  // Get EXAM_TYPES from auth store and build examTypeOptions
+  const examTypeOptions = useMemo(() => {
+    const options = [{ value: "", label: "All Types" }];
+    
+    if (auth?.campus?.campus_exam_types && Array.isArray(auth.campus.campus_exam_types)) {
+      auth.campus.campus_exam_types.forEach((examType) => {
+        options.push({
+          value: examType,
+          label: examType
+        });
+      });
+    }
+    
+    return options;
+  }, [auth?.campus?.campus_exam_types]);
 
   const statusOptions = [
     { value: "", label: "All Status" },
