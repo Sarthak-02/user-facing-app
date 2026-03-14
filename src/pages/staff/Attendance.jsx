@@ -10,7 +10,7 @@ import {
   Shimmer
 } from "../../ui-components";
 import { getFormattedDate, isToday, toLocalISOString } from "../../utils/common-functions";
-import { submitAttendance, getAttendanceDetails } from "../../api/attendance.api";
+import { submitAttendance, getAttendanceDetails, getTodaySchedule } from "../../api/attendance.api";
 import { useAuth } from "../../store/auth.store";
 import { useLoader } from "../../store/loader.store";
 
@@ -19,7 +19,7 @@ import { useLoader } from "../../store/loader.store";
 
 export default function AttendancePage() {
 
-  const { auth: { sections = [], userId } } = useAuth();
+  const { auth: { sections = [], userId, campus = {} } } = useAuth();
 
 
   const [attendance, setAttendance] = useState({});
@@ -27,16 +27,56 @@ export default function AttendancePage() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
-  const [campusSession, setCampusSession] = useState("FULL_DAY");
   const [period, setPeriod] = useState("OVERALL");
   const [students, setStudents] = useState([]);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [noAttendanceFound, setNoAttendanceFound] = useState(false);
   const [submittedAttendanceData, setSubmittedAttendanceData] = useState({});
+  const [scheduleSlots, setScheduleSlots] = useState([]);
+  const [isScheduleLoaded, setIsScheduleLoaded] = useState(false);
+
+  // Fetch today's schedule when page loads or selectedClass changes
+  useEffect(() => {
+    if (!selectedClass || !campus?.attendance_slots) return;
+
+    const fetchTodaySchedule = async () => {
+      try {
+        const payload = {
+          section_id: selectedClass,
+          attendance_slots: campus.attendance_slots
+        };
+
+        const response = await getTodaySchedule(payload);
+
+        if (response.success && response.data?.slots) {
+          setScheduleSlots(response.data.slots);
+          
+          // Set initial period value based on attendance_slots type
+          if (campus.attendance_slots === "daily" && response.data.slots.length > 0) {
+            setPeriod(response.data.slots[0].value);
+          } else if (campus.attendance_slots === "half_day" && response.data.slots.length > 0) {
+            setPeriod(response.data.slots[0].value);
+          } else if (campus.attendance_slots === "period" && response.data.slots.length > 0) {
+            const firstSlot = response.data.slots[0];
+            setPeriod(`${firstSlot.subject} (${firstSlot.startTime} - ${firstSlot.endTime})`);
+          }
+          
+          setIsScheduleLoaded(true);
+        }
+      } catch (error) {
+        console.error("Failed to fetch today's schedule:", error);
+        setScheduleSlots([]);
+        setIsScheduleLoaded(true);
+      }
+    };
+
+    setIsScheduleLoaded(false);
+    fetchTodaySchedule();
+  }, [selectedClass, campus?.attendance_slots]);
 
   // Fetch attendance details for any date (including today)
   useEffect(() => {
-    if (!selectedClass || !selectedDate) return;
+    if (!selectedClass || !selectedDate || !isScheduleLoaded) return;
 
     const fetchAttendanceDetails = async () => {
       setIsLoadingAttendance(true);
@@ -47,7 +87,6 @@ export default function AttendancePage() {
         const params = {
           section_id: selectedClass,
           date: getFormattedDate(selectedDate),
-          campus_session: campusSession,
           period: period
         };
 
@@ -95,7 +134,7 @@ export default function AttendancePage() {
     };
 
     fetchAttendanceDetails();
-  }, [selectedClass, selectedDate, campusSession, period]);
+  }, [selectedClass, selectedDate, period, isScheduleLoaded]);
 
   const editMode = useMemo(() => {
     console.log(submittedAttendanceData);
@@ -118,9 +157,8 @@ export default function AttendancePage() {
     try {
       const payload = {
         section_id: selectedClass,
-        teacher_id: userId, //this will be fetched from the logged in details
-        date: toLocalISOString(selectedDate), //today's date
-        campus_session: campusSession,
+        teacher_id: userId,
+        date: toLocalISOString(selectedDate),
         period: period,
         records: Object.entries(attendance).map(([key, value]) => ({
           student_id: key,
@@ -137,7 +175,6 @@ export default function AttendancePage() {
         const params = {
           section_id: selectedClass,
           date: getFormattedDate(selectedDate),
-          campus_session: campusSession,
           period: period
         };
 
@@ -228,10 +265,10 @@ export default function AttendancePage() {
         setSelectedClass={setSelectedClass}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
-        campusSession={campusSession}
-        setCampusSession={setCampusSession}
         period={period}
         setPeriod={setPeriod}
+        scheduleSlots={scheduleSlots}
+        attendanceSlots={campus?.attendance_slots}
       />
 
       {

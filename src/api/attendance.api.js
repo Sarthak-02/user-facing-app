@@ -77,3 +77,20 @@ export async function getAttendanceDetails(params) {
     throw err.response?.data || err;
   }
 }
+
+/**
+ * Fetch today's schedule for a section
+ * @param {Object} payload - Request payload
+ * @param {string} payload.section_id - Section ID to fetch schedule for (required)
+ * @param {string} payload.attendance_slots - Attendance slot type (period, daily, half_day)
+ * @returns {Promise<Object>} Today's schedule with slots based on attendance_slots type
+ */
+export async function getTodaySchedule(payload) {
+  try {
+    const response = await api.post("attendance/today-schedule", payload);
+    return response.data;
+  } catch (err) {
+    console.error("Error fetching today's schedule:", err.response?.data);
+    throw err.response?.data || err;
+  }
+}
