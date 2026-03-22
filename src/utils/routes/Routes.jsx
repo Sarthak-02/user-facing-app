@@ -19,6 +19,7 @@ import EnterMarks from "../../pages/staff/EnterMarks";
 import StudentProfile from "../../pages/student/Profile";
 import StudyChat from "../../pages/student/StudyChat";
 import StaffProfile from "../../pages/staff/Profile";
+import Scholarships from "../../pages/Scholarships";
 
 export const routes = [
   {
@@ -161,6 +162,17 @@ export const routes = [
             <StudyChat />
           </RoleBasedRoute>
         )
+      },
+
+      {
+        path: "scholarships",
+        element: (
+          <RoleBasedRoute
+            allowedRoles={["student", "teacher", "staff", "admin"]}
+          >
+            <Scholarships />
+          </RoleBasedRoute>
+        ),
       },
 
       // Catch-all route

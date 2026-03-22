@@ -2,7 +2,15 @@ import { useState, useMemo } from "react";
 import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
 import Header from "./Header";
-import { Home, ClipboardCheck, BookOpen, Bell, FileText, Sparkles } from "lucide-react";
+import {
+  Home,
+  ClipboardCheck,
+  BookOpen,
+  Bell,
+  FileText,
+  Sparkles,
+  GraduationCap,
+} from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
 
@@ -19,10 +27,16 @@ export default function Layout() {
     const baseNavItems = [
       { label: "Home", icon: Home, path: "/home" },
     ];
+    const scholarshipsNav = {
+      label: "Scholarships",
+      icon: GraduationCap,
+      path: "/scholarships",
+    };
 
     if (userRole === "student") {
       return [
         ...baseNavItems,
+        scholarshipsNav,
         { label: "Attendance", icon: ClipboardCheck, path: "/student/attendance" },
         { label: "Homework", icon: BookOpen, path: "/student/homework" },
         { label: "Exams", icon: FileText, path: "/student/exams" },
@@ -31,6 +45,7 @@ export default function Layout() {
     } else if (userRole === "teacher" || userRole === "staff") {
       return [
         ...baseNavItems,
+        scholarshipsNav,
         { label: "Attendance", icon: ClipboardCheck, path: "/staff/attendance" },
         { label: "Homework", icon: BookOpen, path: "/staff/homework" },
         { label: "Exams", icon: FileText, path: "/staff/exams" },
@@ -39,7 +54,7 @@ export default function Layout() {
     }
 
     // Default navigation items
-    return baseNavItems;
+    return [...baseNavItems, scholarshipsNav];
   }, [userRole]);
 
   return (

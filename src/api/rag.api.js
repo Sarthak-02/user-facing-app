@@ -16,9 +16,7 @@ function getRagBaseUrl() {
  * @returns {Promise<{ question: string, answer: string, sources: Array, prompt: string|null }>}
  */
 export async function ragAsk(body) {
-  const base = getRagBaseUrl();
-  // const url = `${base}/ask`;
-  const url = "http://127.0.0.1:8000/ask";
+  const url = "https://school-rag-api-272454562298.asia-south1.run.app/ask";
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
