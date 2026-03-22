@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
 import Header from "./Header";
-import { Home, ClipboardCheck, BookOpen, Bell, FileText } from "lucide-react";
+import { Home, ClipboardCheck, BookOpen, Bell, FileText, Sparkles } from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
 
@@ -26,6 +26,7 @@ export default function Layout() {
         { label: "Attendance", icon: ClipboardCheck, path: "/student/attendance" },
         { label: "Homework", icon: BookOpen, path: "/student/homework" },
         { label: "Exams", icon: FileText, path: "/student/exams" },
+        { label: "Study", icon: Sparkles, path: "/student/study" },
       ];
     } else if (userRole === "teacher" || userRole === "staff") {
       return [
