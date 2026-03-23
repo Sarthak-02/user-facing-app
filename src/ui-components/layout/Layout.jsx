@@ -10,6 +10,7 @@ import {
   FileText,
   Sparkles,
   GraduationCap,
+  BarChart3,
 } from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
@@ -40,6 +41,7 @@ export default function Layout() {
         { label: "Attendance", icon: ClipboardCheck, path: "/student/attendance" },
         { label: "Homework", icon: BookOpen, path: "/student/homework" },
         { label: "Exams", icon: FileText, path: "/student/exams" },
+        { label: "Reporting", icon: BarChart3, path: "/student/reporting" },
         { label: "Study", icon: Sparkles, path: "/student/study" },
       ];
     } else if (userRole === "teacher" || userRole === "staff") {

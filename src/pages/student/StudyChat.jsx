@@ -50,19 +50,19 @@ const mdComponents = {
     />
   ),
   p: ({ ...props }) => (
-    <p className="my-2.5 text-sm leading-relaxed text-gray-700 dark:text-gray-300" {...props} />
+    <p className="my-2.5 text-sm leading-relaxed text-gray-900 dark:text-gray-100" {...props} />
   ),
   ul: ({ ...props }) => (
-    <ul className="my-2 list-disc space-y-1.5 pl-5 text-sm text-gray-700 dark:text-gray-300" {...props} />
+    <ul className="my-2 list-disc space-y-1.5 pl-5 text-sm text-gray-900 dark:text-gray-100" {...props} />
   ),
   ol: ({ ...props }) => (
-    <ol className="my-2 list-decimal space-y-1.5 pl-5 text-sm text-gray-700 dark:text-gray-300" {...props} />
+    <ol className="my-2 list-decimal space-y-1.5 pl-5 text-sm text-gray-900 dark:text-gray-100" {...props} />
   ),
   li: ({ ...props }) => <li className="leading-relaxed" {...props} />,
   strong: ({ ...props }) => <strong className="font-semibold text-gray-900 dark:text-gray-100" {...props} />,
   em: ({ ...props }) => <em className="italic" {...props} />,
   pre: ({ children }) => (
-    <pre className="my-2 overflow-x-auto rounded-lg bg-black/5 dark:bg-white/10 p-3 text-xs font-mono whitespace-pre-wrap [&>code]:bg-transparent [&>code]:p-0">
+    <pre className="my-2 overflow-x-auto rounded-lg bg-black/5 dark:bg-white/10 p-3 text-xs font-mono text-gray-900 dark:text-gray-100 whitespace-pre-wrap [&>code]:bg-transparent [&>code]:p-0">
       {children}
     </pre>
   ),
@@ -70,14 +70,17 @@ const mdComponents = {
     const isFenced = /\blanguage-/.test(className || "");
     if (isFenced) {
       return (
-        <code className={`${className || ""} font-mono text-xs`} {...props}>
+        <code
+          className={`${className || ""} font-mono text-xs text-gray-900 dark:text-gray-100`}
+          {...props}
+        >
           {children}
         </code>
       );
     }
     return (
       <code
-        className="rounded bg-black/5 dark:bg-white/10 px-1 py-0.5 text-[0.85em] font-mono"
+        className="rounded bg-black/5 dark:bg-white/10 px-1 py-0.5 text-[0.85em] font-mono text-gray-900 dark:text-gray-100"
         {...props}
       >
         {children}
@@ -133,7 +136,7 @@ function SourceBlock({ item, index }) {
           From textbook exercises
         </p>
       )}
-      <p className="mt-2 text-sm leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+      <p className="mt-2 text-sm leading-relaxed text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
         {item.content}
       </p>
     </article>
@@ -323,7 +326,7 @@ export default function StudyChat() {
                             {m.answer?.trim() ? (
                               <AnswerMarkdown markdown={m.answer} />
                             ) : (
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                              <p className="text-sm text-gray-800 dark:text-gray-200">
                                 No written answer was returned. See textbook excerpts
                                 below if any.
                               </p>
@@ -346,7 +349,7 @@ export default function StudyChat() {
                             </div>
                           )}
                           {!m.answer?.trim() && !m.sources?.length && (
-                            <p className="rounded-2xl rounded-bl-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            <p className="rounded-2xl rounded-bl-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
                               Nothing came back. Try rephrasing your question.
                             </p>
                           )}

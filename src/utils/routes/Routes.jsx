@@ -18,6 +18,7 @@ import ExamDetail from "../../pages/staff/ExamDetail";
 import EnterMarks from "../../pages/staff/EnterMarks";
 import StudentProfile from "../../pages/student/Profile";
 import StudyChat from "../../pages/student/StudyChat";
+import StudentReporting from "../../pages/student/Reporting";
 import StaffProfile from "../../pages/staff/Profile";
 import Scholarships from "../../pages/Scholarships";
 
@@ -162,6 +163,14 @@ export const routes = [
             <StudyChat />
           </RoleBasedRoute>
         )
+      },
+      {
+        path: "student/reporting",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentReporting />
+          </RoleBasedRoute>
+        ),
       },
 
       {
