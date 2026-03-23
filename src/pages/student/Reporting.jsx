@@ -295,19 +295,19 @@ export default function Reporting() {
   return (
     <div className="relative min-h-full overflow-hidden pb-24 md:pb-6">
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-200/55 via-fuchsia-100/65 to-cyan-200/50 dark:from-indigo-950 dark:via-violet-950/85 dark:to-teal-950/45"
+        className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-br from-indigo-200/55 via-fuchsia-100/65 to-cyan-200/50 dark:from-indigo-950 dark:via-violet-950/85 dark:to-teal-950/45"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -right-24 top-0 h-72 w-72 rounded-full bg-violet-400/25 blur-3xl dark:bg-violet-600/15"
+        className="pointer-events-none absolute -right-24 top-0 z-0 h-72 w-72 rounded-full bg-violet-400/25 blur-3xl dark:bg-violet-600/15"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -left-20 bottom-32 h-64 w-64 rounded-full bg-cyan-400/30 blur-3xl dark:bg-teal-600/10"
+        className="pointer-events-none absolute -left-20 bottom-32 z-0 h-64 w-64 rounded-full bg-cyan-400/30 blur-3xl dark:bg-teal-600/10"
         aria-hidden
       />
 
-      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-6 px-4 py-5 md:px-6 md:py-6">
+      <div className="relative z-[1] mx-auto flex max-w-6xl flex-col gap-6 px-4 py-5 md:px-6 md:py-6">
         <Card className="overflow-hidden border-0 p-0 shadow-xl shadow-indigo-500/15 ring-1 ring-white/50 dark:ring-indigo-500/20">
           <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-violet-600 to-teal-600 px-5 py-6 text-white md:px-7 md:py-7">
             <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />

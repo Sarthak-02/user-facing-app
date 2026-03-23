@@ -16,7 +16,7 @@ export default function BottomNav({navItems, setActiveNav}) {
   return (
     <nav
       className="
-        fixed bottom-0 left-0 right-0
+        fixed bottom-0 left-0 right-0 z-50
         h-14 bg-[var(--color-surface)]
         border-t border-[var(--color-border)]
         flex justify-around items-center
