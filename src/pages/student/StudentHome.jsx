@@ -1,8 +1,11 @@
-import { createElement, useMemo } from "react";
+import { createElement, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "../../ui-components";
+import Loader from "../../ui-components/Loader";
 import { useAuth } from "../../store/auth.store";
+import { getReceiverSummary } from "../../api/receiver.api";
 import {
+  AlertCircle,
   Bell,
   BookOpen,
   CalendarDays,
@@ -14,84 +17,22 @@ import {
   XCircle,
 } from "lucide-react";
 
-function addDaysISO(fromDate, dayDelta) {
-  const d = new Date(fromDate);
-  d.setDate(d.getDate() + dayDelta);
-  return d.toISOString().slice(0, 10);
-}
-
-/** Static placeholder data — replace with API responses later. */
-const DUMMY = {
-  /** Used only on Mon–Fri when not a weekend. */
-  presentToday: true,
-  /**
-   * Monday–Friday periods (24h "HH:MM").
-   * Index 0 = Sunday … 6 = Saturday (empty weekend).
-   */
-  timetableByWeekday: {
-    1: [
-      { start: "08:00", end: "08:45", subject: "Assembly", room: "Hall" },
-      { start: "08:50", end: "09:35", subject: "Mathematics", room: "Room 201" },
-      { start: "09:40", end: "10:25", subject: "Science", room: "Lab 1" },
-      { start: "10:25", end: "10:45", subject: "Break", room: "—" },
-      { start: "10:45", end: "11:30", subject: "English", room: "Room 105" },
-      { start: "11:35", end: "12:20", subject: "Social Studies", room: "Room 112" },
-      { start: "12:20", end: "13:00", subject: "Lunch", room: "Cafeteria" },
-      { start: "13:00", end: "13:45", subject: "Hindi", room: "Room 108" },
-      { start: "13:50", end: "14:35", subject: "Computer Science", room: "Lab 2" },
-    ],
-    2: [
-      { start: "08:00", end: "08:45", subject: "Assembly", room: "Hall" },
-      { start: "08:50", end: "09:35", subject: "English", room: "Room 105" },
-      { start: "09:40", end: "10:25", subject: "Mathematics", room: "Room 201" },
-      { start: "10:25", end: "10:45", subject: "Break", room: "—" },
-      { start: "10:45", end: "11:30", subject: "Science", room: "Lab 1" },
-      { start: "11:35", end: "12:20", subject: "Hindi", room: "Room 108" },
-      { start: "12:20", end: "13:00", subject: "Lunch", room: "Cafeteria" },
-      { start: "13:00", end: "13:45", subject: "Physical Education", room: "Ground" },
-      { start: "13:50", end: "14:35", subject: "Art", room: "Studio A" },
-    ],
-    3: [
-      { start: "08:00", end: "08:45", subject: "Assembly", room: "Hall" },
-      { start: "08:50", end: "09:35", subject: "Science", room: "Lab 1" },
-      { start: "09:40", end: "10:25", subject: "Social Studies", room: "Room 112" },
-      { start: "10:25", end: "10:45", subject: "Break", room: "—" },
-      { start: "10:45", end: "11:30", subject: "Mathematics", room: "Room 201" },
-      { start: "11:35", end: "12:20", subject: "English", room: "Room 105" },
-      { start: "12:20", end: "13:00", subject: "Lunch", room: "Cafeteria" },
-      { start: "13:00", end: "13:45", subject: "Computer Science", room: "Lab 2" },
-      { start: "13:50", end: "14:35", subject: "Music", room: "Music room" },
-    ],
-    4: [
-      { start: "08:00", end: "08:45", subject: "Assembly", room: "Hall" },
-      { start: "08:50", end: "09:35", subject: "Hindi", room: "Room 108" },
-      { start: "09:40", end: "10:25", subject: "English", room: "Room 105" },
-      { start: "10:25", end: "10:45", subject: "Break", room: "—" },
-      { start: "10:45", end: "11:30", subject: "Mathematics", room: "Room 201" },
-      { start: "11:35", end: "12:20", subject: "Science", room: "Lab 1" },
-      { start: "12:20", end: "13:00", subject: "Lunch", room: "Cafeteria" },
-      { start: "13:00", end: "13:45", subject: "Social Studies", room: "Room 112" },
-      { start: "13:50", end: "14:35", subject: "Library", room: "Library" },
-    ],
-    5: [
-      { start: "08:00", end: "08:45", subject: "Assembly", room: "Hall" },
-      { start: "08:50", end: "09:35", subject: "Mathematics", room: "Room 201" },
-      { start: "09:40", end: "10:25", subject: "English", room: "Room 105" },
-      { start: "10:25", end: "10:45", subject: "Break", room: "—" },
-      { start: "10:45", end: "11:30", subject: "Science", room: "Lab 1" },
-      { start: "11:35", end: "12:20", subject: "Hindi", room: "Room 108" },
-      { start: "12:20", end: "13:00", subject: "Lunch", room: "Cafeteria" },
-      { start: "13:00", end: "13:45", subject: "Value education", room: "Room 101" },
-      { start: "13:50", end: "14:35", subject: "Club activity", room: "Various" },
-    ],
-    0: [],
-    6: [],
-  },
+/** JS getDay(): 0 Sun … 6 Sat → API timetable day ids (day-1 = Monday … day-7 = Sunday). */
+const JS_DAY_TO_API_DAY_ID = {
+  0: "day-7",
+  1: "day-1",
+  2: "day-2",
+  3: "day-3",
+  4: "day-4",
+  5: "day-5",
+  6: "day-6",
 };
 
 function timeToMinutes(hhmm) {
+  if (!hhmm || typeof hhmm !== "string") return 0;
   const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + m;
+  if (!Number.isFinite(h)) return 0;
+  return h * 60 + (Number.isFinite(m) ? m : 0);
 }
 
 function nowMinutes() {
@@ -105,12 +46,6 @@ function greetingForHour(hour) {
   return "Good evening";
 }
 
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
 function formatDisplayDate(d) {
   return d.toLocaleDateString(undefined, {
     weekday: "long",
@@ -121,6 +56,7 @@ function formatDisplayDate(d) {
 }
 
 function formatShortDue(iso) {
+  if (!iso) return "—";
   try {
     return new Date(iso).toLocaleDateString(undefined, {
       month: "short",
@@ -130,6 +66,79 @@ function formatShortDue(iso) {
   } catch {
     return iso;
   }
+}
+
+/**
+ * @param {object} timetable - API timetable { days, slots, entries }
+ * @param {Date} [now]
+ */
+function buildTodaysPeriods(timetable, now = new Date()) {
+  if (!timetable?.entries?.length || !timetable?.slots?.length) return [];
+
+  const dayId = JS_DAY_TO_API_DAY_ID[now.getDay()];
+  const slotById = new Map(timetable.slots.map((s) => [s.id, s]));
+
+  const todayEntries = timetable.entries.filter((e) => e.dayId === dayId);
+  todayEntries.sort((a, b) => {
+    const sa = slotById.get(a.slotId);
+    const sb = slotById.get(b.slotId);
+    return (sa?.order ?? 0) - (sb?.order ?? 0);
+  });
+
+  return todayEntries.map((entry) => {
+    const slot = slotById.get(entry.slotId);
+    const start = slot?.startTime ?? "";
+    const end = slot?.endTime ?? "";
+    const subject =
+      entry.subject?.trim() ||
+      (slot?.type === "lunch" ? "Lunch" : slot?.label?.split(" - ")[0] || "—");
+    return {
+      start,
+      end,
+      subject,
+      room: entry.room?.trim() || "—",
+      slotType: slot?.type,
+    };
+  });
+}
+
+function currentPeriodIndexFor(periods) {
+  const mins = nowMinutes();
+  let idx = -1;
+  for (let i = 0; i < periods.length; i++) {
+    const p = periods[i];
+    const a = timeToMinutes(p.start);
+    const b = timeToMinutes(p.end);
+    if (b > a && mins >= a && mins < b) {
+      idx = i;
+      break;
+    }
+  }
+  return idx;
+}
+
+/** Homework due still actionable (not past end of due day). */
+function filterActiveHomework(list) {
+  const now = new Date();
+  return (list || []).filter((h) => {
+    const raw = h.dueDate || h.due_date;
+    if (!raw) return false;
+    const due = new Date(raw);
+    if (Number.isNaN(due.getTime())) return false;
+    const endOfDueDay = new Date(due);
+    endOfDueDay.setHours(23, 59, 59, 999);
+    return endOfDueDay >= now;
+  });
+}
+
+function mapBroadcastsToAnnouncements(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map((b, i) => ({
+    id: b.id ?? b.broadcastId ?? `b-${i}`,
+    title: b.title?.trim() || "Announcement",
+    body: (b.message || b.body || b.description || "").trim(),
+    date: b.submittedAt || b.submitted_at || b.createdAt || b.created_at || "",
+  }));
 }
 
 function SectionTitle({ icon, title, wrapperClassName = "mb-4 flex items-center gap-3" }) {
@@ -150,12 +159,61 @@ function SectionTitle({ icon, title, wrapperClassName = "mb-4 flex items-center 
 
 export default function StudentHome() {
   const { auth } = useAuth();
+  const [summaryPayload, setSummaryPayload] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const firstName = useMemo(() => {
     const fromAuth = auth?.details?.student_first_name?.trim();
     if (fromAuth) return fromAuth;
-    return "Sarthak";
+    return "Student";
   }, [auth?.details?.student_first_name]);
+
+  const receiverId = auth.userId;
+  const sectionId = auth.sections?.[0]?.value;
+  const campusId = auth.campus_id;
+
+  const canFetch = Boolean(receiverId && sectionId && campusId);
+
+  const loadSummary = useCallback(async () => {
+    if (!receiverId || !sectionId || !campusId) {
+      setSummaryPayload(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getReceiverSummary({
+        receiverId,
+        sectionId,
+        campusId,
+      });
+      if (res?.success && res.data) {
+        setSummaryPayload(res.data);
+      } else {
+        setSummaryPayload(null);
+        setError(
+          typeof res?.message === "string" ? res.message : "Could not load summary."
+        );
+      }
+    } catch (e) {
+      setSummaryPayload(null);
+      const msg =
+        e?.response?.data?.message ||
+        e?.message ||
+        "Failed to load summary.";
+      setError(typeof msg === "string" ? msg : "Failed to load summary.");
+    } finally {
+      setLoading(false);
+    }
+  }, [receiverId, sectionId, campusId]);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
 
   const { summary, periods, currentPeriodIndex, upcomingHomework, announcements } =
     useMemo(() => {
@@ -174,83 +232,34 @@ export default function StudentHome() {
             ? "No school today — Sunday is a weekly off."
             : "No school today — Saturday is a weekly off.";
         attendanceVariant = "weekend";
-      } else if (DUMMY.presentToday) {
-        attendanceLine = "You are marked present today.";
-        attendanceVariant = "present";
       } else {
-        attendanceLine = "You are marked absent today.";
-        attendanceVariant = "absent";
-      }
-
-      const periodsToday = DUMMY.timetableByWeekday[weekday] ?? [];
-      const mins = nowMinutes();
-      let idx = -1;
-      for (let i = 0; i < periodsToday.length; i++) {
-        const p = periodsToday[i];
-        const a = timeToMinutes(p.start);
-        const b = timeToMinutes(p.end);
-        if (mins >= a && mins < b) {
-          idx = i;
-          break;
+        const at = summaryPayload?.attendanceToday;
+        const status = at?.status?.toUpperCase?.();
+        if (status === "PRESENT" || at?.marked === true) {
+          attendanceLine = "You are marked present today.";
+          attendanceVariant = "present";
+        } else if (status === "ABSENT") {
+          attendanceLine = "You are marked absent today.";
+          attendanceVariant = "absent";
+        } else {
+          attendanceLine = "Your attendance hasn't been recorded yet today.";
+          attendanceVariant = "pending";
         }
       }
 
-      const allHomework = [
-        {
-          id: "hw-1",
-          title: "Algebra — Chapter 5 exercises",
-          subject: "Mathematics",
-          due_date: addDaysISO(now, 2),
-        },
-        {
-          id: "hw-2",
-          title: "Essay: Climate change (500 words)",
-          subject: "English",
-          due_date: addDaysISO(now, 9),
-        },
-        {
-          id: "hw-3",
-          title: "Diagram of plant cell",
-          subject: "Science",
-          due_date: addDaysISO(now, 0),
-        },
-        {
-          id: "hw-4",
-          title: "Past tense worksheet",
-          subject: "Hindi",
-          due_date: addDaysISO(now, -4),
-        },
-      ];
+      const tt = summaryPayload?.timetable;
+      const periodsToday = tt ? buildTodaysPeriods(tt, now) : [];
+      const idx = currentPeriodIndexFor(periodsToday);
 
-      const todayStart = startOfToday();
-      const upcomingHomework = allHomework
-        .filter((h) => {
-          const due = new Date(h.due_date);
-          due.setHours(0, 0, 0, 0);
-          return due.getTime() > todayStart.getTime();
-        })
-        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+      const hwRaw = summaryPayload?.homeworkDueNext7Days;
+      const upcomingHomework = filterActiveHomework(hwRaw).sort(
+        (a, b) =>
+          new Date(a.dueDate || a.due_date) - new Date(b.dueDate || b.due_date)
+      );
 
-      const announcements = [
-        {
-          id: "a1",
-          title: "Annual sports day",
-          body: "House practice sessions begin next week. Check the notice board for timings.",
-          date: addDaysISO(now, -1),
-        },
-        {
-          id: "a2",
-          title: "Library hours",
-          body: "The library will close at 2 PM this Friday for inventory.",
-          date: addDaysISO(now, -2),
-        },
-        {
-          id: "a3",
-          title: "Parent–teacher meeting",
-          body: "PTM for Grade 10 is scheduled on the first Saturday of next month.",
-          date: addDaysISO(now, -5),
-        },
-      ];
+      const announcements = mapBroadcastsToAnnouncements(
+        summaryPayload?.broadcastsReceivedYesterdayAndToday
+      );
 
       return {
         summary: { greeting, firstName, dayLine, attendanceLine, attendanceVariant },
@@ -259,7 +268,7 @@ export default function StudentHome() {
         upcomingHomework,
         announcements,
       };
-    }, [firstName]);
+    }, [summaryPayload, firstName]);
 
   const attendanceIcon =
     summary.attendanceVariant === "present" ? (
@@ -268,11 +277,63 @@ export default function StudentHome() {
       <XCircle className="text-error-600 shrink-0" size={22} />
     ) : summary.attendanceVariant === "weekend" ? (
       <Moon className="text-primary-600 shrink-0" size={22} />
-    ) : null;
+    ) : (
+      <AlertCircle className="shrink-0 text-amber-600" size={22} />
+    );
+
+  if (!canFetch) {
+    return (
+      <div className="min-h-full bg-white p-4 md:p-6">
+        <div className="mx-auto max-w-5xl">
+          <Card className="border border-gray-100 shadow-sm">
+            <p className="text-center font-semibold text-gray-900">
+              Your dashboard needs a section and campus on your profile to load. If this
+              persists, contact your school administrator.
+            </p>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && !summaryPayload) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center bg-white p-4">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (error && !summaryPayload) {
+    return (
+      <div className="min-h-full bg-white p-4 md:p-6">
+        <div className="mx-auto max-w-5xl">
+          <Card className="border border-gray-100 shadow-sm">
+            <p className="mb-4 text-center font-semibold text-error-600">{error}</p>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => loadSummary()}
+                className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+              >
+                Try again
+              </button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-full bg-white p-4 md:p-6 ">
+    <div className="min-h-full bg-white p-4 pb-30 md:p-6 ">
       <div className="mx-auto max-w-5xl space-y-6">
+        {loading ? (
+          <div className="flex justify-center py-2">
+            <Loader />
+          </div>
+        ) : null}
+
         <Card className="border border-gray-100 bg-white shadow-sm dark:border-gray-800 ">
           <div className="flex flex-col gap-4 border-l-4 border-blue-500 pl-4 sm:flex-row sm:items-start sm:justify-between sm:pl-5">
             <div>
@@ -286,6 +347,16 @@ export default function StudentHome() {
                 <CalendarDays size={16} className="shrink-0 text-primary-700 dark:text-primary-400" />
                 {summary.dayLine}
               </p>
+              {summaryPayload?.section?.section_name || summaryPayload?.class?.class_name ? (
+                <p className="mt-1 text-xs font-semibold text-gray-700">
+                  {[
+                    summaryPayload.class?.class_name,
+                    summaryPayload.section?.section_name,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              ) : null}
             </div>
             <div className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/60">
               {attendanceIcon}
@@ -309,7 +380,7 @@ export default function StudentHome() {
                   const isCurrent = i === currentPeriodIndex;
                   return (
                     <li
-                      key={`${p.start}-${p.subject}`}
+                      key={`${p.start}-${p.end}-${p.subject}-${i}`}
                       className={`flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between ${
                         isCurrent
                           ? "border-blue-500 bg-sky-50 shadow-sm dark:border-blue-400 dark:bg-sky-950/40"
@@ -320,7 +391,7 @@ export default function StudentHome() {
                         <p className="font-semibold text-gray-950 dark:text-gray-800">
                           {p.subject}
                           {isCurrent ? (
-                            <span className="ml-2 inline-flex items-center rounded-md bg-primary-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ">
+                            <span className="ml-2 inline-flex items-center rounded-md bg-primary-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                               Now
                             </span>
                           ) : null}
@@ -354,14 +425,14 @@ export default function StudentHome() {
             </div>
             {upcomingHomework.length === 0 ? (
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-800">
-                No upcoming homework with a future due date.
+                No upcoming homework due.
               </p>
             ) : (
               <ul className="space-y-2">
                 {upcomingHomework.map((h) => (
                   <li key={h.id}>
                     <Link
-                      to="/student/homework"
+                      to={`/student/homework/${h.id}`}
                       className="block rounded-lg border border-gray-100 bg-white px-3 py-2.5 transition-all hover:border-primary-400 hover:bg-primary-50/60 dark:border-gray-700 dark:hover:border-primary-500 dark:hover:bg-primary-950/30"
                     >
                       <p className="text-xs font-bold uppercase tracking-wide text-gray-950 dark:text-gray-800">
@@ -369,7 +440,7 @@ export default function StudentHome() {
                       </p>
                       <p className="mt-0.5 font-semibold text-gray-950 dark:text-gray-800">{h.title}</p>
                       <p className="mt-1 text-xs font-semibold text-gray-800 dark:text-gray-600">
-                        Due {formatShortDue(h.due_date)}
+                        Due {formatShortDue(h.dueDate || h.due_date)}
                       </p>
                     </Link>
                   </li>
@@ -394,35 +465,44 @@ export default function StudentHome() {
               <ChevronRight size={14} />
             </Link>
           </div>
-          <ul className="space-y-4">
-            {announcements.map((a) => (
-              <li
-                key={a.id}
-                className="flex gap-3 border-b border-gray-100 pb-4 last:border-0 last:pb-0 dark:border-gray-700"
-              >
-                <span
-                  className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-900"
-                  aria-hidden
+          {announcements.length === 0 ? (
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-800">
+              No announcements from the last two days.
+            </p>
+          ) : (
+            <ul className="space-y-4">
+              {announcements.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex gap-3 border-b border-gray-100 pb-4 last:border-0 last:pb-0 dark:border-gray-700"
                 >
-                  <Bell size={16} />
-                </span>
-                <div className="min-w-0">
-                  <p className="font-semibold text-gray-950 dark:text-gray-800">{a.title}</p>
-                  <p className="mt-1 text-sm font-semibold leading-relaxed text-gray-900 dark:text-gray-800">
-                    {a.body}
-                  </p>
-                  <p className="mt-2 text-xs font-semibold text-gray-800 dark:text-gray-600">
-                    {formatShortDue(a.date)}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  <span
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-900"
+                    aria-hidden
+                  >
+                    <Bell size={16} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      to={`/student/announcements/${a.id}`}
+                      className="block rounded-md outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                    >
+                      <p className="font-semibold text-gray-950 dark:text-gray-800">{a.title}</p>
+                      {a.body ? (
+                        <p className="mt-1 text-sm font-semibold leading-relaxed text-gray-900 dark:text-gray-800">
+                          {a.body}
+                        </p>
+                      ) : null}
+                      <p className="mt-2 text-xs font-semibold text-gray-800 dark:text-gray-600">
+                        {a.date ? formatShortDue(a.date) : null}
+                      </p>
+                    </Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
-
-        <p className="text-center text-xs font-semibold text-gray-800 dark:text-gray-600">
-          Sample data for layout preview — connect APIs when ready.
-        </p>
       </div>
     </div>
   );
