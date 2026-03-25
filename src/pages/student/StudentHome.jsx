@@ -380,7 +380,20 @@ export default function StudentHome() {
         </div>
 
         <Card className="border border-gray-100 bg-white shadow-sm dark:border-gray-800 ">
-          <SectionTitle icon={Megaphone} title="Announcements" />
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <SectionTitle
+              icon={Megaphone}
+              title="Announcements"
+              wrapperClassName="mb-0 flex min-w-0 items-center gap-3"
+            />
+            <Link
+              to="/student/announcements"
+              className="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+            >
+              View all
+              <ChevronRight size={14} />
+            </Link>
+          </div>
           <ul className="space-y-4">
             {announcements.map((a) => (
               <li

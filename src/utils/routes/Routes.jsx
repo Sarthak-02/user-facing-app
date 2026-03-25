@@ -19,6 +19,8 @@ import EnterMarks from "../../pages/staff/EnterMarks";
 import StudentProfile from "../../pages/student/Profile";
 import StudyChat from "../../pages/student/StudyChat";
 import StudentReporting from "../../pages/student/Reporting";
+import Announcements from "../../pages/student/Announcements";
+import AnnouncementDetail from "../../pages/student/AnnouncementDetail";
 import StaffProfile from "../../pages/staff/Profile";
 import Scholarships from "../../pages/Scholarships";
 
@@ -140,6 +142,22 @@ export const routes = [
             <HomeworkDetail />
           </RoleBasedRoute>
         )
+      },
+      {
+        path: "student/announcements",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <Announcements />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "student/announcements/:announcementId",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <AnnouncementDetail />
+          </RoleBasedRoute>
+        ),
       },
       { 
         path: "student/exams", 
