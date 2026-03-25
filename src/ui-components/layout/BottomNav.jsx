@@ -30,7 +30,12 @@ export default function BottomNav({ navItems, setActiveNav }) {
     navigate(path);
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === "/home") {
+      return location.pathname === "/home" || location.pathname === "/";
+    }
+    return location.pathname === path;
+  };
 
   const overflowHasActive = overflowItems.some((item) => isActive(item.path));
 

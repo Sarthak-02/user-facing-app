@@ -8,6 +8,9 @@ export default function Sidebar({ collapsed, setCollapsed, navItems }) {
   const location = useLocation();
 
   const isActive = (path) => {
+    if (path === "/home") {
+      return location.pathname === "/home" || location.pathname === "/";
+    }
     return location.pathname === path;
   };
 

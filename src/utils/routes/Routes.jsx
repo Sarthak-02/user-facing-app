@@ -5,7 +5,7 @@ import RoleBasedRoute from "./RoleBasedRoute";
 import Layout from "../../ui-components/layout/Layout";
 import Attendance from "../../pages/staff/Attendance";
 import BroadcastNotification from "../../pages/staff/BroadcastNotification";
-import Home from "../../pages/staff/Home";
+import Home from "../../pages/Home";
 import StudentAttendance from "../../pages/student/Attendance";
 import Homework from "../../pages/student/Homework";
 import HomeworkDetail from "../../pages/student/HomeworkDetail";
@@ -40,6 +40,7 @@ export const routes = [
     ),
     children: [
       { index: true, element: <Home /> },
+      { path: "home", element: <Home /> },
       
       // Teacher/Staff routes
       { 

@@ -69,16 +69,19 @@
   --color-primary-50:  #EEF2FF;
   --color-primary-100: #E0E7FF;
   --color-primary-500: #6366F1;
+  --color-primary-600: #4F46E5;
   --color-primary-700: #4338CA;
 
   --color-success-100: #DCFCE7;
   --color-success-500: #22C55E;
+  --color-success-600: #16A34A;
 
   --color-warning-100: #FEF3C7;
   --color-warning-500: #F59E0B;
 
   --color-error-100: #FEE2E2;
   --color-error-500: #EF4444;
+  --color-error-600: #DC2626;
 
   --color-accent-100: #CCFBF1;
   --color-accent-500: #14B8A6;
