@@ -82,7 +82,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)] p-4">
       <div className="w-full max-w-sm bg-white p-6 rounded-2xl shadow-md space-y-5">
         {/* USER ID */}
         <TextField

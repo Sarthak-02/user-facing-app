@@ -220,7 +220,7 @@ export default function StudyChat() {
 
   if (!started) {
     return (
-      <div className="min-h-full bg-gray-50 dark:bg-[var(--color-background)] p-4 md:p-8 pb-24 md:pb-8 flex flex-col items-center justify-center">
+      <div className="min-h-full bg-[var(--color-background)] p-4 md:p-8 pb-24 md:pb-8 flex flex-col items-center justify-center">
         <Card className="w-full max-w-md p-6 md:p-8 space-y-6">
           <div className="flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300">
@@ -269,7 +269,7 @@ export default function StudyChat() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-3.5rem)] flex-col bg-gray-50 dark:bg-[var(--color-background)] pb-16 md:pb-0">
+    <div className="flex h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-3.5rem)] flex-col bg-[var(--color-background)] pb-16 md:pb-0">
       <header className="flex-shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
           <button

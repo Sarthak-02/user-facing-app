@@ -9,7 +9,7 @@ export default function Card({
   return (
     <div
       className={clsx(
-        "rounded-xl border border-border p-4 shadow-sm",
+        "rounded-xl border border-border p-4 shadow-sm bg-white",
         className
       )}
       onClick={onClick}

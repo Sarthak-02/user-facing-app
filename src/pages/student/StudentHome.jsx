@@ -283,7 +283,7 @@ export default function StudentHome() {
 
   if (!canFetch) {
     return (
-      <div className="min-h-full bg-white p-4 md:p-6">
+      <div className="min-h-full bg-[var(--color-background)] p-4 md:p-6">
         <div className="mx-auto max-w-5xl">
           <Card className="border border-gray-100 shadow-sm">
             <p className="text-center font-semibold text-gray-900">
@@ -298,7 +298,7 @@ export default function StudentHome() {
 
   if (loading && !summaryPayload) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-white p-4">
+      <div className="flex min-h-[50vh] items-center justify-center bg-[var(--color-background)] p-4">
         <Loader />
       </div>
     );
@@ -306,7 +306,7 @@ export default function StudentHome() {
 
   if (error && !summaryPayload) {
     return (
-      <div className="min-h-full bg-white p-4 md:p-6">
+      <div className="min-h-full bg-[var(--color-background)] p-4 md:p-6">
         <div className="mx-auto max-w-5xl">
           <Card className="border border-gray-100 shadow-sm">
             <p className="mb-4 text-center font-semibold text-error-600">{error}</p>
@@ -326,7 +326,7 @@ export default function StudentHome() {
   }
 
   return (
-    <div className="min-h-full bg-white p-4 pb-30 md:p-6 ">
+    <div className="min-h-full bg-[var(--color-background)] p-4 pb-30 md:p-6 ">
       <div className="mx-auto max-w-5xl space-y-6">
         {loading ? (
           <div className="flex justify-center py-2">
