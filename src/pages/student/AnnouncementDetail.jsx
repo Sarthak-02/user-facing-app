@@ -175,9 +175,7 @@ export default function AnnouncementDetail() {
                 {announcement.title}
               </h1>
             </div>
-            {announcement.status ? (
-              <Badge variant={statusVariant(announcement.status)}>{announcement.status}</Badge>
-            ) : null}
+            
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">

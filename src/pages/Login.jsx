@@ -80,7 +80,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[var(--color-background)] px-4 py-10 sm:flex sm:items-center sm:justify-center sm:px-6 sm:py-12">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--color-background)] px-4 py-10 sm:px-6 sm:py-12">
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_85%_55%_at_50%_-15%,color-mix(in_srgb,var(--color-primary-600)_12%,transparent),transparent)]"
         aria-hidden

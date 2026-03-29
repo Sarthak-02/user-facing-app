@@ -2,17 +2,9 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, DateRange } from "../../ui-components";
 import DesktopListing from "../../components/student-announcements/DesktopListing";
 import MobileListing from "../../components/student-announcements/MobileListing";
-import Dropdown from "../../ui-components/Dropdown";
 import { getReceivedBroadcasts } from "../../api/broadcast.api";
 import { useAuth } from "../../store/auth.store";
 import Loader from "../../ui-components/Loader";
-
-const STATUS_OPTIONS = [
-  { value: "", label: "All statuses" },
-  { value: "SUBMITTED", label: "Submitted" },
-  { value: "NOTIFYING", label: "Sending" },
-  { value: "DRAFT", label: "Draft" },
-];
 
 export default function Announcements() {
   const { auth } = useAuth();
@@ -23,7 +15,6 @@ export default function Announcements() {
 
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [dateRangeStart, setDateRangeStart] = useState("");
   const [dateRangeEnd, setDateRangeEnd] = useState("");
 
@@ -62,10 +53,6 @@ export default function Announcements() {
       );
     }
 
-    if (statusFilter?.value) {
-      list = list.filter((a) => a.status === statusFilter.value);
-    }
-
     const start = dateRangeStart ? new Date(dateRangeStart) : null;
     const end = dateRangeEnd ? new Date(dateRangeEnd) : null;
     if (start) {
@@ -90,16 +77,15 @@ export default function Announcements() {
     });
 
     return list;
-  }, [items, searchQuery, statusFilter, dateRangeStart, dateRangeEnd]);
+  }, [items, searchQuery, dateRangeStart, dateRangeEnd]);
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setStatusFilter("");
     setDateRangeStart("");
     setDateRangeEnd("");
   };
 
-  const hasActiveFilters = searchQuery || statusFilter || dateRangeStart || dateRangeEnd;
+  const hasActiveFilters = searchQuery || dateRangeStart || dateRangeEnd;
 
   if (loading) {
     return (
@@ -152,7 +138,7 @@ export default function Announcements() {
           </div>
 
           <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-4">
+            <div className="col-span-5">
               <div className="relative">
                 <input
                   type="text"
@@ -179,15 +165,6 @@ export default function Announcements() {
             </div>
 
             <div className="col-span-2">
-              <Dropdown
-                selected={statusFilter}
-                onChange={setStatusFilter}
-                options={STATUS_OPTIONS}
-                placeholder="Status"
-              />
-            </div>
-
-            <div className="col-span-2">
               <input
                 type="date"
                 value={dateRangeStart}
@@ -205,7 +182,7 @@ export default function Announcements() {
               />
             </div>
 
-            <div className="col-span-2">
+            <div className="col-span-3">
               {hasActiveFilters && (
                 <button
                   type="button"
@@ -288,7 +265,7 @@ export default function Announcements() {
       </div>
 
       {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end md:hidden pointer-events-none">
+        <div className="fixed inset-0 z-50 flex items-end md:hidden pointer-events-none pb-12">
           <div className="bg-white w-full rounded-t-2xl shadow-2xl border-t border-gray-200 max-h-[80vh] flex flex-col animate-slide-up pointer-events-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">Filters</h2>
@@ -316,16 +293,6 @@ export default function Announcements() {
             </div>
 
             <div className="p-4 space-y-6" style={{ minHeight: "200px" }}>
-              <div className="relative z-10">
-                <Dropdown
-                  label="Status"
-                  selected={statusFilter}
-                  onChange={setStatusFilter}
-                  options={STATUS_OPTIONS}
-                  placeholder="All statuses"
-                />
-              </div>
-
               <div className="relative z-0">
                 <DateRange
                   label="Date range"

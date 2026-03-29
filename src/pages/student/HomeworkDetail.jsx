@@ -157,7 +157,6 @@ export default function HomeworkDetail() {
                 {homework.title}
               </h1>
             </div>
-            <StatusBadge status={homework.status} dueDate={homework.due_date || homework.dueDate} />
           </div>
 
           {/* Info Grid */}
