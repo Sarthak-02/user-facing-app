@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "../../ui-components";
 import TargetSelector from "../../components/TargetSelector";
 import { usePermissions } from "../../store/permissions.store";
@@ -12,26 +12,96 @@ const TARGET_OPTIONS = [
   { value: "STUDENT", label: "Student" },
 ];
 
-export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmitting, submitError }) {
-  // Get permissions data from store
-  const { permissions } = usePermissions();
+const EMPTY_BROADCAST_FORM = {
+  title: "",
+  message: "",
+  targetType: { value: "CAMPUS", label: "Entire Campus" },
+  sectionId: null,
+  studentId: [],
+  classId: null,
+  attachments: [],
+  status: "NOTIFYING",
+};
 
-  // Track previous modal state
-  const prevIsOpenRef = useRef(false);
-
-  // Form state
-  const [formData, setFormData] = useState({
-    title: "",
-    message: "",
-    targetType: { value: "CAMPUS", label: "Entire Campus" },
+function buildFormFromBroadcast(broadcast, permissions) {
+  const targets = broadcast.broadcastTargets || broadcast.targets || [];
+  const base = {
+    title: broadcast.title || "",
+    message: broadcast.message || "",
+    targetType: TARGET_OPTIONS[0],
     sectionId: null,
     studentId: [],
     classId: null,
     attachments: [],
-    status: "DRAFT", // DRAFT or PUBLISHED
-  });
+    status: broadcast.status || "DRAFT",
+  };
+  if (!targets.length) return base;
 
-  console.log("formData", formData);
+  const first = targets[0];
+  const tt = first.targetType || first.target_type;
+
+  if (tt === "CAMPUS") {
+    return { ...base, targetType: TARGET_OPTIONS[0] };
+  }
+  if (tt === "CLASS") {
+    const firstId = first.targetId || first.target_id;
+    const classOption = permissions.classes.find((c) => c.class_id === firstId);
+    return {
+      ...base,
+      targetType: TARGET_OPTIONS[1],
+      classId: classOption
+        ? { value: classOption.class_id, label: classOption.class_name }
+        : { value: firstId, label: String(firstId) },
+    };
+  }
+  if (tt === "SECTION") {
+    const firstId = first.targetId || first.target_id;
+    const sec = permissions.sections.find((s) => s.section_id === firstId);
+    return {
+      ...base,
+      targetType: TARGET_OPTIONS[2],
+      sectionId: sec
+        ? { value: sec.section_id, label: sec.section_name }
+        : { value: firstId, label: String(firstId) },
+    };
+  }
+  if (tt === "STUDENT") {
+    const studentOptions = targets.map((t) => {
+      const id = t.targetId || t.target_id;
+      const st = permissions.students.find((s) => s.student_id === id);
+      return st
+        ? { value: st.student_id, label: st.student_name, section_id: st.section_id }
+        : { value: id, label: String(id), section_id: null };
+    });
+    const firstSt = permissions.students.find(
+      (s) => s.student_id === (first.targetId || first.target_id)
+    );
+    const sectionMeta = firstSt
+      ? permissions.sections.find((s) => s.section_id === firstSt.section_id)
+      : null;
+    return {
+      ...base,
+      targetType: TARGET_OPTIONS[3],
+      sectionId: sectionMeta
+        ? { value: sectionMeta.section_id, label: sectionMeta.section_name }
+        : null,
+      studentId: studentOptions,
+    };
+  }
+  return base;
+}
+
+export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmitting, submitError, existingBroadcast = null }) {
+  // Get permissions data from store
+  const { permissions } = usePermissions();
+
+  const [formData, setFormData] = useState(() =>
+    existingBroadcast
+      ? buildFormFromBroadcast(existingBroadcast, permissions)
+      : { ...EMPTY_BROADCAST_FORM }
+  );
+
+  const isViewingExisting = Boolean(existingBroadcast);
 
   // Error state for attachments
   const [attachmentError, setAttachmentError] = useState("");
@@ -98,32 +168,12 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
     return [];
   }, [formData.targetType, formData.sectionId, formData.classId, formData.studentId, permissions.classes, permissions.sections, permissions.students]);
 
-  // Reset form when modal is opened
-  useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      // Modal just opened, reset form
-      setFormData({
-        title: "",
-        message: "",
-        targetType: { value: "CAMPUS", label: "Entire Campus" },
-        sectionId: null,
-        studentId: [],
-        classId: null,
-        attachments: [],
-        status: "NOTIFYING",
-      });
-      setAttachmentError("");
-    }
-    prevIsOpenRef.current = isOpen;
-  }, [isOpen]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const setTargetType = (type) => {
-    console.log("type", type);
     setFormData((prev) => ({
       ...prev,
       targetType: type,
@@ -219,7 +269,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">
-            Create New Broadcast
+            {isViewingExisting ? "Broadcast details" : "Create New Broadcast"}
           </h2>
           <button
             onClick={onClose}
@@ -243,7 +293,13 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (isViewingExisting) return;
+          }}
+          className="p-6 space-y-6"
+        >
           {/* Target Selection Button - Opens Modal */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -252,7 +308,8 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
             <button
               type="button"
               onClick={() => setShowTargetModal(true)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors flex justify-between items-center text-left"
+              disabled={isViewingExisting}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors flex justify-between items-center text-left disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-white"
             >
               <div>
                 <p className="text-xs text-gray-500">Target audience</p>
@@ -260,7 +317,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
                   {formatTargetLabel()}
                 </p>
               </div>
-              <span className="text-xs px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100">
+              <span className="text-xs px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:pointer-events-none">
                 Change
               </span>
             </button>
@@ -311,7 +368,8 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              readOnly={isViewingExisting}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 read-only:bg-gray-50 read-only:cursor-default"
               placeholder="Enter broadcast title"
               required
             />
@@ -327,8 +385,9 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
               name="message"
               value={formData.message}
               onChange={handleChange}
+              readOnly={isViewingExisting}
               rows={8}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y read-only:bg-gray-50 read-only:cursor-default"
               placeholder="Enter your message"
               required
             />
@@ -345,7 +404,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
               id="attachments"
               multiple
               onChange={handleFileChange}
-              disabled={formData.attachments.length >= 3}
+              disabled={isViewingExisting || formData.attachments.length >= 3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
 
@@ -376,7 +435,8 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
                     <button
                       type="button"
                       onClick={() => handleRemoveAttachment(index)}
-                      className="ml-3 text-red-500 hover:text-red-700 flex-shrink-0"
+                      disabled={isViewingExisting}
+                      className="ml-3 text-red-500 hover:text-red-700 flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -433,15 +493,17 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
               onClick={onClose}
               disabled={isSubmitting}
             >
-              Cancel
+              {isViewingExisting ? "Close" : "Cancel"}
             </Button>
-            <Button
-              type="button"
-              disabled={!canSubmit || isSubmitting}
-              onClick={(e) => handleSubmit(e, "NOTIFYING")}
-            >
-              {isSubmitting ? "Sending..." : "Send"}
-            </Button>
+            {!isViewingExisting && (
+              <Button
+                type="button"
+                disabled={!canSubmit || isSubmitting}
+                onClick={(e) => handleSubmit(e, "NOTIFYING")}
+              >
+                {isSubmitting ? "Sending..." : "Send"}
+              </Button>
+            )}
           </div>
         </form>
       </div>

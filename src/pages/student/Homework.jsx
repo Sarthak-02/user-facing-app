@@ -313,7 +313,7 @@ export default function Homework() {
 
       {/* Filter Modal (Mobile Only) - No dark background */}
       {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end md:hidden pointer-events-none">
+        <div className="fixed inset-0 z-50 flex items-end md:hidden pointer-events-none pb-14">
           <div className="bg-white w-full rounded-t-2xl shadow-2xl border-t border-gray-200 max-h-[80vh] flex flex-col animate-slide-up pointer-events-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">

@@ -11,6 +11,8 @@ export default function BroadcastPage() {
   const { auth } = useAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBroadcast, setSelectedBroadcast] = useState(null);
+  const [formModalKey, setFormModalKey] = useState(0);
 
   // Mobile filter states
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -68,11 +70,20 @@ export default function BroadcastPage() {
   }, [broadcastList, searchQuery, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
 
   const handleCreateBroadcast = () => {
+    setSelectedBroadcast(null);
+    setFormModalKey((k) => k + 1);
+    setIsModalOpen(true);
+  };
+
+  const handleSelectBroadcast = (broadcast) => {
+    setSelectedBroadcast(broadcast);
+    setFormModalKey((k) => k + 1);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setSelectedBroadcast(null);
     setSubmitError(null);
   };
 
@@ -430,6 +441,7 @@ export default function BroadcastPage() {
         <div className="hidden md:block flex-1 min-h-0 overflow-y-auto">
           <DesktopListing
             broadcastList={filteredBroadcasts}
+            onSelectBroadcast={handleSelectBroadcast}
           />
         </div>
       )}
@@ -439,6 +451,7 @@ export default function BroadcastPage() {
         <div className="md:hidden flex-1 min-h-0 overflow-y-auto">
           <MobileListing
             broadcastList={filteredBroadcasts}
+            onSelectBroadcast={handleSelectBroadcast}
           />
         </div>
       )}
@@ -467,11 +480,13 @@ export default function BroadcastPage() {
 
       {/* Broadcast Form Modal */}
       <BroadcastFormModal
+        key={formModalKey}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSubmit={handleSubmitBroadcast}
         isSubmitting={isSubmitting}
         submitError={submitError}
+        existingBroadcast={selectedBroadcast}
       />
 
       {/* Filter Modal (Mobile Only) */}

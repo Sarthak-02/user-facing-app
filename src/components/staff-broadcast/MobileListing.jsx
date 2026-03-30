@@ -1,6 +1,6 @@
 import { Card } from "../../ui-components";
 
-export default function MobileListing({ broadcastList }) {
+export default function MobileListing({ broadcastList, onSelectBroadcast }) {
   const getStatusBadge = (status) => {
     const statusConfig = {
       DRAFT: { bg: "bg-gray-100", text: "text-gray-700", label: "Draft" },
@@ -89,8 +89,21 @@ export default function MobileListing({ broadcastList }) {
   return (
     <div className="space-y-4 pb-30 h-full overflow-y-auto">
       {broadcastList.map((broadcast) => (
-        <Card
+        <div
           key={broadcast.id || broadcast.broadcast_id}
+          role={onSelectBroadcast ? "button" : undefined}
+          tabIndex={onSelectBroadcast ? 0 : undefined}
+          onClick={() => onSelectBroadcast?.(broadcast)}
+          onKeyDown={(e) => {
+            if (!onSelectBroadcast) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onSelectBroadcast(broadcast);
+            }
+          }}
+          className={onSelectBroadcast ? "cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" : ""}
+        >
+        <Card
           className="p-4 active:bg-gray-50 transition-colors"
         >
           {/* Header: Title and Status */}
@@ -176,6 +189,7 @@ export default function MobileListing({ broadcastList }) {
             )}
           </div>
         </Card>
+        </div>
       ))}
     </div>
   );
