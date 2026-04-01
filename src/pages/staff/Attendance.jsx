@@ -250,7 +250,7 @@ export default function AttendancePage() {
   ).length;
 
   return (
-    <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6 md:pb-6">
+    <div className="h-screen md:min-h-screen flex flex-col p-4 gap-4 md:pb-6">
       <ConfirmationModal
         showConfirmation={showConfirmation}
         setShowConfirmation={setShowConfirmation}
@@ -403,7 +403,7 @@ export default function AttendancePage() {
 
           {/* Mobile: Fixed bottom bar with progress - Only in edit mode */}
           {editMode && (
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-surface border-t border-border p-3 sm:p-4 text-center shadow-lg">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-surface border-t border-border p-3 sm:p-4 text-center shadow-lg pb-16">
               {/* Progress Indicator */}
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-2">
@@ -428,7 +428,7 @@ export default function AttendancePage() {
               <Button
                 variant="primary"
                 className="w-full max-w-md"
-                disabled={Object.keys(attendance).length === 0}
+                disabled={Object.keys(attendance).length < students.length}
                 onClick={() => setShowConfirmation(true)}
               >
                 Submit Attendance

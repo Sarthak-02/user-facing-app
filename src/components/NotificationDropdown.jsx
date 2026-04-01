@@ -126,7 +126,9 @@ export default function NotificationDropdown() {
             navigate(`/${rolePrefix}/exams/${notification.sourceId}`);
             break;
           case "BROADCAST":
-            // Stay on current page or navigate to broadcasts
+            if (userRole === "student" && notification.sourceId) {
+              navigate(`/student/announcements/${notification.sourceId}`);
+            }
             break;
           default:
             break;

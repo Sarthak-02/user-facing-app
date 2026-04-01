@@ -85,7 +85,10 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
       },
       "section": {
         selected: formData.sectionId,
-        options: permissions.sections.map(({ section_id, section_name }) => ({
+        options: (formData.classId?.value
+          ? permissions.sections.filter((s) => s.class_id === formData.classId.value)
+          : []
+        ).map(({ section_id, section_name }) => ({
           value: section_id,
           label: section_name
         })),
@@ -106,11 +109,13 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     } else if (formData.targetType?.value === "STUDENT") {
       data['student'] = {
         selected: formData.studentId,
-        options: permissions.students.map(({ student_id, student_name, section_id }) => ({
-          value: student_id,
-          label: student_name,
-          section_id: section_id,
-        })),
+        options: permissions.students
+          .map(({ student_id, student_name, section_id }) => ({
+            value: student_id,
+            label: student_name,
+            section_id: section_id,
+          }))
+          .filter(({ section_id }) => section_id === formData.sectionId?.value),
         onChange: (options) => {
           setFormData((prev) => ({
             ...prev,
@@ -141,16 +146,27 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
           classId = classItem ? { value: classItem.class_id, label: classItem.class_name } : null;
         } else if (firstTarget.targetType === "SECTION") {
           targetType = { value: "SECTION", label: "Section" };
-          // Find the section in permissions to get the label
           const sectionItem = permissions.sections?.find(s => s.section_id === firstTarget.targetId);
           sectionId = sectionItem ? { value: sectionItem.section_id, label: sectionItem.section_name } : null;
+          if (sectionItem) {
+            const classItem = permissions.classes?.find((c) => c.class_id === sectionItem.class_id);
+            classId = classItem ? { value: classItem.class_id, label: classItem.class_name } : null;
+          }
         } else if (firstTarget.targetType === "STUDENT") {
           targetType = { value: "STUDENT", label: "Student" };
-          // Handle multiple students
           studentId = exam.targets.map(target => {
             const studentItem = permissions.students?.find(s => s.student_id === target.targetId);
             return studentItem ? { value: studentItem.student_id, label: studentItem.student_name } : null;
           }).filter(Boolean);
+          const firstStudent = permissions.students?.find((s) => s.student_id === firstTarget.targetId);
+          if (firstStudent?.section_id) {
+            const sectionItem = permissions.sections?.find((s) => s.section_id === firstStudent.section_id);
+            if (sectionItem) {
+              sectionId = { value: sectionItem.section_id, label: sectionItem.section_name };
+              const classItem = permissions.classes?.find((c) => c.class_id === sectionItem.class_id);
+              classId = classItem ? { value: classItem.class_id, label: classItem.class_name } : null;
+            }
+          }
         }
       }
 
@@ -313,8 +329,14 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
   const canProceedStep1 = formData.examType && (formData.examType !== "OTHER" || formData.customExamType);
   const canProceedStep2 =
     (formData.targetType?.value === "CLASS" && Array.isArray(formData.classId) && formData.classId.length > 0) ||
-    (formData.targetType?.value === "SECTION" && formData.sectionId?.value) ||
-    (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0);
+    (formData.targetType?.value === "SECTION" &&
+      formData.classId?.value &&
+      formData.sectionId?.value) ||
+    (formData.targetType?.value === "STUDENT" &&
+      formData.classId?.value &&
+      formData.sectionId?.value &&
+      Array.isArray(formData.studentId) &&
+      formData.studentId.length > 0);
   const canProceedStep3 = formData.subjects.every(
     sub => sub.subjectId?.value && sub.examDate && sub.startTime && sub.endTime
   );

@@ -129,11 +129,10 @@ export default function StudentAttendance() {
     fetchAttendance();
   }, [auth.userId, auth.sections, auth.campus, setAttendanceData, setLoading, setError]);
 
-  // Filter attendance records based on all filters (frontend only)
-  const filteredRecords = useMemo(() => {
+  // Date + period only — summary counts stay stable when toggling present/absent filter
+  const recordsForSummary = useMemo(() => {
     let filtered = [...records];
 
-    // Filter by date range
     if (startDate && endDate) {
       filtered = filtered.filter((record) => {
         const recordDate = new Date(record.date);
@@ -141,40 +140,41 @@ export default function StudentAttendance() {
       });
     }
 
-    // Filter by period
     if (period !== "ALL") {
       filtered = filtered.filter((record) => record.period === period);
     }
 
-    // Filter by status
+    return filtered;
+  }, [records, period, startDate, endDate]);
+
+  // Listing: same scope as summary, plus optional status filter
+  const filteredRecords = useMemo(() => {
+    let filtered = [...recordsForSummary];
+
     if (statusFilter === "PRESENT") {
       filtered = filtered.filter((record) => record.status === "PRESENT");
     } else if (statusFilter === "ABSENT") {
       filtered = filtered.filter((record) => record.status === "ABSENT");
     }
-    // If statusFilter is "ALL", show everything
 
-    // Sort by date (newest first)
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     return filtered;
-  }, [records, period, statusFilter, startDate, endDate]);
+  }, [recordsForSummary, statusFilter]);
 
-  // Calculate summary statistics from filtered records (frontend calculation)
   const displaySummary = useMemo(() => {
-    // Calculate all stats from filtered records
-    const total = filteredRecords.length;
-    const present = filteredRecords.filter((r) => r.status === "PRESENT").length;
-    const absent = filteredRecords.filter((r) => r.status === "ABSENT").length;
-    const onLeave = filteredRecords.filter((r) => r.status === "ON_LEAVE" || r.status === "EXCUSED").length;
-    
+    const total = recordsForSummary.length;
+    const present = recordsForSummary.filter((r) => r.status === "PRESENT").length;
+    const absent = recordsForSummary.filter((r) => r.status === "ABSENT").length;
+    const onLeave = recordsForSummary.filter((r) => r.status === "ON_LEAVE" || r.status === "EXCUSED").length;
+
     return {
       total,
       present,
       absent,
       onLeave,
     };
-  }, [filteredRecords]);
+  }, [recordsForSummary]);
 
   return (
     <div className="h-screen md:min-h-screen flex flex-col  p-4 gap-6">

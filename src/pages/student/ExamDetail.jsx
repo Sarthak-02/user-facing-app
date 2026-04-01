@@ -20,11 +20,53 @@ function formatTime(time) {
   return time;
 }
 
+/**
+ * Student exam detail API may use snake_case, mixed case, or leave status as
+ * PUBLISHED while statistics show all subjects graded.
+ */
+function getExamDisplayStatus(exam, statistics, root) {
+  const raw =
+    exam?.status ??
+    exam?.exam_status ??
+    exam?.examStatus ??
+    root?.status ??
+    root?.exam_status;
+  let normalized =
+    raw != null && String(raw).trim() !== ""
+      ? String(raw).trim().toUpperCase().replace(/\s+/g, "_")
+      : "";
+
+  if (normalized === "COMPLETE") normalized = "COMPLETED";
+
+  const canInferCompleted =
+    normalized === "PUBLISHED" || normalized === "";
+  if (canInferCompleted && statistics) {
+    const total = Number(statistics.total_subjects);
+    const graded = Number(statistics.graded_subjects);
+    if (total > 0 && graded >= total) {
+      return "COMPLETED";
+    }
+    const pct = Number(statistics.completion_percentage);
+    if (total > 0 && !Number.isNaN(pct) && pct >= 100) {
+      return "COMPLETED";
+    }
+  }
+
+  return normalized || "PUBLISHED";
+}
+
 function StatusBadge({ status }) {
   if (status === "COMPLETED") {
     return <Badge variant="success">Completed</Badge>;
-  } else if (status === "PUBLISHED") {
+  }
+  if (status === "PUBLISHED") {
     return <Badge variant="info">Upcoming</Badge>;
+  }
+  if (status === "DRAFT") {
+    return <Badge variant="default">Draft</Badge>;
+  }
+  if (!status) {
+    return <Badge variant="default">—</Badge>;
   }
   return <Badge variant="default">{status}</Badge>;
 }
@@ -286,9 +328,10 @@ export default function StudentExamDetail() {
   }
 
   const { exam, subjects, statistics } = examData;
+  const displayStatus = getExamDisplayStatus(exam, statistics, examData);
 
   return (
-    <div className="h-screen flex flex-col p-4 gap-6 overflow-hidden">
+    <div className="h-screen flex flex-col p-4 pb-20 gap-6 overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-4 flex-shrink-0">
         <button
@@ -327,7 +370,7 @@ export default function StudentExamDetail() {
                   <p className="text-sm text-gray-600 mt-1">{exam.custom_exam_type}</p>
                 )}
               </div>
-              <StatusBadge status={exam.status} />
+              <StatusBadge status={displayStatus} />
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -423,7 +466,7 @@ export default function StudentExamDetail() {
         </Card>
 
         {/* Info message if exam is not completed yet or no marks available */}
-        {exam.status === "PUBLISHED" && statistics?.graded_subjects === 0 && (
+        {displayStatus === "PUBLISHED" && statistics?.graded_subjects === 0 && (
           <Card>
             <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
               <svg

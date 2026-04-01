@@ -25,6 +25,60 @@ function formatDateTime(date) {
   });
 }
 
+function pickString(value) {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  return "";
+}
+
+function classSectionLabel(hw) {
+  const classPart =
+    pickString(hw?.class?.class_name) ||
+    pickString(hw?.class_name) ||
+    pickString(typeof hw?.class === "string" ? hw.class : "");
+  const sectionPart =
+    pickString(hw?.section?.section_name) ||
+    pickString(hw?.section_name) ||
+    pickString(typeof hw?.section === "string" ? hw.section : "");
+
+  if (classPart && sectionPart) return `${classPart} - ${sectionPart}`;
+  if (classPart) return classPart;
+  if (sectionPart) return sectionPart;
+
+  if (hw?.targets?.length) {
+    return hw.targets
+      .map((t) =>
+        t.target_name ||
+        [t.class_name, t.section_name].filter(Boolean).join(" - ")
+      )
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  return "—";
+}
+
+function assignedByLabel(hw) {
+  return (
+    hw?.teacher?.teacher_name ||
+    hw?.assignedBy ||
+    hw?.teacher_name ||
+    (typeof hw?.created_by === "string" ? hw.created_by : hw?.created_by?.name) ||
+    "—"
+  );
+}
+
+function assignedDateValue(hw) {
+  return (
+    hw?.assignedDate ||
+    hw?.assigned_at ||
+    hw?.published_at ||
+    hw?.createdAt ||
+    hw?.created_at ||
+    ""
+  );
+}
+
 function StatusBadge({ status, dueDate }) {
   const now = new Date();
   const due = new Date(dueDate);
@@ -72,10 +126,6 @@ export default function HomeworkDetail() {
     navigate("/student/homework");
   };
 
-  const handleSubmit = () => {
-    // TODO: Implement homework submission logic
-    alert("Submission functionality will be implemented");
-  };
 
   if (loading) {
     return (
@@ -157,7 +207,6 @@ export default function HomeworkDetail() {
                 {homework.title}
               </h1>
             </div>
-            <StatusBadge status={homework.status} dueDate={homework.due_date || homework.dueDate} />
           </div>
 
           {/* Info Grid */}
@@ -165,19 +214,19 @@ export default function HomeworkDetail() {
             <div>
               <div className="text-xs text-gray-500 mb-1">Class / Section</div>
               <div className="text-sm font-medium text-gray-900">
-                {homework.class || homework.class_name} - {homework.section || homework.section_name}
+                {classSectionLabel(homework)}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Assigned By</div>
               <div className="text-sm font-medium text-gray-900">
-                {homework.assignedBy || homework.teacher_name || homework.created_by}
+                {assignedByLabel(homework)}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Assigned Date</div>
               <div className="text-sm font-medium text-gray-900">
-                {formatDate(homework.assignedDate || homework.created_at)}
+                {formatDate(assignedDateValue(homework)) || "—"}
               </div>
             </div>
             <div>

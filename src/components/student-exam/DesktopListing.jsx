@@ -1,15 +1,6 @@
 import { Badge, Card } from "../../ui-components";
 import { useNavigate } from "react-router-dom";
-
-function formatDate(date) {
-  if (!date) return "";
-  const formattedDate = new Date(date).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-  return formattedDate;
-}
+import { examListDateRangeLabel } from "./examListDates";
 
 function getExamTypeLabel(type) {
   const labels = {
@@ -140,11 +131,7 @@ export default function DesktopListing({ examList }) {
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    <span>
-                      {formatDate(exam.startDate)}
-                      {exam.endDate && exam.startDate !== exam.endDate && 
-                        ` - ${formatDate(exam.endDate)}`}
-                    </span>
+                    <span>{examListDateRangeLabel(exam) || "—"}</span>
                   </div>
                 </div>
               </div>

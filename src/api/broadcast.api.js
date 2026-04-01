@@ -1,6 +1,23 @@
 import apiClient from "./axios";
 
 /**
+ * Announcements received by a student (school broadcasts addressed to them).
+ * @param {string} receiverId - Student user ID
+ * @returns {Promise<{ success?: boolean, data?: Array, count?: number }>}
+ */
+export async function getReceivedBroadcasts(receiverId) {
+  try {
+    const response = await apiClient.get("/broadcast/received", {
+      params: { receiverId },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching received broadcasts:", error);
+    throw error;
+  }
+}
+
+/**
  * Get all broadcasts
  * @param {Object} params - Query parameters
  * @param {string} params.campusId - Campus ID

@@ -1,117 +1,92 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, DateRange } from "../../ui-components";
-import DesktopListing from "../../components/homework/DesktopListing";
-import MobileListing from "../../components/homework/MobileListing";
-import Dropdown from "../../ui-components/Dropdown";
-import { getStudentHomeworkAll } from "../../api/homework.api";
+import DesktopListing from "../../components/student-announcements/DesktopListing";
+import MobileListing from "../../components/student-announcements/MobileListing";
+import { getReceivedBroadcasts } from "../../api/broadcast.api";
 import { useAuth } from "../../store/auth.store";
 import Loader from "../../ui-components/Loader";
 
-export default function Homework() {
+export default function Announcements() {
   const { auth } = useAuth();
-  
-  // Data states
-  const [homeworkData, setHomeworkData] = useState([]);
+
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  const [statusFilter] = useState("PUBLISHED");
-  
-  // Filter states
+
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [subjectFilter, setSubjectFilter] = useState("");
   const [dateRangeStart, setDateRangeStart] = useState("");
   const [dateRangeEnd, setDateRangeEnd] = useState("");
-  
-  // Fetch homework data
+
   useEffect(() => {
-    const fetchHomework = async () => {
+    const load = async () => {
       if (!auth.userId) return;
-      
+
       setLoading(true);
       setError(null);
-      
       try {
-        const params = {
-          student_id: auth.userId,
-          status: statusFilter,
-          limit: 100,
-          offset: 0,
-        };
-        
-        // Add date filters if set
-        if (dateRangeStart) {
-          params.start_date = dateRangeStart;
-        }
-        if (dateRangeEnd) {
-          params.end_date = dateRangeEnd;
-        }
-        
-        const response = await getStudentHomeworkAll(params);
-        setHomeworkData(response.data || response || []);
+        const res = await getReceivedBroadcasts(auth.userId);
+        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        setItems(list);
       } catch (err) {
-        console.error("Error fetching homework:", err);
-        setError(err.message || "Failed to fetch homework");
+        console.error("Error fetching announcements:", err);
+        setError(err.message || "Failed to load announcements");
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchHomework();
-  }, [auth.userId, statusFilter, dateRangeStart, dateRangeEnd]);
 
-  // Extract unique subjects from homework data
-  const subjects = useMemo(() => {
-    const uniqueSubjects = [...new Set(homeworkData.map(hw => hw.subject))];
-    return [
-      ...uniqueSubjects.map(subject => ({ value: subject, label: subject })),
-    ];
-  }, [homeworkData]);
+    load();
+  }, [auth.userId]);
 
-  // Filter homework based on client-side filters
-  const filteredHomework = useMemo(() => {
-    let filtered = [...homeworkData];
+  const filtered = useMemo(() => {
+    let list = [...items];
 
-    // Search query filter (client-side)
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((hw) => 
-        hw.title?.toLowerCase().includes(query) ||
-        hw.description?.toLowerCase().includes(query) ||
-        hw.subject?.toLowerCase().includes(query)
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.title?.toLowerCase().includes(q) ||
+          a.message?.toLowerCase().includes(q) ||
+          a.senderName?.toLowerCase().includes(q) ||
+          a.createdBy?.toLowerCase().includes(q)
       );
     }
 
-    // Subject filter (client-side)
-    if (subjectFilter) {
-      filtered = filtered.filter((hw) => hw.subject === subjectFilter?.value);
+    const start = dateRangeStart ? new Date(dateRangeStart) : null;
+    const end = dateRangeEnd ? new Date(dateRangeEnd) : null;
+    if (start) {
+      start.setHours(0, 0, 0, 0);
+      list = list.filter((a) => {
+        const d = new Date(a.submittedAt || a.submitted_at || a.createdAt);
+        return !Number.isNaN(d.getTime()) && d >= start;
+      });
+    }
+    if (end) {
+      end.setHours(23, 59, 59, 999);
+      list = list.filter((a) => {
+        const d = new Date(a.submittedAt || a.submitted_at || a.createdAt);
+        return !Number.isNaN(d.getTime()) && d <= end;
+      });
     }
 
-    // Sort by due date (earliest first)
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.due_date || a.dueDate);
-      const dateB = new Date(b.due_date || b.dueDate);
-      return dateA - dateB;
+    list.sort((a, b) => {
+      const ta = new Date(a.submittedAt || a.submitted_at || a.createdAt).getTime();
+      const tb = new Date(b.submittedAt || b.submitted_at || b.createdAt).getTime();
+      return tb - ta;
     });
 
-    return filtered;
-  }, [homeworkData, searchQuery, subjectFilter]);
-
-  const handleApplyFilters = () => {
-    setIsFilterModalOpen(false);
-  };
+    return list;
+  }, [items, searchQuery, dateRangeStart, dateRangeEnd]);
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setSubjectFilter("");
     setDateRangeStart("");
     setDateRangeEnd("");
   };
 
-  const hasActiveFilters = searchQuery || subjectFilter || dateRangeStart || dateRangeEnd;
+  const hasActiveFilters = searchQuery || dateRangeStart || dateRangeEnd;
 
-  // Loading state
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -120,7 +95,6 @@ export default function Homework() {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -140,10 +114,11 @@ export default function Homework() {
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <h2 className="text-xl font-semibold">Error Loading Homework</h2>
+            <h2 className="text-xl font-semibold">Error loading announcements</h2>
           </div>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
@@ -156,22 +131,18 @@ export default function Homework() {
 
   return (
     <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6">
-      {/* Desktop Header with Filters */}
       <Card className="hidden md:block">
         <div className="space-y-4">
-          {/* Title Row */}
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">My Homework</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Announcements</h1>
           </div>
 
-          {/* Search and Filters Row */}
           <div className="grid grid-cols-12 gap-4">
-            {/* Search Bar */}
-            <div className="col-span-4">
+            <div className="col-span-5">
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search homework..."
+                  placeholder="Search announcements..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -193,46 +164,32 @@ export default function Homework() {
               </div>
             </div>
 
-            {/* Subject Filter */}
-            <div className="col-span-2">
-              <Dropdown
-                selected={subjectFilter}
-                onChange={setSubjectFilter}
-                options={subjects}
-                placeholder="Subject"
-              />
-            </div>
-
-            {/* Date Range Start */}
             <div className="col-span-2">
               <input
                 type="date"
                 value={dateRangeStart}
                 onChange={(e) => setDateRangeStart(e.target.value)}
-                placeholder="From Date"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
-            {/* Date Range End */}
             <div className="col-span-2">
               <input
                 type="date"
                 value={dateRangeEnd}
                 onChange={(e) => setDateRangeEnd(e.target.value)}
-                placeholder="To Date"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
-            {/* Clear Filters Button */}
-            <div className="col-span-2">
+            <div className="col-span-3">
               {hasActiveFilters && (
                 <button
+                  type="button"
                   onClick={handleClearFilters}
                   className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                 >
-                  Clear Filters
+                  Clear filters
                 </button>
               )}
             </div>
@@ -240,15 +197,13 @@ export default function Homework() {
         </div>
       </Card>
 
-      {/* Mobile Header */}
       <div className="md:hidden">
         <Card className="p-4">
           <div className="flex items-center gap-2">
-            {/* Search Bar */}
             <div className="flex-1 relative">
               <input
                 type="text"
-                placeholder="Search homework..."
+                placeholder="Search announcements..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -269,8 +224,8 @@ export default function Homework() {
               </svg>
             </div>
 
-            {/* Filter Button */}
             <button
+              type="button"
               onClick={() => setIsFilterModalOpen(true)}
               className={`relative p-2 rounded-lg border transition-colors ${
                 hasActiveFilters
@@ -294,31 +249,28 @@ export default function Homework() {
                 />
               </svg>
               {hasActiveFilters && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
               )}
             </button>
           </div>
         </Card>
       </div>
 
-      {/* Desktop Listing */}
       <div className="hidden md:block flex-1 overflow-hidden">
-        <DesktopListing homeworkList={filteredHomework} />
+        <DesktopListing announcements={filtered} />
       </div>
 
-      {/* Mobile Listing */}
       <div className="md:hidden flex-1 overflow-hidden">
-        <MobileListing homeworkList={filteredHomework} />
+        <MobileListing announcements={filtered} />
       </div>
 
-      {/* Filter Modal (Mobile Only) - No dark background */}
       {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end md:hidden pointer-events-none pb-14">
+        <div className="fixed inset-0 z-50 flex items-end md:hidden pointer-events-none pb-12">
           <div className="bg-white w-full rounded-t-2xl shadow-2xl border-t border-gray-200 max-h-[80vh] flex flex-col animate-slide-up pointer-events-auto">
-            {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">Filters</h2>
               <button
+                type="button"
                 onClick={() => setIsFilterModalOpen(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 aria-label="Close filters"
@@ -340,23 +292,10 @@ export default function Homework() {
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-4 space-y-6" style={{ minHeight: '200px' }}>
-              {/* Subject Filter */}
-              <div className="relative z-10">
-                <Dropdown
-                  label="Subject"
-                  selected={subjectFilter}
-                  onChange={setSubjectFilter}
-                  options={subjects}
-                  placeholder="Select subject"
-                />
-              </div>
-
-              {/* Date Range Filters */}
+            <div className="p-4 space-y-6" style={{ minHeight: "200px" }}>
               <div className="relative z-0">
                 <DateRange
-                  label="Due Date Range"
+                  label="Date range"
                   startDate={dateRangeStart}
                   endDate={dateRangeEnd}
                   onStartDateChange={setDateRangeStart}
@@ -365,19 +304,20 @@ export default function Homework() {
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="p-4 border-t border-gray-200 flex gap-2 bg-white">
               <button
+                type="button"
                 onClick={handleClearFilters}
                 className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
               >
-                Clear All
+                Clear all
               </button>
               <button
-                onClick={handleApplyFilters}
+                type="button"
+                onClick={() => setIsFilterModalOpen(false)}
                 className="flex-1 px-4 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
               >
-                Apply Filters
+                Apply
               </button>
             </div>
           </div>

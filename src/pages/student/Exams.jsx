@@ -4,6 +4,7 @@ import DesktopListing from "../../components/student-exam/DesktopListing";
 import MobileListing from "../../components/student-exam/MobileListing";
 import Dropdown from "../../ui-components/Dropdown";
 import { getStudentExamsAll } from "../../api/exam.api";
+import { getExamListDateRange, parseExamDateInput } from "../../components/student-exam/examListDates";
 import { useAuth } from "../../store/auth.store";
 import Loader from "../../ui-components/Loader";
 
@@ -104,11 +105,15 @@ export default function StudentExams() {
       filtered = filtered.filter((exam) => exam.examType === examTypeFilter);
     }
 
-    // Sort by start date (earliest first)
+    // Sort by start date (earliest first); exams without dates last
     filtered.sort((a, b) => {
-      const dateA = new Date(a.startDate || a.start_date);
-      const dateB = new Date(b.startDate || b.start_date);
-      return dateA - dateB;
+      const startA = getExamListDateRange(a).start;
+      const startB = getExamListDateRange(b).start;
+      const tA = parseExamDateInput(startA)?.getTime();
+      const tB = parseExamDateInput(startB)?.getTime();
+      const orderA = tA ?? Number.POSITIVE_INFINITY;
+      const orderB = tB ?? Number.POSITIVE_INFINITY;
+      return orderA - orderB;
     });
 
     return filtered;

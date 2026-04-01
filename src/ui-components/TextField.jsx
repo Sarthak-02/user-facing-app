@@ -9,15 +9,19 @@
  * - onChange?: (e) => void
  * - variant?: "default" | "error" | "success" | "disabled"
  * - type?: "text" | "password"
+ * - suffix?: ReactNode — rendered inside the field on the right (e.g. password toggle)
+ * - autoComplete?: string
  */
 export default function TextField({
     label,
     icon,
+    suffix,
     placeholder,
     value,
     onChange,
     variant = "default",
     type = "text",
+    autoComplete,
   }) {
     
   
@@ -53,9 +57,17 @@ export default function TextField({
             value={value}
             onChange={onChange}
             disabled={variant === "disabled"}
+            autoComplete={autoComplete}
             className={`w-full bg-transparent focus:outline-none
-              ${icon ? "pl-10" : ""} ${variant === "disabled" ? "cursor-not-allowed" : ""}`}
+              ${icon ? "pl-10" : ""}
+              ${suffix ? "pr-10" : ""}
+              ${variant === "disabled" ? "cursor-not-allowed" : ""}`}
           />
+          {suffix ? (
+            <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center text-gray-500">
+              {suffix}
+            </span>
+          ) : null}
         </div>
   
         {/* {variant === "error" && (

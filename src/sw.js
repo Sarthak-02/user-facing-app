@@ -21,6 +21,10 @@ import { NavigationRoute, registerRoute } from "workbox-routing";
 import { initializeApp } from "firebase/app";
 import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 import { firebaseConfig } from "./firebase-config.js";
+import {
+  DEFAULT_NOTIFICATION_BADGE_URL,
+  DEFAULT_NOTIFICATION_ICON_URL,
+} from "./utils/notification-default-icon.js";
 
 // ⚠️ CRITICAL: This placeholder MUST be present for workbox-build to inject the manifest
 precacheAndRoute(self.__WB_MANIFEST);
@@ -43,8 +47,8 @@ try {
     const notificationTitle = payload?.notification?.title ?? "Digi School";
     const notificationOptions = {
       body: payload?.notification?.body ?? "",
-      icon: payload?.notification?.icon || "/pwa-192x192.png",
-      badge: "/pwa-192x192.png",
+      icon: payload?.notification?.icon || DEFAULT_NOTIFICATION_ICON_URL,
+      badge: DEFAULT_NOTIFICATION_BADGE_URL,
       tag: payload?.data?.type || "general",
       data: {
         ...payload?.data,

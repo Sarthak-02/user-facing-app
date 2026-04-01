@@ -5,7 +5,7 @@ import RoleBasedRoute from "./RoleBasedRoute";
 import Layout from "../../ui-components/layout/Layout";
 import Attendance from "../../pages/staff/Attendance";
 import BroadcastNotification from "../../pages/staff/BroadcastNotification";
-import Home from "../../pages/staff/Home";
+import Home from "../../pages/Home";
 import StudentAttendance from "../../pages/student/Attendance";
 import Homework from "../../pages/student/Homework";
 import HomeworkDetail from "../../pages/student/HomeworkDetail";
@@ -17,7 +17,12 @@ import Exams from "../../pages/staff/Exams";
 import ExamDetail from "../../pages/staff/ExamDetail";
 import EnterMarks from "../../pages/staff/EnterMarks";
 import StudentProfile from "../../pages/student/Profile";
+import StudyChat from "../../pages/student/StudyChat";
+import StudentReporting from "../../pages/student/Reporting";
+import Announcements from "../../pages/student/Announcements";
+import AnnouncementDetail from "../../pages/student/AnnouncementDetail";
 import StaffProfile from "../../pages/staff/Profile";
+import Scholarships from "../../pages/Scholarships";
 
 export const routes = [
   {
@@ -37,6 +42,7 @@ export const routes = [
     ),
     children: [
       { index: true, element: <Home /> },
+      { path: "home", element: <Home /> },
       
       // Teacher/Staff routes
       { 
@@ -137,6 +143,22 @@ export const routes = [
           </RoleBasedRoute>
         )
       },
+      {
+        path: "student/announcements",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <Announcements />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "student/announcements/:announcementId",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <AnnouncementDetail />
+          </RoleBasedRoute>
+        ),
+      },
       { 
         path: "student/exams", 
         element: (
@@ -153,7 +175,34 @@ export const routes = [
           </RoleBasedRoute>
         )
       },
-      
+      {
+        path: "student/study",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudyChat />
+          </RoleBasedRoute>
+        )
+      },
+      {
+        path: "student/reporting",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentReporting />
+          </RoleBasedRoute>
+        ),
+      },
+
+      {
+        path: "scholarships",
+        element: (
+          <RoleBasedRoute
+            allowedRoles={["student", "teacher", "staff", "admin"]}
+          >
+            <Scholarships />
+          </RoleBasedRoute>
+        ),
+      },
+
       // Catch-all route
       { path: "*", element: <Home /> },
     ],

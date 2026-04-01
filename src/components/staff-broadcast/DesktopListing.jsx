@@ -1,6 +1,6 @@
 import { Card } from "../../ui-components";
 
-export default function DesktopListing({ broadcastList }) {
+export default function DesktopListing({ broadcastList, onSelectBroadcast }) {
   const getStatusBadge = (status) => {
     const statusConfig = {
       DRAFT: { bg: "bg-gray-100", text: "text-gray-700", label: "Draft" },
@@ -113,7 +113,17 @@ export default function DesktopListing({ broadcastList }) {
             {broadcastList.map((broadcast) => (
               <tr
                 key={broadcast.id || broadcast.broadcast_id}
-                className="hover:bg-gray-50 transition-colors"
+                role={onSelectBroadcast ? "button" : undefined}
+                tabIndex={onSelectBroadcast ? 0 : undefined}
+                onClick={() => onSelectBroadcast?.(broadcast)}
+                onKeyDown={(e) => {
+                  if (!onSelectBroadcast) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelectBroadcast(broadcast);
+                  }
+                }}
+                className={`hover:bg-gray-50 transition-colors ${onSelectBroadcast ? "cursor-pointer" : ""}`}
               >
                 {/* Title & Message Preview */}
                 <td className="px-6 py-4">
