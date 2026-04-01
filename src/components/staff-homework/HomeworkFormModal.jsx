@@ -64,16 +64,20 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
           label: class_name
         })),
         onChange: (option) => {
-         
           setFormData((prev) => ({
             ...prev,
             classId: option,
+            sectionId: null,
+            studentId: [],
           }));
         },
       },
       "section": {
         selected: formData.sectionId,
-        options: permissions.sections.map(({ section_id, section_name }) => ({
+        options: (formData.classId?.value
+          ? permissions.sections.filter((s) => s.class_id === formData.classId.value)
+          : []
+        ).map(({ section_id, section_name }) => ({
           value: section_id,
           label: section_name
         })),
@@ -142,6 +146,10 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
           const section = permissions.sections.find(s => s.section_id === targetId);
           if (section) {
             sectionId = { value: section.section_id, label: section.section_name };
+            const classObj = permissions.classes.find((c) => c.class_id === section.class_id);
+            if (classObj) {
+              classId = { value: classObj.class_id, label: classObj.class_name };
+            }
           }
         } else if (firstTarget.target_type === "STUDENT" || firstTarget.targetType === "STUDENT") {
           targetType = { value: "STUDENT", label: "Student" };
@@ -156,6 +164,10 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
           const section = permissions.sections.find(s => s.section_id === sectionIdValue);
           if (section) {
             sectionId = { value: section.section_id, label: section.section_name };
+            const classObj = permissions.classes.find((c) => c.class_id === section.class_id);
+            if (classObj) {
+              classId = { value: classObj.class_id, label: classObj.class_name };
+            }
           }
         } else if (firstTarget.target_type === "CLASS" || firstTarget.targetType === "CLASS") {
           targetType = { value: "CLASS", label: "Class" };
@@ -363,8 +375,14 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
     formData.subject?.value &&
     formData.description.trim() &&
     formData.dueDate &&
-    ((formData.targetType?.value === "SECTION" && formData.sectionId?.value) ||
-      (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0));
+    ((formData.targetType?.value === "SECTION" &&
+      formData.classId?.value &&
+      formData.sectionId?.value) ||
+      (formData.targetType?.value === "STUDENT" &&
+        formData.classId?.value &&
+        formData.sectionId?.value &&
+        Array.isArray(formData.studentId) &&
+        formData.studentId.length > 0));
 
   if (!isOpen) return null;
 

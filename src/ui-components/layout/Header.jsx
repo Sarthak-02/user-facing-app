@@ -54,14 +54,14 @@ export default function Header() {
     <header
       className="
         h-14 md:h-16
-        flex items-center justify-between
+        flex items-center justify-end
         px-4 md:px-6
         bg-surface
         border-b border-[var(--color-border)]
         sticky top-0 z-30
       "
     >
-      {/* Left: Section Selector/Label */}
+      {/* Left: Section Selector/Label
       <div className="flex items-center gap-2">
         {sections.length === 1 ? (
           <span className="text-sm md:text-base font-medium">
@@ -90,7 +90,7 @@ export default function Header() {
             ))}
           </select>
         ) : null}
-      </div>
+      </div> */}
 
       {/* Right: Actions */}
       <div className="flex items-center gap-4">

@@ -57,9 +57,15 @@ function buildFormFromBroadcast(broadcast, permissions) {
   if (tt === "SECTION") {
     const firstId = first.targetId || first.target_id;
     const sec = permissions.sections.find((s) => s.section_id === firstId);
+    const classOption = sec?.class_id
+      ? permissions.classes.find((c) => c.class_id === sec.class_id)
+      : null;
     return {
       ...base,
       targetType: TARGET_OPTIONS[2],
+      classId: classOption
+        ? { value: classOption.class_id, label: classOption.class_name }
+        : null,
       sectionId: sec
         ? { value: sec.section_id, label: sec.section_name }
         : { value: firstId, label: String(firstId) },
@@ -79,9 +85,15 @@ function buildFormFromBroadcast(broadcast, permissions) {
     const sectionMeta = firstSt
       ? permissions.sections.find((s) => s.section_id === firstSt.section_id)
       : null;
+    const classFromSection = sectionMeta?.class_id
+      ? permissions.classes.find((c) => c.class_id === sectionMeta.class_id)
+      : null;
     return {
       ...base,
       targetType: TARGET_OPTIONS[3],
+      classId: classFromSection
+        ? { value: classFromSection.class_id, label: classFromSection.class_name }
+        : null,
       sectionId: sectionMeta
         ? { value: sectionMeta.section_id, label: sectionMeta.section_name }
         : null,
@@ -128,7 +140,10 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
       },
       "section": {
         selected: formData.sectionId,
-        options: permissions.sections.map(({ section_id, section_name }) => ({
+        options: (formData.classId?.value
+          ? permissions.sections.filter((s) => s.class_id === formData.classId.value)
+          : []
+        ).map(({ section_id, section_name }) => ({
           value: section_id,
           label: section_name
         })),
@@ -258,8 +273,14 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
     formData.message.trim() &&
     (formData.targetType?.value === "CAMPUS" ||
       (formData.targetType?.value === "CLASS" && formData.classId?.value) ||
-      (formData.targetType?.value === "SECTION" && formData.sectionId?.value) ||
-      (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0));
+      (formData.targetType?.value === "SECTION" &&
+        formData.classId?.value &&
+        formData.sectionId?.value) ||
+      (formData.targetType?.value === "STUDENT" &&
+        formData.classId?.value &&
+        formData.sectionId?.value &&
+        Array.isArray(formData.studentId) &&
+        formData.studentId.length > 0));
 
   if (!isOpen) return null;
 
