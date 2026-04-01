@@ -9,6 +9,10 @@ import { saveFCMToken } from "../api/auth.api";
 import { useAuth } from "../store/auth.store";
 import { toast } from "sonner";
 import { showCustomNotification } from "../components/CustomNotificationToast";
+import {
+  DEFAULT_NOTIFICATION_BADGE_URL,
+  DEFAULT_NOTIFICATION_ICON_URL,
+} from "../utils/notification-default-icon.js";
 
 const NotificationContext = createContext(null);
 
@@ -59,8 +63,8 @@ export function NotificationProvider({ children }) {
           payload.notification.title || "Digi School",
           {
             body: payload.notification.body || "",
-            icon: payload.notification.icon || "/pwa-192x192.png",
-            badge: "/pwa-192x192.png",
+            icon: payload.notification.icon || DEFAULT_NOTIFICATION_ICON_URL,
+            badge: DEFAULT_NOTIFICATION_BADGE_URL,
             data: payload.data || {},
           }
         );

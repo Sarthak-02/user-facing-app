@@ -25,8 +25,6 @@ export default defineConfig({
         type: 'module',
       },
       includeAssets: [
-        "favicon.svg",
-        "apple-touch-icon.png",
         "pwa-192x192.png",
         "pwa-512x512.png",
       ],
@@ -40,8 +38,18 @@ export default defineConfig({
         start_url: "/app/",
         scope: "/app/",
         icons: [
-          { src: "/app/pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "/app/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "/app/pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/app/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
         ],
       },
     }),

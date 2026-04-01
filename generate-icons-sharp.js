@@ -13,7 +13,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const svgPath = path.join(__dirname, 'public', 'app-icon.svg');
+const logoSvg = path.join(__dirname, 'src', 'assets', 'logo_vectorized.svg');
+const fallbackSvg = path.join(__dirname, 'public', 'app-icon.svg');
 const publicDir = path.join(__dirname, 'public');
 
 const sizes = [
@@ -24,10 +25,12 @@ const sizes = [
 
 async function generateIcons() {
   try {
-    console.log('📱 Generating PWA icons from app-icon.svg...\n');
+    const svgPath = fs.existsSync(logoSvg) ? logoSvg : fallbackSvg;
+    const sourceLabel = svgPath === logoSvg ? 'src/assets/logo_vectorized.svg' : 'public/app-icon.svg';
+    console.log(`📱 Generating PWA & notification icons from ${sourceLabel}...\n`);
 
     if (!fs.existsSync(svgPath)) {
-      console.error('❌ Error: app-icon.svg not found in public/ folder');
+      console.error('❌ Error: No SVG found. Add src/assets/logo_vectorized.svg or public/app-icon.svg');
       process.exit(1);
     }
 
