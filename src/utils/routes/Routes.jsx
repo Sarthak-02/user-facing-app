@@ -18,6 +18,8 @@ import ExamDetail from "../../pages/staff/ExamDetail";
 import EnterMarks from "../../pages/staff/EnterMarks";
 import StudentProfile from "../../pages/student/Profile";
 import StudyChat from "../../pages/student/StudyChat";
+import StudentMessages from "../../pages/student/StudentMessages";
+import StaffMessages from "../../pages/staff/StaffMessages";
 import StudentReporting from "../../pages/student/Reporting";
 import Announcements from "../../pages/student/Announcements";
 import AnnouncementDetail from "../../pages/student/AnnouncementDetail";
@@ -101,6 +103,22 @@ export const routes = [
           </RoleBasedRoute>
         )
       },
+      {
+        path: "staff/chat",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffMessages />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/chat/:conversationId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffMessages />
+          </RoleBasedRoute>
+        ),
+      },
       { 
         path: "broadcast", 
         element: (
@@ -182,6 +200,22 @@ export const routes = [
             <StudyChat />
           </RoleBasedRoute>
         )
+      },
+      {
+        path: "student/chat",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentMessages />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "student/chat/:conversationId",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentMessages />
+          </RoleBasedRoute>
+        ),
       },
       {
         path: "student/reporting",

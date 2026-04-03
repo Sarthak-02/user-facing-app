@@ -297,7 +297,7 @@ export default function Scholarships() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col p-4 gap-4 pb-24 md:pb-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pb-24 md:pb-6">
       <Card>
         <div className="space-y-4">
           <div>

@@ -12,6 +12,7 @@ import {
   GraduationCap,
   BarChart3,
   Megaphone,
+  MessageCircle,
 } from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
@@ -43,6 +44,7 @@ export default function Layout() {
         { label: "Homework", icon: BookOpen, path: "/student/homework" },
         { label: "Announcements", icon: Megaphone, path: "/student/announcements" },
         { label: "Exams", icon: FileText, path: "/student/exams" },
+        { label: "Messages", icon: MessageCircle, path: "/student/chat" },
         { label: "Reporting", icon: BarChart3, path: "/student/reporting" },
         { label: "Study", icon: Sparkles, path: "/student/study" },
       ];
@@ -53,6 +55,7 @@ export default function Layout() {
         { label: "Attendance", icon: ClipboardCheck, path: "/staff/attendance" },
         { label: "Homework", icon: BookOpen, path: "/staff/homework" },
         { label: "Exams", icon: FileText, path: "/staff/exams" },
+        { label: "Messages", icon: MessageCircle, path: "/staff/chat" },
         { label: "Broadcast", icon: Bell, path: "/broadcast" },
       ];
     }
@@ -83,8 +86,10 @@ export default function Layout() {
           <Header />
         </div>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto"><Outlet /></main>
+        {/* Page Content — children use flex-1 min-h-0 + overflow-y-auto for page scroll, or internal scroll (e.g. chat) */}
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <Outlet />
+        </main>
       </div>
 
       {/* Mobile Bottom Navigation */}

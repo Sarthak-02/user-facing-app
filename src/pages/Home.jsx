@@ -4,8 +4,13 @@ import StaffHome from "./staff/Home";
 
 export default function Home() {
   const { auth } = useAuth();
-  if (auth?.role?.toLowerCase() === "student") {
-    return <StudentHome />;
-  }
-  return <StaffHome />;
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto">
+      {auth?.role?.toLowerCase() === "student" ? (
+        <StudentHome />
+      ) : (
+        <StaffHome />
+      )}
+    </div>
+  );
 }

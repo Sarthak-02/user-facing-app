@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Clock,
   Megaphone,
+  MessageCircle,
   Moon,
   XCircle,
 } from "lucide-react";
@@ -366,6 +367,34 @@ export default function StudentHome() {
             </div>
           </div>
         </Card>
+
+        <Link to="/student/chat" className="block">
+          <Card className="border border-gray-100 bg-white shadow-sm transition-all hover:border-primary-400 hover:shadow-md dark:border-gray-800 dark:hover:border-primary-500">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-900"
+                  aria-hidden
+                >
+                  <MessageCircle size={20} strokeWidth={2} />
+                </span>
+                <div>
+                  <h2 className="text-lg font-semibold tracking-tight text-gray-950 dark:text-gray-900">
+                    Messages
+                  </h2>
+                  <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-600">
+                    Chat with your teachers. New messages refresh while you are in a conversation.
+                  </p>
+                </div>
+              </div>
+              <ChevronRight
+                className="shrink-0 text-primary-700 dark:text-primary-400"
+                size={22}
+                aria-hidden
+              />
+            </div>
+          </Card>
+        </Link>
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="border border-gray-100 bg-white shadow-sm dark:border-gray-800 ">
