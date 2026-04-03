@@ -25,6 +25,13 @@ import Announcements from "../../pages/student/Announcements";
 import AnnouncementDetail from "../../pages/student/AnnouncementDetail";
 import StaffProfile from "../../pages/staff/Profile";
 import Scholarships from "../../pages/Scholarships";
+import StaffLessonPlansHome from "../../pages/staff/StaffLessonPlansHome";
+import StaffLessonPlansSubjectPick from "../../pages/staff/StaffLessonPlansSubjectPick";
+import StaffLessonPlansBrowse from "../../pages/staff/StaffLessonPlansBrowse";
+import StaffLessonPlanDetail from "../../pages/staff/StaffLessonPlanDetail";
+import StudentLessonPlansHome from "../../pages/student/StudentLessonPlansHome";
+import StudentLessonPlansBrowse from "../../pages/student/StudentLessonPlansBrowse";
+import StudentLessonPlanDetail from "../../pages/student/StudentLessonPlanDetail";
 
 export const routes = [
   {
@@ -78,6 +85,38 @@ export const routes = [
             <TeacherHomeworkDetail />
           </RoleBasedRoute>
         )
+      },
+      {
+        path: "staff/lesson-plans/section/:sectionId/subject/:subjectId/plan/:planId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffLessonPlanDetail />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/lesson-plans/section/:sectionId/subject/:subjectId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffLessonPlansBrowse />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/lesson-plans/section/:sectionId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffLessonPlansSubjectPick />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/lesson-plans",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffLessonPlansHome />
+          </RoleBasedRoute>
+        ),
       },
       { 
         path: "staff/exams", 
@@ -160,6 +199,30 @@ export const routes = [
             <HomeworkDetail />
           </RoleBasedRoute>
         )
+      },
+      {
+        path: "student/lesson-plans/subject/:subjectId/plan/:planId",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentLessonPlanDetail />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "student/lesson-plans/subject/:subjectId",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentLessonPlansBrowse />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "student/lesson-plans",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentLessonPlansHome />
+          </RoleBasedRoute>
+        ),
       },
       {
         path: "student/announcements",

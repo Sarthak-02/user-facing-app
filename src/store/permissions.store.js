@@ -67,11 +67,20 @@ export const usePermissions = create(
       // Get all teacher subjects
       getTeacherSubjects: () => get().permissions.teacher_subjects,
 
-      // Get subjects for a specific section
+      // Get subjects for a specific section (prefers subjects embedded on the section row from API)
       getSubjectsBySection: (section_id) => {
-        return get().permissions.teacher_subjects.filter(
-          (subject) => subject.section_id === section_id
-        );
+        const perm = get().permissions;
+        const section = (perm.sections || []).find((s) => s.section_id === section_id);
+        console.log("section",section.section_subjects);
+        if (section && Array.isArray(section.section_subjects) && section.section_subjects.length > 0) {
+          return section.section_subjects
+            .map((s) => ({
+              subject_id: s,
+              subject_name: s,
+              section_id: section_id,
+            }))
+           
+        }
       },
     }),
     {

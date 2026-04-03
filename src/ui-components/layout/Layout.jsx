@@ -13,6 +13,7 @@ import {
   BarChart3,
   Megaphone,
   MessageCircle,
+  NotebookPen,
 } from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
@@ -42,6 +43,7 @@ export default function Layout() {
         scholarshipsNav,
         { label: "Attendance", icon: ClipboardCheck, path: "/student/attendance" },
         { label: "Homework", icon: BookOpen, path: "/student/homework" },
+        { label: "Lesson plans", icon: NotebookPen, path: "/student/lesson-plans" },
         { label: "Announcements", icon: Megaphone, path: "/student/announcements" },
         { label: "Exams", icon: FileText, path: "/student/exams" },
         { label: "Messages", icon: MessageCircle, path: "/student/chat" },
@@ -54,6 +56,7 @@ export default function Layout() {
         scholarshipsNav,
         { label: "Attendance", icon: ClipboardCheck, path: "/staff/attendance" },
         { label: "Homework", icon: BookOpen, path: "/staff/homework" },
+        { label: "Lesson plans", icon: NotebookPen, path: "/staff/lesson-plans" },
         { label: "Exams", icon: FileText, path: "/staff/exams" },
         { label: "Messages", icon: MessageCircle, path: "/staff/chat" },
         { label: "Broadcast", icon: Bell, path: "/broadcast" },
