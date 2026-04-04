@@ -41,6 +41,24 @@ function statusLabel(status) {
   return String(status).replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
 }
 
+function teacherDisplayName(teacher) {
+  if (!teacher || typeof teacher !== "object") return "";
+  const parts = [
+    teacher.teacher_first_name,
+    teacher.teacher_middle_name,
+    teacher.teacher_last_name,
+  ].filter(Boolean);
+  if (parts.length) return parts.join(" ");
+  return teacher.teacher_employee_code || teacher.teacher_id || "";
+}
+
+function truncateText(text, max) {
+  if (!text || typeof text !== "string") return "";
+  const t = text.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max).trimEnd()}…`;
+}
+
 export default function StudentLessonPlansBrowse() {
   const { subjectId } = useParams();
   const navigate = useNavigate();
@@ -81,9 +99,10 @@ export default function StudentLessonPlansBrowse() {
         });
         const list = normalizeLessonPlanList(rawPlans);
         for (const p of list) {
-          if (!p.subject_id) continue;
-          const name = p.subject_name || p.subject?.name || p.subject_id;
-          map.set(p.subject_id, name);
+          const sid = p.subject;
+          const name = p.subject_name || sid;
+          if (sid) map.set(sid, name || sid);
+          else if (name) map.set(name, name);
         }
       } catch (_) {
         /* ignore */
@@ -109,13 +128,13 @@ export default function StudentLessonPlansBrowse() {
       const raw = await listLessonPlans({
         campus_id: auth.campus_id,
         section_id: sectionId,
-        subject_id: subjectId,
+        subject: subjectId,
         limit: 200,
       });
       const list = normalizeLessonPlanList(raw);
       list.sort((a, b) => {
-        const da = new Date(a.lesson_date || 0).getTime();
-        const db = new Date(b.lesson_date || 0).getTime();
+        const da = new Date(a.lesson_date ?? a.lessonDate ?? 0).getTime();
+        const db = new Date(b.lesson_date ?? b.lessonDate ?? 0).getTime();
         return db - da;
       });
       setPlans(list);
@@ -182,6 +201,10 @@ export default function StudentLessonPlansBrowse() {
         <div className="mt-6 space-y-2">
           {plans.map((p) => {
             const id = p.lesson_plan_id || p.id;
+            const title = p.chapter_topic ?? p.chapterTopic ?? "Untitled";
+            const dateVal = p.lesson_date ?? p.lessonDate;
+            const teacher = teacherDisplayName(p.teacher);
+            const desc = truncateText(p.description, 120);
             return (
               <Card key={id}>
                 <button
@@ -190,9 +213,15 @@ export default function StudentLessonPlansBrowse() {
                   onClick={() => navigate(`/student/lesson-plans/subject/${subjectId}/plan/${id}`)}
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">{p.chapter_topic || "Untitled"}</p>
-                      <p className="mt-1 text-sm text-gray-600">{formatDate(p.lesson_date)}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900">{title}</p>
+                      <p className="mt-1 text-sm text-gray-600">{formatDate(dateVal)}</p>
+                      {teacher ? (
+                        <p className="mt-0.5 text-xs text-gray-500">Teacher: {teacher}</p>
+                      ) : null}
+                      {desc ? (
+                        <p className="mt-2 line-clamp-2 text-sm text-gray-600">{desc}</p>
+                      ) : null}
                     </div>
                     <Badge variant={statusVariant(p.status)}>{statusLabel(p.status)}</Badge>
                   </div>

@@ -76,9 +76,13 @@ export default function StudentLessonPlansHome() {
             });
             const plans = normalizeLessonPlanList(rawPlans);
             for (const p of plans) {
-              if (!p.subject_id) continue;
-              const name = p.subject_name || p.subject?.name || p.subject_id;
-              map.set(p.subject_id, { subject_id: p.subject_id, subject_name: name });
+              const sid = p.subject_id;
+              const name = p.subject_name || sid;
+              if (sid) {
+                map.set(sid, { subject_id: sid, subject_name: name || sid });
+              } else if (name) {
+                map.set(name, { subject_id: name, subject_name: name });
+              }
             }
           } catch (e) {
             console.warn("Lesson plans list for subjects failed", e);

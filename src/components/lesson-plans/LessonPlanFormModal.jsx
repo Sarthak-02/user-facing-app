@@ -39,6 +39,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
 
   const [lessonDate, setLessonDate] = useState("");
   const [chapterTopic, setChapterTopic] = useState("");
+  const [description, setDescription] = useState("");
   const [objectives, setObjectives] = useState([""]);
   const [activities, setActivities] = useState([
     { type: "lecture", description: "", duration_minutes: "" },
@@ -55,9 +56,10 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
     if (!open) return;
 
     if (plan) {
-      setLessonDate(toDateInputValue(plan.lesson_date));
-      setChapterTopic(plan.chapter_topic || "");
-      const objs = plan.learning_objectives;
+      setLessonDate(toDateInputValue(plan.lesson_date ?? plan.lessonDate));
+      setChapterTopic(plan.chapter_topic ?? plan.chapterTopic ?? "");
+      setDescription(plan.description ?? "");
+      const objs = plan.learning_objectives ?? plan.learningObjectives;
       setObjectives(Array.isArray(objs) && objs.length ? [...objs] : [""]);
       const acts = plan.activities;
       setActivities(
@@ -68,7 +70,9 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
               duration_minutes:
                 a.duration_minutes !== undefined && a.duration_minutes !== null
                   ? String(a.duration_minutes)
-                  : "",
+                  : a.durationMinutes !== undefined && a.durationMinutes !== null
+                    ? String(a.durationMinutes)
+                    : "",
             }))
           : [{ type: "lecture", description: "", duration_minutes: "" }]
       );
@@ -81,6 +85,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
     } else {
       setLessonDate(toDateInputValue(new Date().toISOString()));
       setChapterTopic("");
+      setDescription("");
       setObjectives([""]);
       setActivities([{ type: "lecture", description: "", duration_minutes: "" }]);
       setHomework("");
@@ -186,6 +191,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
         await updateLessonPlan(planId, {
           lesson_date: lessonDate,
           chapter_topic: chapterTopic.trim(),
+          ...(description.trim() ? { description: description.trim() } : { description: null }),
           learning_objectives,
           activities: activitiesPayload,
           homework: homework.trim() || null,
@@ -198,11 +204,12 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
         await createLessonPlan({
           lesson_date: lessonDate,
           chapter_topic: chapterTopic.trim(),
+          ...(description.trim() ? { description: description.trim() } : {}),
           learning_objectives,
           activities: activitiesPayload,
           homework: homework.trim() || undefined,
           status: status.value,
-          subject_id: context.subjectId,
+          subject: context.subjectId,
           class_id: context.classId,
           section_id: context.sectionId || undefined,
           teacher_id: context.teacherId,
@@ -220,11 +227,15 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
   };
 
   return (
-    <Modal open={open} onClose={onClose} className="max-h-[90vh] max-w-2xl overflow-y-auto">
-      <h2 className="text-lg font-semibold text-gray-900">
+    <Modal
+      open={open}
+      onClose={onClose}
+      className="max-h-[90vh] w-full max-w-[min(42rem,calc(100vw-1.5rem))] overflow-y-auto sm:max-w-2xl"
+    >
+      <h2 className="pr-11 text-lg font-semibold leading-snug text-gray-900">
         {isEdit ? "Edit lesson plan" : "New lesson plan"}
       </h2>
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-4 w-full min-w-0 space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Lesson date</label>
           <Input
@@ -244,6 +255,15 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           />
         </div>
         <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Description (optional)</label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            placeholder="Overview, focus areas, or notes for this lesson"
+          />
+        </div>
+        <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
           <Dropdown
             options={STATUS_OPTIONS}
@@ -253,25 +273,27 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           />
         </div>
 
-        <div>
-          <div className="mb-2 flex items-center justify-between">
+        <div className="w-full min-w-0">
+          <div className="mb-2 flex w-full items-center justify-between gap-2">
             <span className="text-sm font-medium text-gray-700">Learning objectives</span>
             <Button type="button" variant="ghost" className="py-1 text-sm" onClick={addObjective}>
               <Plus className="h-4 w-4" /> Add
             </Button>
           </div>
-          <div className="space-y-2">
+          <div className="w-full space-y-2">
             {objectives.map((obj, i) => (
-              <div key={i} className="flex gap-2">
-                <Input
-                  value={obj}
-                  onChange={(e) => setObjective(i, e.target.value)}
-                  placeholder={`Objective ${i + 1}`}
-                />
+              <div key={i} className="flex w-full min-w-0 items-stretch gap-2">
+                <div className="min-w-0 flex-1">
+                  <Input
+                    value={obj}
+                    onChange={(e) => setObjective(i, e.target.value)}
+                    placeholder={`Objective ${i + 1}`}
+                  />
+                </div>
                 <Button
                   type="button"
                   variant="secondary"
-                  className="shrink-0 px-2"
+                  className="shrink-0 self-center px-2"
                   onClick={() => removeObjective(i)}
                   disabled={objectives.length <= 1}
                 >
@@ -331,7 +353,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           </div>
         </div>
 
-        <div>
+        {/* <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Homework (optional)</label>
           <Textarea
             value={homework}
@@ -339,7 +361,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
             rows={3}
             placeholder="Instructions for students"
           />
-        </div>
+        </div> */}
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Attachments</label>

@@ -37,6 +37,20 @@ function statusLabel(status) {
   return String(status).replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
 }
 
+function classSectionLabel(p) {
+  const c = p.class_name ?? p.class?.class_name;
+  const s = p.section_name ?? p.section?.section_name;
+  if (c && s) return `${c} · ${s}`;
+  return s || c || "";
+}
+
+function truncateText(text, max) {
+  if (!text || typeof text !== "string") return "";
+  const t = text.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max).trimEnd()}…`;
+}
+
 export default function StaffLessonPlansBrowse() {
   const { sectionId, subjectId } = useParams();
   const navigate = useNavigate();
@@ -63,8 +77,7 @@ export default function StaffLessonPlansBrowse() {
   );
 
   const subjectMeta = subjectsInSection.find((s) => s.subject_id === subjectId);
-  console.log("subjectMeta",subjectMeta);
-  console.log("subjectsInSection",subjectsInSection);
+
   const fetchPlans = useCallback(async () => {
     if (!permissions.teacher_id || !subjectId || !classId) {
       setPlans([]);
@@ -77,15 +90,15 @@ export default function StaffLessonPlansBrowse() {
       const raw = await listLessonPlans({
         teacher_id: permissions.teacher_id,
         campus_id: auth.campus_id || undefined,
-        subject_id: subjectId,
+        subject: subjectId,
         class_id: classId,
         section_id: sectionId,
         limit: 200,
       });
       const list = normalizeLessonPlanList(raw);
       list.sort((a, b) => {
-        const da = new Date(a.lesson_date || 0).getTime();
-        const db = new Date(b.lesson_date || 0).getTime();
+        const da = new Date(a.lesson_date ?? a.lessonDate ?? 0).getTime();
+        const db = new Date(b.lesson_date ?? b.lessonDate ?? 0).getTime();
         return db - da;
       });
       setPlans(list);
@@ -170,7 +183,7 @@ export default function StaffLessonPlansBrowse() {
           <p className="text-sm text-gray-600">Planned lessons for this subject</p>
         </div>
         <Button
-          className="shrink-0 gap-2"
+          className="hidden shrink-0 gap-2 md:inline-flex"
           onClick={() => {
             setEditingPlan(null);
             setFormOpen(true);
@@ -193,41 +206,72 @@ export default function StaffLessonPlansBrowse() {
         <div className="mt-6 space-y-2">
           {plans.map((p) => {
             const id = p.lesson_plan_id || p.id;
+            const title = p.chapter_topic ?? p.chapterTopic ?? "Untitled";
+            const dateVal = p.lesson_date ?? p.lessonDate;
+            const meta = classSectionLabel(p);
+            const desc = truncateText(p.description, 140);
             return (
-              <Card key={id}>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <Card key={id} className="relative">
+                <div className="relative pr-[5.25rem] sm:pr-28">
+                  <div className="absolute right-0 top-0 z-10">
+                    <Badge variant={statusVariant(p.status)}>{statusLabel(p.status)}</Badge>
+                  </div>
                   <button
                     type="button"
-                    className="text-left"
+                    className="w-full min-w-0 text-left"
                     onClick={() =>
                       navigate(`/staff/lesson-plans/section/${sectionId}/subject/${subjectId}/plan/${id}`)
                     }
                   >
-                    <p className="font-medium text-gray-900">{p.chapter_topic || "Untitled"}</p>
-                    <p className="mt-1 text-sm text-gray-600">{formatDate(p.lesson_date)}</p>
+                    <p className="pr-1 font-medium text-gray-900">{title}</p>
+                    <p className="mt-1 text-sm text-gray-600">{formatDate(dateVal)}</p>
+                    {meta ? <p className="mt-0.5 text-xs text-gray-500">{meta}</p> : null}
+                    {desc ? (
+                      <p className="mt-2 line-clamp-2 text-sm text-gray-600">{desc}</p>
+                    ) : null}
                   </button>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={statusVariant(p.status)}>{statusLabel(p.status)}</Badge>
-                    <Button
-                      variant="secondary"
-                      className="text-sm"
-                      onClick={() => {
-                        setEditingPlan(p);
-                        setFormOpen(true);
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button variant="danger" className="text-sm" onClick={() => setDeleteTarget(p)}>
-                      Delete
-                    </Button>
-                  </div>
+                </div>
+                <div className="mt-4 flex items-center justify-center gap-4 border-t border-border pt-4">
+                  <Button
+                    variant="secondary"
+                    className="min-w-[6.5rem] px-5 py-2.5 text-base font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingPlan(p);
+                      setFormOpen(true);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    className="min-w-[6.5rem] px-5 py-2.5 text-base font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget(p);
+                    }}
+                  >
+                    Delete
+                  </Button>
                 </div>
               </Card>
             );
           })}
         </div>
       )}
+
+      {/* Floating create button (mobile — matches staff homework FAB) */}
+      <button
+        type="button"
+        onClick={() => {
+          setEditingPlan(null);
+          setFormOpen(true);
+        }}
+        className="fixed bottom-20 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-blue-600 active:scale-95 active:bg-blue-700 md:hidden"
+        aria-label="Create new lesson plan"
+      >
+        <Plus className="h-6 w-6" strokeWidth={2} />
+      </button>
 
       <LessonPlanFormModal
         open={formOpen}

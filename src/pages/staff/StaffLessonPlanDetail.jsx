@@ -33,6 +33,24 @@ function statusLabel(status) {
   return String(status).replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
 }
 
+function teacherDisplayName(teacher) {
+  if (!teacher || typeof teacher !== "object") return "";
+  const parts = [
+    teacher.teacher_first_name,
+    teacher.teacher_middle_name,
+    teacher.teacher_last_name,
+  ].filter(Boolean);
+  if (parts.length) return parts.join(" ");
+  return teacher.teacher_employee_code || teacher.teacher_id || "";
+}
+
+function classSectionLabel(p) {
+  const c = p.class_name ?? p.class?.class_name;
+  const s = p.section_name ?? p.section?.section_name;
+  if (c && s) return `${c} · ${s}`;
+  return s || c || "";
+}
+
 export default function StaffLessonPlanDetail() {
   const { sectionId, subjectId, planId } = useParams();
   const navigate = useNavigate();
@@ -105,9 +123,11 @@ export default function StaffLessonPlanDetail() {
   const objectives = plan.learning_objectives || [];
   const activities = plan.activities || [];
   const attachments = plan.attachments || plan.lesson_plan_attachments || [];
+  const classSection = classSectionLabel(plan);
+  const teacherName = teacherDisplayName(plan.teacher);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6 ">
       <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
         <ArrowLeft className="h-4 w-4" />
         Back
@@ -115,8 +135,19 @@ export default function StaffLessonPlanDetail() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{plan.chapter_topic || "Lesson plan"}</h1>
-          <p className="mt-1 text-sm text-gray-600">{formatDate(plan.lesson_date)}</p>
+          <h1 className="text-xl font-bold text-gray-900">
+            {plan.chapter_topic ?? plan.chapterTopic ?? "Lesson plan"}
+          </h1>
+          <p className="mt-1 text-sm text-gray-600">
+            {formatDate(plan.lesson_date ?? plan.lessonDate)}
+          </p>
+          {(plan.subject_name || classSection || teacherName) ? (
+            <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+              {plan.subject_name ? <span>{plan.subject_name}</span> : null}
+              {classSection ? <span>{classSection}</span> : null}
+              {teacherName ? <span>Teacher: {teacherName}</span> : null}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge variant={statusVariant(plan.status)}>{statusLabel(plan.status)}</Badge>
@@ -124,7 +155,13 @@ export default function StaffLessonPlanDetail() {
         </div>
       </div>
 
-      <Card className="mt-6" title="Learning objectives">
+      {plan.description ? (
+        <Card className="mt-6" title="Description">
+          <p className="whitespace-pre-wrap text-sm text-gray-800">{plan.description}</p>
+        </Card>
+      ) : null}
+
+      <Card className={plan.description ? "mt-4" : "mt-6"} title="Learning objectives">
         <ol className="list-decimal space-y-2 pl-5 text-sm text-gray-800">
           {objectives.length ? (
             objectives.map((o, i) => <li key={i}>{o}</li>)
@@ -140,8 +177,10 @@ export default function StaffLessonPlanDetail() {
             activities.map((a, i) => (
               <li key={i} className="rounded-lg border border-border bg-surface/40 p-3">
                 <p className="font-medium capitalize">{a.type || "Activity"}</p>
-                {a.duration_minutes != null && (
-                  <p className="mt-1 text-xs text-gray-600">{a.duration_minutes} minutes</p>
+                {(a.duration_minutes != null || a.durationMinutes != null) && (
+                  <p className="mt-1 text-xs text-gray-600">
+                    {a.duration_minutes ?? a.durationMinutes} minutes
+                  </p>
                 )}
                 {a.description && <p className="mt-2 text-gray-700">{a.description}</p>}
               </li>
