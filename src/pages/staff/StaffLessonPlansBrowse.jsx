@@ -182,16 +182,6 @@ export default function StaffLessonPlansBrowse() {
           <h1 className="text-xl font-bold text-gray-900">{headerSubtitle}</h1>
           <p className="text-sm text-gray-600">Planned lessons for this subject</p>
         </div>
-        <Button
-          className="hidden shrink-0 gap-2 md:inline-flex"
-          onClick={() => {
-            setEditingPlan(null);
-            setFormOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          New plan
-        </Button>
       </div>
 
       {loading ? (

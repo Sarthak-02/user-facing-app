@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 import { Card } from "../../ui-components";
 import Loader from "../../ui-components/Loader";
 import { useAuth } from "../../store/auth.store";
-import { getReceiverSummary } from "../../api/receiver.api";
+import {
+  getReceiverSummary,
+  unwrapReceiverSummaryResponse,
+} from "../../api/receiver.api";
 import {
   AlertCircle,
   Bell,
@@ -192,13 +195,12 @@ export default function StudentHome() {
         sectionId,
         campusId,
       });
-      if (res?.success && res.data) {
-        setSummaryPayload(res.data);
+      const { payload, message } = unwrapReceiverSummaryResponse(res);
+      if (payload) {
+        setSummaryPayload(payload);
       } else {
         setSummaryPayload(null);
-        setError(
-          typeof res?.message === "string" ? res.message : "Could not load summary."
-        );
+        setError(message || "Could not load summary.");
       }
     } catch (e) {
       setSummaryPayload(null);
@@ -252,15 +254,21 @@ export default function StudentHome() {
       const periodsToday = tt ? buildTodaysPeriods(tt, now) : [];
       const idx = currentPeriodIndexFor(periodsToday);
 
-      const hwRaw = summaryPayload?.homeworkDueNext7Days;
+      const hwRaw =
+        Array.isArray(summaryPayload?.homeworkDueNext7Days) &&
+        summaryPayload.homeworkDueNext7Days.length > 0
+          ? summaryPayload.homeworkDueNext7Days
+          : summaryPayload?.homework?.dueNextSevenDays;
       const upcomingHomework = filterActiveHomework(hwRaw).sort(
         (a, b) =>
           new Date(a.dueDate || a.due_date) - new Date(b.dueDate || b.due_date)
       );
 
-      const announcements = mapBroadcastsToAnnouncements(
-        summaryPayload?.broadcastsReceivedYesterdayAndToday
-      );
+      const broadcastList = summaryPayload?.broadcastsReceivedYesterdayAndToday;
+      const announcementSource = Array.isArray(broadcastList)
+        ? broadcastList
+        : summaryPayload?.announcements?.recent;
+      const announcements = mapBroadcastsToAnnouncements(announcementSource);
 
       return {
         summary: { greeting, firstName, dayLine, attendanceLine, attendanceVariant },
@@ -270,6 +278,8 @@ export default function StudentHome() {
         announcements,
       };
     }, [summaryPayload, firstName]);
+
+  const messagesUnreadTotal = summaryPayload?.messages?.totalUnread ?? 0;
 
   const attendanceIcon =
     summary.attendanceVariant === "present" ? (
@@ -379,9 +389,16 @@ export default function StudentHome() {
                   <MessageCircle size={20} strokeWidth={2} />
                 </span>
                 <div>
-                  <h2 className="text-lg font-semibold tracking-tight text-gray-950 dark:text-gray-900">
-                    Messages
-                  </h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-lg font-semibold tracking-tight text-gray-950 dark:text-gray-900">
+                      Messages
+                    </h2>
+                    {messagesUnreadTotal > 0 ? (
+                      <span className="inline-flex min-h-[22px] min-w-[22px] items-center justify-center rounded-full bg-primary-600 px-2 text-xs font-bold text-white">
+                        {messagesUnreadTotal > 99 ? "99+" : messagesUnreadTotal}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-600">
                     Chat with your teachers. New messages refresh while you are in a conversation.
                   </p>
