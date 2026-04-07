@@ -2,8 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Card } from "../../ui-components";
 import AttendanceSummary from "../../components/student-attendance/AttendanceSummary";
 import FiltersModal from "../../components/student-attendance/FiltersModal";
-import DesktopListing from "../../components/student-attendance/DesktopListing";
-import MobileListing from "../../components/student-attendance/MobileListing";
+import AttendanceCalendar from "../../components/student-attendance/AttendanceCalendar";
 import { getStudentAttendance } from "../../api/attendance.api";
 import { useAttendance } from "../../store/attendance.store";
 import { useAuth } from "../../store/auth.store";
@@ -177,7 +176,7 @@ export default function StudentAttendance() {
   }, [recordsForSummary]);
 
   return (
-    <div className="h-screen md:min-h-screen flex flex-col  p-4 gap-6">
+    <div className="h-screen md:min-h-screen flex flex-col p-4 gap-3 md:gap-4">
       {/* Loading State */}
       {loading && (
         <Card>
@@ -202,8 +201,8 @@ export default function StudentAttendance() {
       {!loading && !error && (
         <>
           {/* Header */}
-          <Card className="hidden md:block">
-            <div className="flex items-center justify-between ">
+          <Card className="hidden md:block !py-2 !px-3">
+            <div className="flex items-center justify-between">
               
               {/* Desktop: Show filters inline in header */}
               <div >
@@ -221,7 +220,7 @@ export default function StudentAttendance() {
           </Card>
 
           {/* Mobile: Floating Filter Button */}
-          <div className="md:hidden">
+          {/* <div className="md:hidden">
             <FiltersModal
               period={period}
               setPeriod={setPeriod}
@@ -231,7 +230,7 @@ export default function StudentAttendance() {
               setCustomDateRange={setCustomDateRange}
               periodOptions={periodOptions}
             />
-          </div>
+          </div> */}
 
           {/* Summary */}
           <AttendanceSummary
@@ -243,30 +242,21 @@ export default function StudentAttendance() {
             onStatusFilterChange={setStatusFilter}
           />
 
-          {/* Desktop Table */}
-          <div className="hidden md:block flex-1 overflow-hidden">
-            <DesktopListing attendanceRecords={filteredRecords} />
-          </div>
-
-          {/* Mobile List */}
-          <div className="md:hidden flex-1 overflow-hidden">
-            <MobileListing attendanceRecords={filteredRecords} />
-          </div>
-
-          {/* Empty state for desktop when no records */}
-          {filteredRecords.length === 0 && (
-            <div className="hidden md:block">
-              <Card>
-                <div className="text-center py-12 text-gray-500">
-                  <p className="text-lg font-medium mb-2">
-                    No attendance records found
-                  </p>
-                  <p className="text-sm">
-                    Try adjusting your filters or date range to see more results.
-                  </p>
-                </div>
-              </Card>
+          {filteredRecords.length > 0 ? (
+            <div className="flex-1 overflow-y-auto pb-24">
+              <AttendanceCalendar attendanceRecords={filteredRecords} />
             </div>
+          ) : (
+            <Card>
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-lg font-medium mb-2">
+                  No attendance records found
+                </p>
+                <p className="text-sm">
+                  Try adjusting your filters or date range to see more results.
+                </p>
+              </div>
+            </Card>
           )}
         </>
       )}

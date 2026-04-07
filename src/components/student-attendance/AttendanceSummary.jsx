@@ -10,41 +10,61 @@ export default function AttendanceSummary({
 }) {
   const presentPercentage = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
 
+  const cardBase = "!p-2 sm:!p-2.5 !shadow-sm rounded-lg leading-tight";
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <Card 
-        className={`cursor-pointer transition-all hover:shadow-md ${
-          statusFilter === "ALL" ? "border-2 border-blue-500 shadow-lg" : "border-2 border-transparent"
+    <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+      <Card
+        className={`${cardBase} cursor-pointer transition-all hover:shadow ${
+          statusFilter === "ALL"
+            ? "border border-blue-500 ring-1 ring-blue-500"
+            : "border border-transparent"
         }`}
         onClick={() => onStatusFilterChange("ALL")}
       >
-        <div className="text-xs text-gray-500">Total Days</div>
-        <div className="text-xl font-semibold">{total}</div>
+        <div className="text-[10px] font-medium text-gray-500 sm:text-[11px]">
+          Total
+        </div>
+        <div className="text-base font-semibold tabular-nums sm:text-lg">{total}</div>
       </Card>
 
-      <Card 
-        className={`cursor-pointer transition-all hover:shadow-md ${
-          statusFilter === "PRESENT" ? "border-2 border-blue-500 shadow-lg" : "border-2 border-transparent"
+      <Card
+        className={`${cardBase} cursor-pointer transition-all hover:shadow ${
+          statusFilter === "PRESENT"
+            ? "border border-blue-500 ring-1 ring-blue-500"
+            : "border border-transparent"
         }`}
         onClick={() => onStatusFilterChange("PRESENT")}
       >
-        <div className="text-xs text-gray-500">Present</div>
-        <div className="text-xl font-semibold text-success-600">{present}</div>
+        <div className="text-[10px] font-medium text-gray-500 sm:text-[11px]">
+          Present
+        </div>
+        <div className="text-base font-semibold tabular-nums text-success-600 sm:text-lg">
+          {present}
+        </div>
       </Card>
 
-      <Card 
-        className={`cursor-pointer transition-all hover:shadow-md ${
-          statusFilter === "ABSENT" ? "border-2 border-blue-500 shadow-lg" : "border-2 border-transparent"
+      <Card
+        className={`${cardBase} cursor-pointer transition-all hover:shadow ${
+          statusFilter === "ABSENT"
+            ? "border border-blue-500 ring-1 ring-blue-500"
+            : "border border-transparent"
         }`}
         onClick={() => onStatusFilterChange("ABSENT")}
       >
-        <div className="text-xs text-gray-500">Absent</div>
-        <div className="text-xl font-semibold text-error-600">{absent}</div>
+        <div className="text-[10px] font-medium text-gray-500 sm:text-[11px]">
+          Absent
+        </div>
+        <div className="text-base font-semibold tabular-nums text-error-600 sm:text-lg">
+          {absent}
+        </div>
       </Card>
 
-      <Card>
-        <div className="text-xs text-gray-500">Attendance %</div>
-        <div className="text-xl font-semibold text-primary-600">
+      <Card className={`${cardBase} border border-border`}>
+        <div className="text-[10px] font-medium text-gray-500 sm:text-[11px]">
+          Rate
+        </div>
+        <div className="text-base font-semibold tabular-nums text-primary-600 sm:text-lg">
           {presentPercentage}%
         </div>
       </Card>
