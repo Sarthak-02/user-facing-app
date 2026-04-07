@@ -1,6 +1,12 @@
 import { useState, useMemo } from "react";
 import { Button } from "../../ui-components";
+import Dropdown from "../../ui-components/Dropdown";
 import TargetSelector from "../../components/TargetSelector";
+import {
+  ANNOUNCEMENT_CATEGORY_OPTIONS,
+  DEFAULT_ANNOUNCEMENT_CATEGORY,
+  announcementCategoryOptionFromValue,
+} from "../../constants/announcementCategories";
 import { usePermissions } from "../../store/permissions.store";
 import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
@@ -15,6 +21,7 @@ const TARGET_OPTIONS = [
 const EMPTY_BROADCAST_FORM = {
   title: "",
   message: "",
+  category: DEFAULT_ANNOUNCEMENT_CATEGORY,
   targetType: { value: "CAMPUS", label: "Entire Campus" },
   sectionId: null,
   studentId: [],
@@ -28,6 +35,9 @@ function buildFormFromBroadcast(broadcast, permissions) {
   const base = {
     title: broadcast.title || "",
     message: broadcast.message || "",
+    category: announcementCategoryOptionFromValue(
+      broadcast.category ?? broadcast.announcementCategory
+    ),
     targetType: TARGET_OPTIONS[0],
     sectionId: null,
     studentId: [],
@@ -377,6 +387,31 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
               </div>
             </div>
           )}
+
+          {/* Category */}
+          <div>
+            {isViewingExisting ? (
+              <>
+                <span className="block text-sm text-gray-600 mb-1">Category</span>
+                <p className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-900">
+                  {formData.category?.label ?? "—"}
+                </p>
+              </>
+            ) : (
+              <Dropdown
+                label="Category"
+                options={ANNOUNCEMENT_CATEGORY_OPTIONS}
+                selected={formData.category}
+                onChange={(option) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    category: option || DEFAULT_ANNOUNCEMENT_CATEGORY,
+                  }))
+                }
+                placeholder="Select category"
+              />
+            )}
+          </div>
 
           {/* Title */}
           <div>

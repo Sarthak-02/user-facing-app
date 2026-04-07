@@ -143,6 +143,7 @@ export default function BroadcastPage() {
       const payload = {
         title: broadcastData.title,
         message: broadcastData.message,
+        category: broadcastData.category?.value || "general",
         targets: targets,
         campusId: auth.campus_id,
         ...(attachmentUrls && { attachmentUrls })
