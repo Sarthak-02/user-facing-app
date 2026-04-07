@@ -56,11 +56,13 @@ function AttachmentIndicator({ count }) {
   );
 }
 
-export default function MobileListing({ homeworkList, onEdit, onPublish }) {
+export default function MobileListing({ homeworkList, onEdit, onPublish, listFromPath }) {
   const navigate = useNavigate();
-  
+
   const handleCardClick = (homeworkId) => {
-    navigate(`/staff/homework/${homeworkId}`);
+    navigate(`/staff/homework/${homeworkId}`, {
+      state: listFromPath ? { from: listFromPath } : undefined,
+    });
   };
 
   const handleEditClick = (e, homework) => {

@@ -1,18 +1,24 @@
+import { Navigate } from "react-router-dom";
 import LoginPage from "../../pages/Login";
 import PublicRoute from "./PublicRoute";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleBasedRoute from "./RoleBasedRoute";
 import Layout from "../../ui-components/layout/Layout";
-import Attendance from "../../pages/staff/Attendance";
+import StaffAttendanceHome from "../../pages/staff/StaffAttendanceHome";
+import StaffAttendanceSection from "../../pages/staff/StaffAttendanceSection";
 import BroadcastNotification from "../../pages/staff/BroadcastNotification";
 import Home from "../../pages/Home";
 import StudentAttendance from "../../pages/student/Attendance";
-import Homework from "../../pages/student/Homework";
 import HomeworkDetail from "../../pages/student/HomeworkDetail";
+import StudentHomeworkSubjectHome from "../../pages/student/StudentHomeworkSubjectHome";
+import StudentHomeworkBrowse from "../../pages/student/StudentHomeworkBrowse";
 import StudentExams from "../../pages/student/Exams";
 import StudentExamDetail from "../../pages/student/ExamDetail";
 import TeacherHomework from "../../pages/staff/Homework";
 import TeacherHomeworkDetail from "../../pages/staff/HomeworkDetail";
+import StaffHomeworkHome from "../../pages/staff/StaffHomeworkHome";
+import StaffHomeworkSubjectPick from "../../pages/staff/StaffHomeworkSubjectPick";
+import StaffHomeworkStudentPick from "../../pages/staff/StaffHomeworkStudentPick";
 import Exams from "../../pages/staff/Exams";
 import ExamDetail from "../../pages/staff/ExamDetail";
 import EnterMarks from "../../pages/staff/EnterMarks";
@@ -62,29 +68,73 @@ export const routes = [
           </RoleBasedRoute>
         )
       },
-      { 
-        path: "staff/attendance", 
+      {
+        path: "staff/attendance/section/:sectionId/history",
         element: (
           <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
-            <Attendance />
+            <StaffAttendanceSection readOnly />
           </RoleBasedRoute>
-        )
+        ),
       },
-      { 
-        path: "staff/homework", 
+      {
+        path: "staff/attendance/section/:sectionId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffAttendanceSection />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/attendance",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffAttendanceHome />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/homework/section/:sectionId/subject/:subjectId/student/:studentId",
         element: (
           <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
             <TeacherHomework />
           </RoleBasedRoute>
-        )
+        ),
       },
-      { 
-        path: "staff/homework/:homeworkId", 
+      {
+        path: "staff/homework/section/:sectionId/subject/:subjectId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffHomeworkStudentPick />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/homework/section",
+        element: <Navigate to="/staff/homework" replace />,
+      },
+      {
+        path: "staff/homework/section/:sectionId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffHomeworkSubjectPick />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/homework",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffHomeworkHome />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/homework/:homeworkId",
         element: (
           <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
             <TeacherHomeworkDetail />
           </RoleBasedRoute>
-        )
+        ),
       },
       {
         path: "staff/lesson-plans/section/:sectionId/subject/:subjectId/plan/:planId",
@@ -184,21 +234,33 @@ export const routes = [
           </RoleBasedRoute>
         )
       },
-      { 
-        path: "student/homework", 
+      {
+        path: "student/homework/subject/:subjectId",
         element: (
           <RoleBasedRoute allowedRoles={["student"]}>
-            <Homework />
+            <StudentHomeworkBrowse />
           </RoleBasedRoute>
-        )
+        ),
       },
-      { 
-        path: "student/homework/:homeworkId", 
+      {
+        path: "student/homework/subject",
+        element: <Navigate to="/student/homework" replace />,
+      },
+      {
+        path: "student/homework",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentHomeworkSubjectHome />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "student/homework/:homeworkId",
         element: (
           <RoleBasedRoute allowedRoles={["student"]}>
             <HomeworkDetail />
           </RoleBasedRoute>
-        )
+        ),
       },
       {
         path: "student/lesson-plans/subject/:subjectId/plan/:planId",

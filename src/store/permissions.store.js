@@ -73,14 +73,13 @@ export const usePermissions = create(
         const section = (perm.sections || []).find((s) => s.section_id === section_id);
         console.log("section",section.section_subjects);
         if (section && Array.isArray(section.section_subjects) && section.section_subjects.length > 0) {
-          return section.section_subjects
-            .map((s) => ({
-              subject_id: s,
-              subject_name: s,
-              section_id: section_id,
-            }))
-           
+          return section.section_subjects.map((s) => ({
+            subject_id: s,
+            subject_name: s,
+            section_id: section_id,
+          }));
         }
+        return [];
       },
     }),
     {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Card, Badge, Button } from "../../ui-components";
 import { getHomeworkDetail } from "../../api/homework.api";
 import Loader from "../../ui-components/Loader";
@@ -96,6 +96,7 @@ function StatusBadge({ status, dueDate }) {
 export default function HomeworkDetail() {
   const { homeworkId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [homework, setHomework] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -123,7 +124,7 @@ export default function HomeworkDetail() {
   }, [homeworkId]);
 
   const handleGoBack = () => {
-    navigate("/student/homework");
+    navigate(location.state?.from || "/student/homework");
   };
 
 
@@ -159,7 +160,7 @@ export default function HomeworkDetail() {
                 {error || "Homework not found"}
               </h2>
             </div>
-            <Button onClick={() => navigate("/student/homework")}>
+            <Button onClick={() => navigate(location.state?.from || "/student/homework")}>
               Back to Homework List
             </Button>
           </div>
