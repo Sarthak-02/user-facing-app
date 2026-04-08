@@ -179,20 +179,33 @@ export default function StudentAttendance() {
     <div className="h-screen md:min-h-screen flex flex-col p-4 gap-3 md:gap-4">
       {/* Loading State */}
       {loading && (
-        <Card>
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
-            <p className="text-gray-600">Loading attendance data...</p>
+        <div className="flex flex-col gap-3 md:gap-4 animate-pulse">
+          <Card className="!py-2 !px-3">
+            <div className="h-8 w-64 bg-gray-200 rounded-lg" />
+          </Card>
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="!p-3 rounded-xl">
+                <div className="h-3 w-12 bg-gray-200 rounded mb-2" />
+                <div className="h-6 w-8 bg-gray-200 rounded" />
+              </Card>
+            ))}
           </div>
-        </Card>
+          <Card>
+            <div className="h-64 bg-gray-100 rounded-lg" />
+          </Card>
+        </div>
       )}
 
       {/* Error State */}
       {error && (
-        <Card>
-          <div className="text-center py-8 text-error-600">
-            <p className="font-medium mb-2">Error loading attendance</p>
-            <p className="text-sm text-gray-600">{error}</p>
+        <Card className="border border-error-200 bg-error-50">
+          <div className="text-center py-8">
+            <div className="h-10 w-10 rounded-full bg-error-100 flex items-center justify-center mx-auto mb-3">
+              <span className="text-error-600 text-lg font-bold">!</span>
+            </div>
+            <p className="font-semibold text-error-700 mb-1">Failed to load attendance</p>
+            <p className="text-sm text-gray-500">{error}</p>
           </div>
         </Card>
       )}
@@ -200,37 +213,20 @@ export default function StudentAttendance() {
       {/* Content - only show when not loading */}
       {!loading && !error && (
         <>
-          {/* Header */}
+          {/* Header — desktop filters */}
           <Card className="hidden md:block !py-2 !px-3">
             <div className="flex items-center justify-between">
-              
-              {/* Desktop: Show filters inline in header */}
-              <div >
-                <FiltersModal
-                  period={period}
-                  setPeriod={setPeriod}
-                  dateRange={dateRange}
-                  setDateRange={setDateRange}
-                  customDateRange={customDateRange}
-                  setCustomDateRange={setCustomDateRange}
-                  periodOptions={periodOptions}
-                />
-              </div>
+              <FiltersModal
+                period={period}
+                setPeriod={setPeriod}
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                customDateRange={customDateRange}
+                setCustomDateRange={setCustomDateRange}
+                periodOptions={periodOptions}
+              />
             </div>
           </Card>
-
-          {/* Mobile: Floating Filter Button */}
-          {/* <div className="md:hidden">
-            <FiltersModal
-              period={period}
-              setPeriod={setPeriod}
-              dateRange={dateRange}
-              setDateRange={setDateRange}
-              customDateRange={customDateRange}
-              setCustomDateRange={setCustomDateRange}
-              periodOptions={periodOptions}
-            />
-          </div> */}
 
           {/* Summary */}
           <AttendanceSummary
@@ -247,13 +243,16 @@ export default function StudentAttendance() {
               <AttendanceCalendar attendanceRecords={filteredRecords} />
             </div>
           ) : (
-            <Card>
-              <div className="text-center py-12 text-gray-500">
-                <p className="text-lg font-medium mb-2">
-                  No attendance records found
+            <Card className="border border-dashed border-gray-300">
+              <div className="text-center py-12 text-gray-400">
+                <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <span className="text-2xl">📅</span>
+                </div>
+                <p className="text-base font-semibold text-gray-600 mb-1">
+                  No records found
                 </p>
                 <p className="text-sm">
-                  Try adjusting your filters or date range to see more results.
+                  Try adjusting your filters or date range.
                 </p>
               </div>
             </Card>
