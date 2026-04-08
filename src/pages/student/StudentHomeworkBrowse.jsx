@@ -156,81 +156,82 @@ export default function StudentHomeworkBrowse() {
 
   return (
     <div className="h-screen md:min-h-screen flex flex-col gap-3 px-4 pb-4 pt-2 md:pt-3">
-      <div className="relative flex shrink-0 flex-col items-center justify-center py-0.5">
-        <Button
-          variant="ghost"
-          className="absolute left-0 top-1/2 h-8 min-h-0 -translate-y-1/2 gap-1.5 px-0 py-0"
+      {/* Desktop Header */}
+      <div className="hidden md:flex items-center gap-3 shrink-0">
+        <button
+          type="button"
           onClick={goBack}
+          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-        <h1 className="mx-10 max-w-[min(100%,calc(100%-5.5rem))] truncate text-center text-xl font-bold text-gray-900 md:mx-14 md:text-2xl">
-          {headerTitle}
-        </h1>
-      </div>
-
-      <Card className="hidden md:block">
-        <div className="space-y-4">
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-5">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search homework..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
+          <ArrowLeft className="h-5 w-5 text-gray-600" />
+        </button>
+        <div className="flex-1 bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">{headerTitle}</h1>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {filteredHomework.length} {filteredHomework.length === 1 ? "assignment" : "assignments"}
+              </p>
             </div>
-            <div className="col-span-2">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear filters
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <input
+                type="text"
+                placeholder="Search homework..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-9 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
+              />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <div className="flex items-center gap-2">
               <input
                 type="date"
                 value={dateRangeStart}
                 onChange={(e) => setDateRangeStart(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
               />
-            </div>
-            <div className="col-span-2">
+              <span className="text-gray-400 text-sm">to</span>
               <input
                 type="date"
                 value={dateRangeEnd}
                 onChange={(e) => setDateRangeEnd(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
               />
-            </div>
-            <div className="col-span-3 flex justify-end">
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={handleClearFilters}
-                  className="rounded-lg bg-gray-100 px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-200"
-                >
-                  Clear Filters
-                </button>
-              )}
             </div>
           </div>
         </div>
-      </Card>
+      </div>
 
-      <div className="md:hidden">
-        <Card className="p-4">
+      {/* Mobile Header */}
+      <div className="md:hidden shrink-0">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <button type="button" onClick={goBack} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-bold text-gray-900 truncate">{headerTitle}</h1>
+            </div>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full font-medium">
+              {filteredHomework.length}
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <input
@@ -238,50 +239,31 @@ export default function StudentHomeworkBrowse() {
                 placeholder="Search homework..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2.5 pl-9 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
               />
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
             <button
               type="button"
               onClick={() => setIsFilterModalOpen(true)}
-              className={`relative rounded-lg border p-2 transition-colors ${
+              className={`relative p-2.5 rounded-lg border transition-colors ${
                 hasActiveFilters
-                  ? "border-blue-500 bg-blue-500 text-white"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
               }`}
               aria-label="Open filters"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
+              {hasActiveFilters && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+              )}
             </button>
           </div>
-        </Card>
+        </div>
       </div>
 
       <div className="hidden md:block flex-1 overflow-hidden">
