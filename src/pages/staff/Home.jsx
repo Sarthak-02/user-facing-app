@@ -392,6 +392,16 @@ function normalizeSectionIds(sections) {
     .filter((id) => typeof id === "string" && id.length > 0);
 }
 
+function homeworkUrgency(dueDate) {
+  if (!dueDate) return "normal";
+  const due = new Date(dueDate);
+  if (isNaN(due.getTime())) return "normal";
+  const diffDays = (due - new Date()) / (1000 * 60 * 60 * 24);
+  if (diffDays < 1) return "urgent";
+  if (diffDays < 3) return "soon";
+  return "normal";
+}
+
 function SectionTitle({ icon, title, wrapperClassName = "mb-4 flex items-center gap-3" }) {
   return (
     <div className={wrapperClassName}>
@@ -558,84 +568,98 @@ export default function StaffHome() {
 
   return (
     <div className="min-h-full bg-[var(--color-background)] p-4 pb-30 md:p-6">
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-5">
         {loading ? (
           <div className="flex justify-center py-2">
             <Loader />
           </div>
         ) : null}
 
-        <Card className="border border-gray-100 bg-white shadow-sm dark:border-gray-800">
-          <div className="flex flex-col gap-4 border-l-4 border-blue-500 pl-4 sm:flex-row sm:items-start sm:justify-between sm:pl-5">
-            <div>
-              <p className="text-sm font-semibold text-gray-800 dark:text-gray-800">
-                {summary.greeting}
-              </p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-950 md:text-3xl">
-                {summary.firstName},
-              </h1>
-              <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-800">
-                <CalendarDays
-                  size={16}
-                  className="shrink-0 text-primary-700 dark:text-primary-400"
-                />
-                {summary.dayLine}
-              </p>
+        <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-5 shadow-lg md:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl font-bold text-white">
+                {summary.firstName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-indigo-200">{summary.greeting}</p>
+                <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">
+                  {summary.firstName}
+                </h1>
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-indigo-100">
+                  <CalendarDays size={14} className="shrink-0" />
+                  {summary.dayLine}
+                </p>
+              </div>
             </div>
-            <div className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/60">
-              <School className="mt-0.5 shrink-0 text-primary-600" size={22} aria-hidden />
-              <p className="text-sm font-semibold leading-snug text-gray-950 dark:text-gray-50">
+            <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm sm:self-start">
+              <School size={18} className="shrink-0 text-indigo-100" aria-hidden />
+              <p className="text-sm font-semibold text-white">
                 {teacherSections.length === 1
-                  ? "You have 1 section on your timetable."
-                  : `You have ${teacherSections.length} sections on your timetable.`}
+                  ? "1 section"
+                  : `${teacherSections.length} sections`}
               </p>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Link to="/staff/chat" className="block">
-          <Card className="border border-gray-100 bg-white shadow-sm transition-all hover:border-primary-400 hover:shadow-md dark:border-gray-800 dark:hover:border-primary-500">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-900"
-                  aria-hidden
-                >
-                  <MessageCircle size={20} strokeWidth={2} />
-                </span>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-lg font-semibold tracking-tight text-gray-950 dark:text-gray-900">
-                      Messages
-                    </h2>
-                    {messagesUnreadTotal > 0 ? (
-                      <span className="inline-flex min-h-[22px] min-w-[22px] items-center justify-center rounded-full bg-primary-600 px-2 text-xs font-bold text-white">
-                        {messagesUnreadTotal > 99 ? "99+" : messagesUnreadTotal}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-600">
-                    Chat with students and colleagues. Unread counts update while you are in a
-                    conversation.
-                  </p>
-                </div>
-              </div>
-              <ChevronRight
-                className="shrink-0 text-primary-700 dark:text-primary-400"
-                size={22}
-                aria-hidden
-              />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-800">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+              <Clock size={18} />
+            </span>
+            <div>
+              <p className="text-xl font-bold text-gray-950">{periods.length}</p>
+              <p className="text-xs font-semibold text-gray-500">Today's classes</p>
             </div>
-          </Card>
-        </Link>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-800">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+              <BookOpen size={18} />
+            </span>
+            <div>
+              <p className="text-xl font-bold text-gray-950">{subjects.length}</p>
+              <p className="text-xs font-semibold text-gray-500">Subjects</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-800">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+              <Bell size={18} />
+            </span>
+            <div>
+              <p className="text-xl font-bold text-gray-950">{upcomingHomework.length}</p>
+              <p className="text-xs font-semibold text-gray-500">Homework due</p>
+            </div>
+          </div>
+          <Link
+            to="/staff/chat"
+            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-all hover:border-primary-400 hover:shadow-md dark:border-gray-800"
+          >
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+              <MessageCircle size={18} />
+              {messagesUnreadTotal > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[9px] font-bold text-white">
+                  {messagesUnreadTotal > 9 ? "9+" : messagesUnreadTotal}
+                </span>
+              ) : null}
+            </span>
+            <div>
+              <p className="text-xl font-bold text-gray-950">{messagesUnreadTotal}</p>
+              <p className="text-xs font-semibold text-gray-500">Unread msgs</p>
+            </div>
+          </Link>
+        </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-2">
           <Card className="border border-gray-100 bg-white shadow-sm dark:border-gray-800">
             <SectionTitle icon={Clock} title="Today's schedule" />
             {periods.length === 0 ? (
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-800">
-                No classes scheduled for today.
-              </p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50">
+                  <Clock size={22} className="text-gray-400" />
+                </span>
+                <p className="text-sm font-semibold text-gray-500">No classes scheduled for today.</p>
+              </div>
             ) : (
               <ul className="space-y-2">
                 {periods.map((p, i) => {
@@ -643,28 +667,40 @@ export default function StaffHome() {
                   return (
                     <li
                       key={`${p.sectionId || ""}-${p.start}-${p.end}-${p.subject}-${i}`}
-                      className={`flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between ${
+                      className={`flex flex-col gap-1 rounded-xl border px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between ${
                         isCurrent
-                          ? "border-blue-500 bg-sky-50 shadow-sm dark:border-blue-400 dark:bg-sky-950/40"
-                          : "border-gray-100 bg-white dark:border-gray-700"
+                          ? "border-sky-300 bg-sky-50 shadow-sm dark:border-sky-600 dark:bg-sky-950/40"
+                          : "border-gray-100 bg-gray-50/50 dark:border-gray-700"
                       }`}
                     >
-                      <div className="min-w-0">
-                        <p className="font-semibold text-gray-950 dark:text-gray-800">
-                          {p.subject}
-                          {isCurrent ? (
-                            <span className="ml-2 inline-flex items-center rounded-md bg-primary-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                              Now
-                            </span>
-                          ) : null}
-                        </p>
-                        <p className="text-xs font-semibold text-gray-800 dark:text-gray-600">
-                          {[p.sectionName && `Section ${p.sectionName}`, p.room !== "—" ? p.room : null]
-                            .filter(Boolean)
-                            .join(" · ") || "—"}
-                        </p>
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                            isCurrent
+                              ? "bg-sky-500 text-white"
+                              : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          {i + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-950 dark:text-gray-800">
+                            {p.subject}
+                            {isCurrent ? (
+                              <span className="ml-2 inline-flex items-center gap-1 rounded-md bg-sky-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                                Now
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {[p.sectionName && `Section ${p.sectionName}`, p.room !== "—" ? p.room : null]
+                              .filter(Boolean)
+                              .join(" · ") || "—"}
+                          </p>
+                        </div>
                       </div>
-                      <p className="shrink-0 font-mono text-xs font-bold tabular-nums text-gray-950 dark:text-gray-800">
+                      <p className="ml-8 shrink-0 font-mono text-xs font-bold tabular-nums text-gray-600 dark:text-gray-400 sm:ml-0">
                         {p.start} – {p.end}
                       </p>
                     </li>
@@ -690,10 +726,14 @@ export default function StaffHome() {
               </Link>
             </div>
             {subjects.length === 0 ? (
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-800">
-                No subjects were found on your timetable. If this looks wrong, ask your
-                administrator to confirm your assignments.
-              </p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50">
+                  <BookOpen size={22} className="text-gray-400" />
+                </span>
+                <p className="text-sm font-semibold text-gray-500">
+                  No subjects found. Contact your administrator.
+                </p>
+              </div>
             ) : (
               <ul className="space-y-2">
                 {subjects.map((s) => {
@@ -703,28 +743,21 @@ export default function StaffHome() {
                       : null;
                   const inner = (
                     <>
-                      <div className="flex min-w-0 items-start gap-2">
-                        <Layers
-                          className="mt-0.5 h-4 w-4 shrink-0 text-primary-600"
-                          aria-hidden
-                        />
+                      <div className="flex min-w-0 items-start gap-2.5">
+                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                          <Layers size={14} aria-hidden />
+                        </span>
                         <div className="min-w-0">
-                          <p className="font-semibold text-gray-950 dark:text-gray-800">
-                            {s.name}
-                          </p>
+                          <p className="font-semibold text-gray-950 dark:text-gray-800">{s.name}</p>
                           {s.sectionLabels.length > 0 ? (
-                            <p className="mt-0.5 text-xs font-semibold text-gray-800 dark:text-gray-600">
+                            <p className="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">
                               {s.sectionLabels.join(" · ")}
                             </p>
                           ) : null}
                         </div>
                       </div>
                       {lessonPlansHref ? (
-                        <ChevronRight
-                          className="shrink-0 text-primary-700 dark:text-primary-400"
-                          size={18}
-                          aria-hidden
-                        />
+                        <ChevronRight className="shrink-0 text-primary-400" size={16} aria-hidden />
                       ) : null}
                     </>
                   );
@@ -734,7 +767,7 @@ export default function StaffHome() {
                       <li key={`${s.subjectId}-${s.name}`}>
                         <Link
                           to={lessonPlansHref}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-white px-3 py-2.5 transition-all hover:border-primary-400 hover:bg-primary-50/60 dark:border-gray-700 dark:hover:border-primary-500 dark:hover:bg-primary-950/30"
+                          className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5 transition-all hover:border-primary-300 hover:bg-primary-50/60 dark:border-gray-700 dark:hover:border-primary-500"
                         >
                           {inner}
                         </Link>
@@ -745,7 +778,7 @@ export default function StaffHome() {
                   return (
                     <li
                       key={`${s.subjectId || s.name}-${s.sectionIds.join(",")}`}
-                      className="rounded-lg border border-gray-100 bg-white px-3 py-2.5 dark:border-gray-700"
+                      className="rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5 dark:border-gray-700"
                     >
                       <div className="flex items-center justify-between gap-3">{inner}</div>
                     </li>
@@ -756,7 +789,7 @@ export default function StaffHome() {
           </Card>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-2">
           <Card className="border border-gray-100 bg-white shadow-sm dark:border-gray-800">
             <div className="mb-4 flex items-center justify-between gap-3">
               <SectionTitle
@@ -789,31 +822,65 @@ export default function StaffHome() {
               </p>
             ) : null}
             {upcomingHomework.length === 0 ? (
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-800">
-                {homeworkCount != null && homeworkCount > 0
-                  ? "Nothing due right now, or due dates have passed."
-                  : "No homework due."}
-              </p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50">
+                  <BookOpen size={22} className="text-gray-400" />
+                </span>
+                <p className="text-sm font-semibold text-gray-500">
+                  {homeworkCount != null && homeworkCount > 0
+                    ? "Nothing due right now."
+                    : "No homework due."}
+                </p>
+              </div>
             ) : (
               <ul className="space-y-2">
-                {upcomingHomework.map((h) => (
-                  <li key={h.id}>
-                    <Link
-                      to={`/staff/homework/${h.id}`}
-                      className="block rounded-lg border border-gray-100 bg-white px-3 py-2.5 transition-all hover:border-primary-400 hover:bg-primary-50/60 dark:border-gray-700 dark:hover:border-primary-500 dark:hover:bg-primary-950/30"
-                    >
-                      <p className="text-xs font-bold uppercase tracking-wide text-gray-950 dark:text-gray-800">
-                        {h.subject}
-                      </p>
-                      <p className="mt-0.5 font-semibold text-gray-950 dark:text-gray-800">
-                        {h.title}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-gray-800 dark:text-gray-600">
-                        Due {formatShortDue(h.dueDate || h.due_date)}
-                      </p>
-                    </Link>
-                  </li>
-                ))}
+                {upcomingHomework.map((h) => {
+                  const urgency = homeworkUrgency(h.dueDate || h.due_date);
+                  return (
+                    <li key={h.id}>
+                      <Link
+                        to={`/staff/homework/${h.id}`}
+                        className={`block rounded-xl border px-3 py-2.5 transition-all ${
+                          urgency === "urgent"
+                            ? "border-red-200 bg-red-50/60 hover:border-red-300 dark:border-red-800 dark:bg-red-950/30"
+                            : urgency === "soon"
+                              ? "border-amber-200 bg-amber-50/60 hover:border-amber-300 dark:border-amber-800 dark:bg-amber-950/30"
+                              : "border-gray-100 bg-gray-50/50 hover:border-primary-300 hover:bg-primary-50/60 dark:border-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p
+                              className={`text-xs font-bold uppercase tracking-wide ${
+                                urgency === "urgent"
+                                  ? "text-red-600"
+                                  : urgency === "soon"
+                                    ? "text-amber-600"
+                                    : "text-primary-600"
+                              }`}
+                            >
+                              {h.subject}
+                            </p>
+                            <p className="mt-0.5 font-semibold text-gray-950 dark:text-gray-800">
+                              {h.title}
+                            </p>
+                          </div>
+                          <span
+                            className={`shrink-0 rounded-lg px-2 py-1 text-xs font-bold ${
+                              urgency === "urgent"
+                                ? "bg-red-100 text-red-700"
+                                : urgency === "soon"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            Due {formatShortDue(h.dueDate || h.due_date)}
+                          </span>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Card>
@@ -841,33 +908,35 @@ export default function StaffHome() {
               </p>
             ) : null}
             {announcements.length === 0 ? (
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-800">
-                {announcementsCount != null && announcementsCount > 0
-                  ? "Announcements could not be listed. Try refreshing."
-                  : "No announcements received."}
-              </p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50">
+                  <Megaphone size={22} className="text-gray-400" />
+                </span>
+                <p className="text-sm font-semibold text-gray-500">
+                  {announcementsCount != null && announcementsCount > 0
+                    ? "Announcements could not be listed. Try refreshing."
+                    : "No announcements received."}
+                </p>
+              </div>
             ) : (
-              <ul className="space-y-4">
+              <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                 {announcements.map((a) => (
-                  <li
-                    key={a.id}
-                    className="flex gap-3 border-b border-gray-100 pb-4 last:border-0 last:pb-0 dark:border-gray-700"
-                  >
+                  <li key={a.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
                     <span
-                      className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-900"
+                      className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700 dark:bg-primary-950/50"
                       aria-hidden
                     >
-                      <Bell size={16} />
+                      <Megaphone size={15} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-950 dark:text-gray-800">{a.title}</p>
+                      <p className="font-semibold text-gray-950 dark:text-gray-100">{a.title}</p>
                       {a.body ? (
-                        <p className="mt-1 text-sm font-semibold leading-relaxed text-gray-900 dark:text-gray-800">
+                        <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                           {a.body}
                         </p>
                       ) : null}
                       {a.date ? (
-                        <p className="mt-2 text-xs font-semibold text-gray-800 dark:text-gray-600">
+                        <p className="mt-1.5 text-xs font-medium text-gray-400">
                           {formatShortDue(a.date)}
                         </p>
                       ) : null}

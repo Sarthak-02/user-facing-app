@@ -35,6 +35,7 @@ import StaffLessonPlansHome from "../../pages/staff/StaffLessonPlansHome";
 import StaffLessonPlansSubjectPick from "../../pages/staff/StaffLessonPlansSubjectPick";
 import StaffLessonPlansBrowse from "../../pages/staff/StaffLessonPlansBrowse";
 import StaffLessonPlanDetail from "../../pages/staff/StaffLessonPlanDetail";
+import StaffTopicDetail from "../../pages/staff/StaffTopicDetail";
 import StudentLessonPlansHome from "../../pages/student/StudentLessonPlansHome";
 import StudentLessonPlansBrowse from "../../pages/student/StudentLessonPlansBrowse";
 import StudentLessonPlanDetail from "../../pages/student/StudentLessonPlanDetail";
@@ -133,6 +134,14 @@ export const routes = [
         element: (
           <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
             <TeacherHomeworkDetail />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/lesson-plans/section/:sectionId/subject/:subjectId/plan/:classPlanId/topic/:topicId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffTopicDetail />
           </RoleBasedRoute>
         ),
       },

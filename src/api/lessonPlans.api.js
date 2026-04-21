@@ -184,3 +184,159 @@ export async function uploadLessonPlanFile(file, lessonPlanId) {
     fileSize: file.size,
   };
 }
+
+// ─── Class Plans ─────────────────────────────────────────────────────────────
+
+/**
+ * @param {{ campus_id?: string, teacher_id?: string, class_name?: string, subject?: string, academic_year?: string, is_published?: boolean, limit?: number, offset?: number }} params
+ */
+export async function listClassPlans(params) {
+  const response = await api.get("/class-plans", { params });
+  const d = response.data?.data ?? response.data;
+  return Array.isArray(d) ? d : (d?.class_plans ?? d?.plans ?? d?.items ?? []);
+}
+
+/**
+ * @param {string} classPlanId
+ */
+export async function getClassPlanById(classPlanId) {
+  const response = await api.get(`/class-plans/${classPlanId}`);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {{ campus_id: string, teacher_id: string, class_name: string, subject: string, academic_year: string, master_plan_id?: string, is_published?: boolean, topics?: object[] }} body
+ */
+export async function createClassPlan(body) {
+  const response = await api.post("/class-plans", body);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} classPlanId
+ * @param {{ class_name?: string, subject?: string, academic_year?: string, is_published?: boolean, master_plan_id?: string | null }} body
+ */
+export async function updateClassPlan(classPlanId, body) {
+  const response = await api.patch(`/class-plans/${classPlanId}`, body);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} classPlanId
+ */
+export async function deleteClassPlan(classPlanId) {
+  const response = await api.delete(`/class-plans/${classPlanId}`);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * Seed a class plan from a master plan.
+ * @param {{ board: string, subject: string, class_name: string, academic_year: string, campus_id: string, teacher_id: string, is_published?: boolean }} body
+ */
+export async function seedClassPlanFromMaster(body) {
+  const response = await api.post("/class-plans/seed-from-master", body);
+  return response.data?.data ?? response.data;
+}
+
+// ─── Topics ──────────────────────────────────────────────────────────────────
+
+/**
+ * @param {string} classPlanId
+ * @param {Array<{ chapter_title: string, chapter_number?: number, title: string, display_order: number, status?: string, scheduled_date?: string, teacher_notes?: string, is_added_by_teacher?: boolean }>} topics
+ */
+export async function addClassPlanTopics(classPlanId, topics) {
+  const response = await api.post(`/class-plans/${classPlanId}/topics`, { topics });
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} topicId
+ * @param {{ chapter_title?: string, chapter_number?: number | null, title?: string, display_order?: number, status?: string, scheduled_date?: string | null, completed_on?: string | null, actual_duration_mins?: number | null, teacher_notes?: string | null, is_added_by_teacher?: boolean }} body
+ */
+export async function updateClassPlanTopic(topicId, body) {
+  const response = await api.patch(`/class-plan-topics/${topicId}`, body);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} topicId
+ */
+export async function deleteClassPlanTopic(topicId) {
+  const response = await api.delete(`/class-plan-topics/${topicId}`);
+  return response.data?.data ?? response.data;
+}
+
+// ─── Materials ────────────────────────────────────────────────────────────────
+
+/**
+ * @param {string} topicId
+ * @param {{ file_name: string, file_url: string }} body
+ */
+export async function addTopicMaterial(topicId, body) {
+  const response = await api.post(`/class-plan-topics/${topicId}/materials`, body);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} materialId
+ */
+export async function deleteTopicMaterial(materialId) {
+  const response = await api.delete(`/class-plan-materials/${materialId}`);
+  return response.data?.data ?? response.data;
+}
+
+// ─── Assignments ──────────────────────────────────────────────────────────────
+
+/**
+ * @param {string} topicId
+ * @param {{ title: string, due_date?: string, file_url?: string, status?: "DRAFT"|"PUBLISHED"|"CLOSED" }} body
+ */
+export async function addTopicAssignment(topicId, body) {
+  const response = await api.post(`/class-plan-topics/${topicId}/assignments`, body);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} assignmentId
+ * @param {{ title?: string, due_date?: string | null, file_url?: string | null, status?: "DRAFT"|"PUBLISHED"|"CLOSED" }} body
+ */
+export async function updateTopicAssignment(assignmentId, body) {
+  const response = await api.patch(`/class-plan-assignments/${assignmentId}`, body);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} assignmentId
+ */
+export async function deleteTopicAssignment(assignmentId) {
+  const response = await api.delete(`/class-plan-assignments/${assignmentId}`);
+  return response.data?.data ?? response.data;
+}
+
+// ─── Quizzes ──────────────────────────────────────────────────────────────────
+
+/**
+ * @param {string} topicId
+ * @param {{ title: string, generated_by_ai?: boolean, file_url?: string }} body
+ */
+export async function addTopicQuiz(topicId, body) {
+  const response = await api.post(`/class-plan-topics/${topicId}/quizzes`, body);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} quizId
+ * @param {{ title?: string, generated_by_ai?: boolean, file_url?: string | null }} body
+ */
+export async function updateTopicQuiz(quizId, body) {
+  const response = await api.patch(`/class-plan-quizzes/${quizId}`, body);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} quizId
+ */
+export async function deleteTopicQuiz(quizId) {
+  const response = await api.delete(`/class-plan-quizzes/${quizId}`);
+  return response.data?.data ?? response.data;
+}
