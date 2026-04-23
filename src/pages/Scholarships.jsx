@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, GraduationCap, Calendar, Search, SlidersHorizontal, X, ChevronRight, Building2, Award } from "lucide-react";
 import { getScholarships } from "../api/scholarships.api";
-import { Card, Badge, Loader, Dropdown, Modal } from "../ui-components";
+import { Badge, Loader, Dropdown, Modal } from "../ui-components";
 import Button from "../ui-components/Button";
 
 function statusBadgeVariant(status) {
@@ -9,6 +9,27 @@ function statusBadgeVariant(status) {
   if (s === "OPEN") return "success";
   if (s === "CLOSED" || s === "EXPIRED") return "error";
   return "info";
+}
+
+function statusBorderColor(status) {
+  const s = (status || "").toUpperCase();
+  if (s === "OPEN") return "border-l-green-400";
+  if (s === "CLOSED" || s === "EXPIRED") return "border-l-red-300";
+  return "border-l-blue-300";
+}
+
+function statusAccentBg(status) {
+  const s = (status || "").toUpperCase();
+  if (s === "OPEN") return "bg-green-50";
+  if (s === "CLOSED" || s === "EXPIRED") return "bg-red-50";
+  return "bg-blue-50";
+}
+
+function statusIconColor(status) {
+  const s = (status || "").toUpperCase();
+  if (s === "OPEN") return "text-green-500";
+  if (s === "CLOSED" || s === "EXPIRED") return "text-red-400";
+  return "text-blue-400";
 }
 
 function truncate(text, max = 220) {
@@ -24,6 +45,21 @@ function formatDateTime(value) {
   return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString();
 }
 
+function formatDateShort(value) {
+  if (value == null || value === "") return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function daysUntil(value) {
+  if (value == null || value === "") return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const diff = Math.ceil((d - Date.now()) / 86_400_000);
+  return diff;
+}
+
 function formatList(value) {
   if (value == null) return "—";
   if (Array.isArray(value)) {
@@ -32,7 +68,6 @@ function formatList(value) {
   return String(value);
 }
 
-/** Map one API `classes` entry to a grade 1–12, or null if not recognized. */
 function parseGradeFromClassEntry(entry) {
   if (entry == null || entry === "") return null;
   if (typeof entry === "number") {
@@ -82,6 +117,8 @@ function DetailRow({ label, children }) {
 function ScholarshipDetailModal({ scholarship, onClose }) {
   if (!scholarship) return null;
   const s = scholarship;
+  const closeDate = formatDateShort(s.closeDate);
+  const days = daysUntil(s.closeDate);
 
   return (
     <Modal
@@ -90,14 +127,28 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
       className="max-h-[min(90vh,720px)] max-w-2xl flex flex-col overflow-hidden p-0"
     >
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="shrink-0 border-b border-border px-4 py-3 pr-10">
-          <h2
-            id="scholarship-detail-title"
-            className="text-lg font-semibold text-gray-900 leading-snug"
-          >
-            {s.scholarshipName || "Scholarship"}
-          </h2>
-          <div className="mt-2 flex flex-wrap gap-2">
+        {/* Modal header */}
+        <div className={`shrink-0 border-b border-border px-5 py-4 pr-12 ${statusAccentBg(s.status)}`}>
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center">
+              <Award className={`h-5 w-5 ${statusIconColor(s.status)}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2
+                id="scholarship-detail-title"
+                className="text-base font-bold text-gray-900 leading-snug"
+              >
+                {s.scholarshipName || "Scholarship"}
+              </h2>
+              {s.sourceName && (
+                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                  <Building2 className="h-3 w-3" />
+                  {s.sourceName}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
             {s.category && <Badge variant="info">{s.category}</Badge>}
             {s.status && (
               <Badge variant={statusBadgeVariant(s.status)}>{s.status}</Badge>
@@ -105,14 +156,20 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
             {s.academicYear && (
               <Badge variant="info">{s.academicYear}</Badge>
             )}
+            {closeDate && days != null && days > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-orange-700 px-2 py-1 text-xs font-medium">
+                <Calendar className="h-3 w-3" />
+                {days} day{days !== 1 ? "s" : ""} left
+              </span>
+            )}
           </div>
         </div>
 
         <div
-          className="min-h-0 flex-1 overflow-y-auto px-4 py-4 space-y-4"
+          className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-4"
           aria-labelledby="scholarship-detail-title"
         >
-          <dl className="space-y-4">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DetailRow label="Source">{s.sourceName || "—"}</DetailRow>
             <DetailRow label="Source type">{s.sourceType || "—"}</DetailRow>
             <DetailRow label="Classes">{formatList(s.classes)}</DetailRow>
@@ -122,12 +179,26 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
             {s.rawTitle && s.rawTitle !== s.scholarshipName && (
               <DetailRow label="Original title">{s.rawTitle}</DetailRow>
             )}
-            {s.benefitSummary && (
-              <DetailRow label="Benefits">{s.benefitSummary}</DetailRow>
-            )}
-            {s.eligibilitySummary && (
-              <DetailRow label="Eligibility">{s.eligibilitySummary}</DetailRow>
-            )}
+          </dl>
+
+          {(s.benefitSummary || s.eligibilitySummary) && (
+            <div className="space-y-3 pt-2 border-t border-border">
+              {s.benefitSummary && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Benefits</p>
+                  <p className="text-sm text-gray-800 leading-relaxed">{s.benefitSummary}</p>
+                </div>
+              )}
+              {s.eligibilitySummary && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Eligibility</p>
+                  <p className="text-sm text-gray-800 leading-relaxed">{s.eligibilitySummary}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border">
             <DetailRow label="Last checked">
               {formatDateTime(s.lastCheckedAt)}
             </DetailRow>
@@ -174,6 +245,114 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
         </div>
       </div>
     </Modal>
+  );
+}
+
+function ScholarshipCard({ s, onOpen }) {
+  const closeDate = formatDateShort(s.closeDate);
+  const days = daysUntil(s.closeDate);
+  const status = (s.status || "").toUpperCase();
+  const isOpen = status === "OPEN";
+  const classes = Array.isArray(s.classes) ? s.classes.slice(0, 4) : [];
+  const extraClasses = Array.isArray(s.classes) ? Math.max(0, s.classes.length - 4) : 0;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`View details: ${s.scholarshipName || "Scholarship"}`}
+      className="group bg-white rounded-2xl border border-gray-100 border-l-4 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+      style={{ borderLeftColor: isOpen ? "#4ade80" : status === "CLOSED" || status === "EXPIRED" ? "#fca5a5" : "#93c5fd" }}
+      onClick={() => onOpen(s)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(s);
+        }
+      }}
+    >
+      {/* Card body */}
+      <div className="p-5 pb-3 flex-1 flex flex-col gap-3">
+        {/* Top row: icon + title + badge */}
+        <div className="flex items-start gap-3">
+          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${isOpen ? "bg-green-50" : "bg-gray-100"}`}>
+            <GraduationCap className={`h-5 w-5 ${isOpen ? "text-green-500" : "text-gray-400"}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                {s.category && (
+                  <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider">
+                    {s.category}
+                  </span>
+                )}
+                <h2 className="text-sm font-bold text-gray-900 mt-0.5 line-clamp-2 leading-snug group-hover:text-indigo-700 transition-colors">
+                  {s.scholarshipName || "Untitled"}
+                </h2>
+              </div>
+              {s.status && (
+                <Badge variant={statusBadgeVariant(s.status)}>
+                  {s.status}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Source */}
+        {s.sourceName && (
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <Building2 className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="truncate">{s.sourceName}</span>
+            {s.academicYear && <span className="ml-1 text-gray-400">· {s.academicYear}</span>}
+          </div>
+        )}
+
+        {/* Benefit/Eligibility summary */}
+        {(s.benefitSummary || s.eligibilitySummary) && (
+          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+            {truncate(s.benefitSummary || s.eligibilitySummary, 180)}
+          </p>
+        )}
+
+        {/* Classes chips */}
+        {classes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {classes.map((c, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600"
+              >
+                Class {parseGradeFromClassEntry(c) ?? c}
+              </span>
+            ))}
+            {extraClasses > 0 && (
+              <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                +{extraClasses} more
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Card footer */}
+      <div className={`px-5 py-3 border-t border-gray-100 flex items-center justify-between ${isOpen ? "bg-green-50" : "bg-gray-50"}`}>
+        <div className="flex items-center gap-3">
+          {closeDate && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>Closes {closeDate}</span>
+            </div>
+          )}
+          {days != null && days > 0 && days <= 30 && (
+            <span className="inline-flex items-center rounded-full bg-orange-100 text-orange-700 px-2 py-0.5 text-xs font-semibold">
+              {days}d left
+            </span>
+          )}
+        </div>
+        <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+      </div>
+    </div>
   );
 }
 
@@ -268,11 +447,23 @@ export default function Scholarships() {
     return list;
   }, [items, searchQuery, categoryFilter, statusFilter, classFilter]);
 
+  const openCount = useMemo(
+    () => items.filter((s) => (s.status || "").toUpperCase() === "OPEN").length,
+    [items]
+  );
+
   const hasFilters =
     searchQuery.trim() ||
     categoryFilter?.value ||
     statusFilter?.value ||
     classFilter?.value;
+
+  function clearFilters() {
+    setSearchQuery("");
+    setCategoryFilter(null);
+    setStatusFilter(null);
+    setClassFilter(null);
+  }
 
   if (loading) {
     return (
@@ -285,197 +476,130 @@ export default function Scholarships() {
   if (error) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center p-4 pb-20 md:pb-4">
-        <Card className="max-w-md w-full text-center">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">
+        <div className="max-w-md w-full text-center bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
+          <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <GraduationCap className="h-7 w-7 text-red-300" />
+          </div>
+          <h2 className="text-base font-bold text-gray-900 mb-2">
             Could not load scholarships
           </h2>
-          <p className="text-gray-600 text-sm mb-4">{String(error)}</p>
+          <p className="text-gray-500 text-sm mb-5">{String(error)}</p>
           <Button onClick={() => window.location.reload()}>Retry</Button>
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pb-24 md:pb-6">
-      <Card>
-        <div className="space-y-4">
+      {/* Hero strip */}
+      <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 rounded-2xl px-5 py-5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+            <GraduationCap className="h-6 w-6 text-white" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Scholarships</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Government and other scholarship listings. Open the official site
-              for full details and applications.
+            <h1 className="text-xl font-bold text-white">Scholarships</h1>
+            <p className="text-indigo-200 text-xs mt-0.5">
+              Government and private scholarship listings
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-            <div className="md:col-span-4 relative">
-              <input
-                type="search"
-                placeholder="Search by name, source, or keywords…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                aria-label="Search scholarships"
-              />
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+          {openCount > 0 && (
+            <div className="ml-auto flex-shrink-0 bg-green-400 text-white text-xs font-bold rounded-full px-3 py-1">
+              {openCount} open
             </div>
-            <div className="md:col-span-2">
-              <Dropdown
-                selected={categoryFilter}
-                onChange={setCategoryFilter}
-                options={categoryOptions}
-                placeholder="Category"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Dropdown
-                selected={statusFilter}
-                onChange={setStatusFilter}
-                options={statusOptions}
-                placeholder="Status"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Dropdown
-                selected={classFilter}
-                onChange={setClassFilter}
-                options={CLASS_FILTER_OPTIONS}
-                placeholder="Class"
-              />
-            </div>
-            <div className="md:col-span-2 flex items-end">
-              {hasFilters && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setCategoryFilter(null);
-                    setStatusFilter(null);
-                    setClassFilter(null);
-                  }}
-                  className="w-full px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
+          )}
         </div>
-      </Card>
+      </div>
 
-      <p className="text-sm text-gray-500 px-1">
-        Showing {filtered.length} of {items.length}
-      </p>
+      {/* Filter bar */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 space-y-3">
+        {/* Search */}
+        <div className="relative">
+          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="search"
+            placeholder="Search by name, source, or keywords…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition bg-gray-50"
+            aria-label="Search scholarships"
+          />
+        </div>
 
-      <div className="flex flex-col gap-3">
-        {filtered.length === 0 ? (
-          <Card className="text-center text-gray-600 py-10">
-            No scholarships match your filters.
-          </Card>
-        ) : (
-          filtered.map((s) => (
-            <div
-              key={s.id}
-              role="button"
-              tabIndex={0}
-              aria-label={`View details: ${s.scholarshipName || "Scholarship"}`}
-              className="cursor-pointer rounded-xl transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
-              onClick={() => setDetailScholarship(s)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setDetailScholarship(s);
-                }
-              }}
+        {/* Filter dropdowns row */}
+        <div className="flex flex-wrap items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2 min-w-0">
+            <Dropdown
+              selected={categoryFilter}
+              onChange={setCategoryFilter}
+              options={categoryOptions}
+              placeholder="Category"
+            />
+            <Dropdown
+              selected={statusFilter}
+              onChange={setStatusFilter}
+              options={statusOptions}
+              placeholder="Status"
+            />
+            <Dropdown
+              selected={classFilter}
+              onChange={setClassFilter}
+              options={CLASS_FILTER_OPTIONS}
+              placeholder="Class"
+            />
+          </div>
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex-shrink-0"
             >
-              <Card className="flex flex-col gap-3 pointer-events-none hover:border-primary-400">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-lg font-semibold text-gray-900 leading-snug">
-                    {s.scholarshipName || "Untitled"}
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {s.sourceName}
-                    {s.academicYear ? ` · ${s.academicYear}` : ""}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 shrink-0">
-                  {s.category && (
-                    <Badge variant="info">{s.category}</Badge>
-                  )}
-                  {s.status && (
-                    <Badge variant={statusBadgeVariant(s.status)}>
-                      {s.status}
-                    </Badge>
-                  )}
-                </div>
-              </div>
+              <X className="h-3.5 w-3.5" />
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
 
-              {(s.benefitSummary || s.eligibilitySummary) && (
-                <div className="space-y-2 text-sm text-gray-700">
-                  {s.benefitSummary && (
-                    <p className="line-clamp-3">{truncate(s.benefitSummary, 320)}</p>
-                  )}
-                  {s.eligibilitySummary && (
-                    <p className="line-clamp-3 text-gray-600">
-                      {s.benefitSummary && (
-                        <span className="font-medium text-gray-800">Eligibility · </span>
-                      )}
-                      {truncate(s.eligibilitySummary, s.benefitSummary ? 240 : 320)}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="pointer-events-auto flex flex-wrap gap-2 pt-1">
-                {s.detailsUrl && (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    className="inline-flex items-center gap-2"
-                    onClick={() => {
-                      const w = window.open(s.detailsUrl, "_blank");
-                      if (w) w.opener = null;
-                    }}
-                  >
-                    Official details
-                    <ExternalLink className="h-4 w-4" aria-hidden />
-                  </Button>
-                )}
-                {s.announcementUrl && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="inline-flex items-center gap-2"
-                    onClick={() => {
-                      const w = window.open(s.announcementUrl, "_blank");
-                      if (w) w.opener = null;
-                    }}
-                  >
-                    Announcement
-                    <ExternalLink className="h-4 w-4" aria-hidden />
-                  </Button>
-                )}
-              </div>
-              </Card>
-            </div>
-          ))
+      {/* Results count */}
+      <div className="flex items-center gap-2 px-1">
+        <p className="text-sm text-gray-500">
+          Showing <span className="font-semibold text-gray-700">{filtered.length}</span> of <span className="font-semibold text-gray-700">{items.length}</span> scholarships
+        </p>
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-xs text-indigo-500 hover:text-indigo-700 font-medium underline underline-offset-2"
+          >
+            Clear filters
+          </button>
         )}
       </div>
+
+      {/* Card grid */}
+      {filtered.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm text-center py-16 px-4">
+          <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <GraduationCap className="h-8 w-8 text-indigo-200" />
+          </div>
+          <p className="text-base font-semibold text-gray-700 mb-1">No scholarships found</p>
+          <p className="text-sm text-gray-400 mb-4">Try adjusting your search or filters.</p>
+          {hasFilters && (
+            <Button variant="secondary" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.map((s) => (
+            <ScholarshipCard key={s.id} s={s} onOpen={setDetailScholarship} />
+          ))}
+        </div>
+      )}
 
       <ScholarshipDetailModal
         scholarship={detailScholarship}
