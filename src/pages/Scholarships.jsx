@@ -529,7 +529,7 @@ export default function Scholarships() {
 
         {/* Filter dropdowns row */}
         <div className="flex flex-wrap items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          {/* <SlidersHorizontal className="h-4 w-4 text-gray-400 flex-shrink-0" /> */}
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2 min-w-0">
             <Dropdown
               selected={categoryFilter}
