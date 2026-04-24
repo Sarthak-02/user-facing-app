@@ -67,7 +67,7 @@ export default function MobileListing({ examList, onEdit, onPublish, onView }) {
   }
 
   return (
-    <div className="space-y-3 pb-30">
+    <div className="space-y-3 pb-32">
       {examList.map((exam) => (
         <div
           key={exam.id}

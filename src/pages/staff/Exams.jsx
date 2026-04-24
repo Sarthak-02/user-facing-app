@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Card, Button } from "../../ui-components";
+import Shimmer from "../../ui-components/Shimmer";
 import DesktopListing from "../../components/staff-exam/DesktopListing";
 import MobileListing from "../../components/staff-exam/MobileListing";
 import ExamFormModal from "../../components/staff-exam/ExamFormModal";
@@ -9,96 +10,44 @@ import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
 import { useNavigate } from "react-router-dom";
 
-// Mock data - Replace with actual API call
-const MOCK_EXAMS = [
-  {
-    id: "exam-001",
-    examType: "MID_TERM",
-    customExamType: "",
-    class: "Class 10",
-    section: "Section A",
-    status: "COMPLETED",
-    subjects: [
-      {
-        subjectId: "sub1",
-        subjectName: "Mathematics",
-        examDate: "2026-01-10",
-        startTime: "09:00",
-        endTime: "11:00",
-      },
-      {
-        subjectId: "sub7",
-        subjectName: "Physics",
-        examDate: "2026-01-12",
-        startTime: "09:00",
-        endTime: "11:00",
-      },
-      {
-        subjectId: "sub8",
-        subjectName: "Chemistry",
-        examDate: "2026-01-14",
-        startTime: "09:00",
-        endTime: "11:00",
-      },
-    ],
-    startDate: "2026-01-10",
-    endDate: "2026-01-14",
-    gradingType: "PERCENTAGE",
-    passingValue: "40",
-    maxValue: "100",
-  },
-  {
-    id: "exam-002",
-    examType: "QUARTERLY",
-    customExamType: "",
-    class: "Class 9",
-    section: "Section A",
-    status: "PUBLISHED",
-    subjects: [
-      {
-        subjectId: "sub1",
-        subjectName: "Mathematics",
-        examDate: "2026-01-28",
-        startTime: "10:00",
-        endTime: "12:00",
-      },
-      {
-        subjectId: "sub2",
-        subjectName: "Science",
-        examDate: "2026-01-30",
-        startTime: "10:00",
-        endTime: "12:00",
-      },
-    ],
-    startDate: "2026-01-28",
-    endDate: "2026-02-02",
-    gradingType: "GPA",
-    passingValue: "2.0",
-    maxValue: "4.0",
-  },
-  {
-    id: "exam-003",
-    examType: "UNIT_TEST",
-    customExamType: "",
-    class: "Class 11",
-    section: "Section A",
-    status: "DRAFT",
-    subjects: [
-      {
-        subjectId: "sub1",
-        subjectName: "Mathematics",
-        examDate: "2026-02-20",
-        startTime: "09:00",
-        endTime: "10:30",
-      },
-    ],
-    startDate: "2026-02-20",
-    endDate: "2026-02-20",
-    gradingType: "LETTER_GRADE",
-    passingValue: "D",
-    maxValue: "A+",
-  },
-];
+function formatTime(timeString) {
+  if (!timeString) return "";
+  if (timeString.split(":").length === 3) return timeString;
+  return timeString + ":00";
+}
+
+function buildTargets(examData) {
+  const targets = [];
+  if (examData.targetType?.value === "CLASS" && Array.isArray(examData.classId) && examData.classId.length > 0) {
+    examData.classId.forEach((classItem) => {
+      targets.push({ targetType: "CLASS", targetId: classItem.value });
+    });
+  } else if (examData.targetType?.value === "SECTION" && examData.sectionId?.value) {
+    targets.push({ targetType: "SECTION", targetId: examData.sectionId.value });
+  } else if (examData.targetType?.value === "STUDENT" && examData.studentId) {
+    const studentIds = Array.isArray(examData.studentId) ? examData.studentId : [examData.studentId];
+    studentIds.forEach((student) => {
+      targets.push({ targetType: "STUDENT", targetId: student.value });
+    });
+  }
+  return targets;
+}
+
+function buildGradingExtras(examData) {
+  if (examData.gradingType === "PERCENTAGE" || examData.gradingType === "GPA") {
+    return {
+      passing_value: examData.passingValue ? Number(examData.passingValue) : null,
+      max_value: examData.maxValue ? Number(examData.maxValue) : null,
+    };
+  } else if (examData.gradingType === "LETTER_GRADE") {
+    return {
+      passing_value: examData.passingValue || null,
+      max_value: examData.maxValue || null,
+      grade_ranges: examData.gradeRanges || [],
+    };
+  }
+  return {};
+}
 
 export default function Exams() {
   const { auth } = useAuth();
@@ -110,6 +59,8 @@ export default function Exams() {
   // Publish confirmation modal
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [examToPublish, setExamToPublish] = useState(null);
+  const [publishError, setPublishError] = useState(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Mobile filter states
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -236,177 +187,44 @@ export default function Exams() {
     setSubmitError(null);
 
     try {
+      const targets = buildTargets(examData);
+      const grading_extras = buildGradingExtras(examData);
+      const subjects = examData.subjects.map((sub) => ({
+        subjectName: sub.subjectName,
+        examDate: sub.examDate,
+        examStartTime: formatTime(sub.startTime),
+        examEndTime: formatTime(sub.endTime),
+        extras: {},
+      }));
+
       if (editingExam) {
-        // Transform form data to API schema for update
-        const targets = [];
-
-        // Build targets array based on targetType
-        if (examData.targetType?.value === "CLASS" && Array.isArray(examData.classId) && examData.classId.length > 0) {
-          // Handle multiple class selections
-          examData.classId.forEach((classItem) => {
-            targets.push({
-              targetType: "CLASS",
-              targetId: classItem.value,
-            });
-          });
-        } else if (examData.targetType?.value === "SECTION" && examData.sectionId?.value) {
-          targets.push({
-            targetType: "SECTION",
-            targetId: examData.sectionId.value,
-          });
-        } else if (examData.targetType?.value === "STUDENT" && examData.studentId) {
-          const studentIds = Array.isArray(examData.studentId)
-            ? examData.studentId
-            : [examData.studentId];
-
-          studentIds.forEach((student) => {
-            targets.push({
-              targetType: "STUDENT",
-              targetId: student.value,
-            });
-          });
-        }
-
-        // Prepare grading_extras based on grading type
-        let grading_extras = {};
-        if (examData.gradingType === "PERCENTAGE" || examData.gradingType === "GPA") {
-          grading_extras = {
-            passing_value: examData.passingValue ? Number(examData.passingValue) : null,
-            max_value: examData.maxValue ? Number(examData.maxValue) : null,
-          };
-        } else if (examData.gradingType === "LETTER_GRADE") {
-          grading_extras = {
-            passing_value: examData.passingValue || null,
-            max_value: examData.maxValue || null,
-            grade_ranges: examData.gradeRanges || [],
-          };
-        }
-
-        // Helper function to format time to HH:MM:SS
-        const formatTime = (timeString) => {
-          if (!timeString) return "";
-          // If already has seconds (HH:MM:SS), return as is
-          if (timeString.split(':').length === 3) {
-            return timeString;
-          }
-          // Otherwise add :00 for seconds (HH:MM -> HH:MM:00)
-          return timeString + ":00";
-        };
-
-        // Prepare API payload for update
         const payload = {
           exam_type: examData.customExamType || examData.examType,
           target: examData.targetType?.value || "CLASS",
-          subjects: examData.subjects.map((sub) => ({
-            subjectName: sub.subjectName,
-            examDate: sub.examDate,
-            examStartTime: formatTime(sub.startTime),
-            examEndTime: formatTime(sub.endTime),
-            extras: {},
-          })),
-          targets: targets,
+          subjects,
+          targets,
           grading_type: examData.gradingType,
-          grading_extras: grading_extras,
+          grading_extras,
           publish: examData.status === "PUBLISHED",
         };
-
-        console.log("Updating exam:", editingExam.id, "with payload:", JSON.stringify(payload, null, 2));
-
-        // Call API to update exam
-        const response = await updateExam(editingExam.id, payload);
-        console.log("Exam updated successfully:", response);
-
-        // Refresh exam list
-        await fetchExams();
-
-        handleCloseModal();
+        await updateExam(editingExam.id, payload);
       } else {
-        // Transform form data to API schema
-        const targets = [];
-
-        // Build targets array based on targetType
-        if (examData.targetType?.value === "CLASS" && Array.isArray(examData.classId) && examData.classId.length > 0) {
-          // Handle multiple class selections
-          examData.classId.forEach((classItem) => {
-            targets.push({
-              targetType: "CLASS",
-              targetId: classItem.value,
-            });
-          });
-        } else if (examData.targetType?.value === "SECTION" && examData.sectionId?.value) {
-          targets.push({
-            targetType: "SECTION",
-            targetId: examData.sectionId.value,
-          });
-        } else if (examData.targetType?.value === "STUDENT" && examData.studentId) {
-          const studentIds = Array.isArray(examData.studentId)
-            ? examData.studentId
-            : [examData.studentId];
-
-          studentIds.forEach((student) => {
-            targets.push({
-              targetType: "STUDENT",
-              targetId: student.value,
-            });
-          });
-        }
-
-        // Prepare grading_extras based on grading type
-        let grading_extras = {};
-        if (examData.gradingType === "PERCENTAGE" || examData.gradingType === "GPA") {
-          grading_extras = {
-            passing_value: examData.passingValue ? Number(examData.passingValue) : null,
-            max_value: examData.maxValue ? Number(examData.maxValue) : null,
-          };
-        } else if (examData.gradingType === "LETTER_GRADE") {
-          grading_extras = {
-            passing_value: examData.passingValue || null,
-            max_value: examData.maxValue || null,
-            grade_ranges: examData.gradeRanges || [],
-          };
-        }
-
-        // Helper function to format time to HH:MM:SS
-        const formatTime = (timeString) => {
-          if (!timeString) return "";
-          // If already has seconds (HH:MM:SS), return as is
-          if (timeString.split(':').length === 3) {
-            return timeString;
-          }
-          // Otherwise add :00 for seconds (HH:MM -> HH:MM:00)
-          return timeString + ":00";
-        };
-
-        // Prepare API payload
         const payload = {
           exam_type: examData.customExamType || examData.examType,
           target: examData.targetType?.value || "CLASS",
           teacher_id: auth.userId,
           campus_id: auth.campus_id,
-          subjects: examData.subjects.map((sub) => ({
-            subjectName: sub.subjectName,
-            examDate: sub.examDate,
-            examStartTime: formatTime(sub.startTime),
-            examEndTime: formatTime(sub.endTime),
-            extras: {},
-          })),
-          targets: targets,
+          subjects,
+          targets,
           grading_type: examData.gradingType,
-          grading_extras: grading_extras,
+          grading_extras,
           publish: examData.status === "PUBLISHED",
         };
-
-        console.log("Creating exam with payload:", JSON.stringify(payload, null, 2));
-
-        // Call API
-        const response = await createExam(payload);
-        console.log("Exam created successfully:", response);
-
-        // Refresh exam list
-        await fetchExams();
-
-        handleCloseModal();
+        await createExam(payload);
       }
+
+      await fetchExams();
+      handleCloseModal();
     } catch (error) {
       console.error("Error submitting exam:", error);
       setSubmitError(error.message || `Failed to ${editingExam ? 'update' : 'create'} exam. Please try again.`);
@@ -421,25 +239,25 @@ export default function Exams() {
   };
 
   const confirmPublish = async () => {
+    setIsPublishing(true);
+    setPublishError(null);
     try {
-      console.log("Publishing exam:", examToPublish.id);
       await publishExam(examToPublish.id, auth.userId);
-      
-      // Refresh exam list after publishing
       await fetchExams();
-      
       setIsPublishModalOpen(false);
       setExamToPublish(null);
     } catch (error) {
       console.error("Error publishing exam:", error);
-      // You might want to show an error message to the user here
-      alert(error.message || "Failed to publish exam. Please try again.");
+      setPublishError(error.message || "Failed to publish exam. Please try again.");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
   const cancelPublish = () => {
     setIsPublishModalOpen(false);
     setExamToPublish(null);
+    setPublishError(null);
   };
 
   const handleApplyFilters = () => {
@@ -676,12 +494,14 @@ export default function Exams() {
 
       {/* Loading State */}
       {isLoading && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-gray-600">Loading exams...</p>
+        <>
+          <div className="hidden md:block flex-1 overflow-y-auto min-h-0">
+            <Shimmer variant="table" count={6} />
           </div>
-        </div>
+          <div className="md:hidden flex-1 overflow-y-auto min-h-0">
+            <Shimmer variant="card-list" count={5} />
+          </div>
+        </>
       )}
 
       {/* Error State */}
@@ -773,7 +593,7 @@ export default function Exams() {
 
       {/* Filter Modal (Mobile Only) */}
       {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end md:hidden">
+        <div className="fixed inset-0 z-50 flex items-end md:hidden bg-black/50">
           <div className="bg-white w-full rounded-t-2xl max-h-[90vh] flex flex-col animate-slide-up shadow-2xl">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -872,7 +692,7 @@ export default function Exams() {
 
       {/* Publish Confirmation Modal */}
       {isPublishModalOpen && examToPublish && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-200">
@@ -886,7 +706,7 @@ export default function Exams() {
               </p>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900">
-                  {examToPublish.examType.replace("_", " ")}
+                  {examToPublish.examType.replaceAll("_", " ")}
                 </h4>
                 {examToPublish.customExamType && (
                   <p className="text-sm text-gray-600">{examToPublish.customExamType}</p>
@@ -899,14 +719,24 @@ export default function Exams() {
                   {examToPublish.subjects?.length || 0} subject(s)
                 </p>
               </div>
+              {publishError && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {publishError}
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
             <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
-              <Button variant="secondary" onClick={cancelPublish}>
+              <Button variant="secondary" onClick={cancelPublish} disabled={isPublishing}>
                 Cancel
               </Button>
-              <Button onClick={confirmPublish}>Publish</Button>
+              <Button onClick={confirmPublish} disabled={isPublishing}>
+                {isPublishing ? "Publishing..." : "Publish"}
+              </Button>
             </div>
           </div>
         </div>
