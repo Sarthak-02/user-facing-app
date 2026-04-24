@@ -143,7 +143,7 @@ export async function listTodayPickups(campus_id, date) {
 
 /**
  * Get a GCS signed URL for direct photo upload.
- * Returns { upload_url, object_path }.
+ * Returns { uploadUrl, objectPath }.
  */
 export async function getPickupPhotoUploadUrl(entity, entity_id, mime_type) {
   try {
@@ -192,14 +192,14 @@ export async function processPickupPhoto(object_path, entity, entity_id) {
 export async function uploadPickupPhoto(blob, entity, entity_id) {
   const mime = blob.type || "image/jpeg";
 
-  const { upload_url, object_path } = await getPickupPhotoUploadUrl(
+  const { uploadUrl, objectPath } = await getPickupPhotoUploadUrl(
     entity,
     entity_id,
     mime,
   );
 
   // Upload directly to GCS — no Authorization header (signed URL handles auth)
-  const uploadRes = await fetch(upload_url, {
+  const uploadRes = await fetch(uploadUrl, {
     method: "PUT",
     body: blob,
     headers: { "Content-Type": mime },
@@ -208,6 +208,6 @@ export async function uploadPickupPhoto(blob, entity, entity_id) {
     throw new Error(`GCS upload failed: ${uploadRes.status}`);
   }
 
-  const result = await processPickupPhoto(object_path, entity, entity_id);
+  const result = await processPickupPhoto(objectPath, entity, entity_id);
   return result?.photo_url || result?.url || result;
 }

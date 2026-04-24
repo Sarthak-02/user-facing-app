@@ -1,21 +1,22 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   ShieldCheck,
   ClipboardCheck,
   Clock,
-  Camera,
-  ImageIcon,
   Search,
   Check,
   X,
   AlertCircle,
   User,
   Calendar,
+  ChevronRight,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
 import { Badge, Loader, Modal } from "../../ui-components";
 import Button from "../../ui-components/Button";
+import PhotoPicker from "../../ui-components/PhotoPicker";
 import {
   listPendingPickupRequests,
   approvePickupRequest,
@@ -24,10 +25,7 @@ import {
   listPickupRequests,
   confirmPickup,
   listTodayPickups,
-  uploadPickupPhoto,
 } from "../../api/pickup.api";
-import { compressImage } from "../../utils/compressImage";
-import { Loader2 } from "lucide-react";
 
 const todayStr = new Date().toISOString().split("T")[0];
 
@@ -61,45 +59,16 @@ function sourceBadge(source) {
 // ─── Confirm Pickup Modal ─────────────────────────────────────────────────────
 
 function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
-  const cameraRef = useRef(null);
-  const galleryRef = useRef(null);
-  const [photoBlob, setPhotoBlob] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
-  const [photoCompressing, setPhotoCompressing] = useState(false);
+  const [entityId] = useState(() => crypto.randomUUID());
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [photoPreview, setPhotoPreview] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (open) {
-      setPhotoBlob(null);
-      setPhotoPreview(null);
-      setPhotoCompressing(false);
-      setNotes("");
-      setError(null);
-    }
-  }, [open]);
-
-  async function handlePhotoCapture(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = "";
-    setPhotoCompressing(true);
-    try {
-      const blob = await compressImage(file);
-      setPhotoBlob(blob);
-      setPhotoPreview(URL.createObjectURL(blob));
-    } catch {
-      setPhotoBlob(file);
-      setPhotoPreview(URL.createObjectURL(file));
-    } finally {
-      setPhotoCompressing(false);
-    }
-  }
 
   async function handleConfirm() {
     setError(null);
     try {
-      await onConfirm({ photoBlob, notes: notes.trim() });
+      await onConfirm({ photo_url: photoUrl, notes: notes.trim() });
     } catch (err) {
       setError(err?.message || err?.error || "Confirmation failed. Please try again.");
     }
@@ -148,85 +117,19 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
         </div>
       </div>
 
-      {/* Photo capture */}
+      {/* Photo */}
       <div className="mb-4">
         <p className="text-xs font-semibold text-gray-600 mb-2">
           Pickup Photo{" "}
           <span className="text-gray-400 font-normal">(optional)</span>
         </p>
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          ref={cameraRef}
-          onChange={handlePhotoCapture}
-          className="hidden"
+        <PhotoPicker
+          entity="pickup_log"
+          entityId={entityId}
+          preview={photoPreview}
+          onPhotoUrl={(url, preview) => { setPhotoUrl(url); setPhotoPreview(preview); }}
+          onRemove={() => { setPhotoUrl(""); setPhotoPreview(""); }}
         />
-        <input
-          type="file"
-          accept="image/*"
-          ref={galleryRef}
-          onChange={handlePhotoCapture}
-          className="hidden"
-        />
-        {photoCompressing ? (
-          <div className="w-full h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="text-xs font-medium">Processing image…</span>
-          </div>
-        ) : photoPreview ? (
-          <div className="relative">
-            <img
-              src={photoPreview}
-              alt="Pickup"
-              className="w-full h-44 object-cover rounded-xl border border-gray-200"
-            />
-            <button
-              type="button"
-              onClick={() => { setPhotoBlob(null); setPhotoPreview(null); }}
-              className="absolute top-2 right-2 bg-white rounded-full p-1 shadow border border-gray-200 text-gray-500 hover:text-red-500"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="absolute bottom-2 right-2 flex gap-1.5">
-              <button
-                type="button"
-                onClick={() => cameraRef.current?.click()}
-                className="bg-white rounded-lg px-2.5 py-1.5 shadow border border-gray-200 text-xs font-medium text-gray-600 flex items-center gap-1 hover:bg-gray-50"
-              >
-                <Camera className="h-3.5 w-3.5" />
-                Retake
-              </button>
-              <button
-                type="button"
-                onClick={() => galleryRef.current?.click()}
-                className="bg-white rounded-lg px-2.5 py-1.5 shadow border border-gray-200 text-xs font-medium text-gray-600 flex items-center gap-1 hover:bg-gray-50"
-              >
-                <ImageIcon className="h-3.5 w-3.5" />
-                Gallery
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => cameraRef.current?.click()}
-              className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-5 text-gray-400 hover:border-violet-400 hover:text-violet-500 transition-colors"
-            >
-              <Camera className="h-6 w-6" />
-              <span className="text-xs font-medium">Take Photo</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => galleryRef.current?.click()}
-              className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-5 text-gray-400 hover:border-violet-400 hover:text-violet-500 transition-colors"
-            >
-              <ImageIcon className="h-6 w-6" />
-              <span className="text-xs font-medium">From Gallery</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Notes */}
@@ -252,12 +155,7 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
       )}
 
       <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          className="flex-1"
-          onClick={onClose}
-          disabled={confirming}
-        >
+        <Button variant="secondary" className="flex-1" onClick={onClose} disabled={confirming}>
           Cancel
         </Button>
         <button
@@ -278,10 +176,6 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
 
 function RejectModal({ open, onClose, onReject, request, rejecting }) {
   const [note, setNote] = useState("");
-
-  useEffect(() => {
-    if (open) setNote("");
-  }, [open]);
 
   return (
     <Modal open={open} onClose={rejecting ? undefined : onClose} className="max-w-sm">
@@ -325,16 +219,112 @@ function RejectModal({ open, onClose, onReject, request, rejecting }) {
   );
 }
 
+// ─── Request Detail Modal ─────────────────────────────────────────────────────
+
+function RequestDetailModal({ request, open, onClose, onApprove, onReject, approvingId, rejectingId }) {
+  if (!request) return null;
+  const photoUrl = request.photoUrl || request.photo_url;
+  const validDate = request.validDate || request.valid_date;
+  const studentName = request.studentName || request.student_name;
+  const busy = approvingId === request.id || rejectingId === request.id;
+  const status = (request.status || "PENDING").toUpperCase();
+
+  function statusColor() {
+    if (status === "APPROVED") return "text-green-600 bg-green-50";
+    if (status === "REJECTED") return "text-red-600 bg-red-50";
+    return "text-orange-600 bg-orange-50";
+  }
+
+  return (
+    <Modal open={open} onClose={busy ? undefined : onClose} className="max-w-md">
+      <h2 className="text-base font-bold text-gray-900 mb-4 pr-8">Pickup Request</h2>
+
+      {/* Photo + name */}
+      <div className="flex flex-col items-center gap-2 mb-5">
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt={request.name}
+            className="w-24 h-24 rounded-2xl object-cover border border-gray-200 shadow-sm"
+          />
+        ) : (
+          <div className="w-24 h-24 rounded-2xl bg-orange-100 flex items-center justify-center">
+            <User className="h-10 w-10 text-orange-400" />
+          </div>
+        )}
+        <p className="text-lg font-bold text-gray-900">{request.name}</p>
+        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor()}`}>
+          {status.charAt(0) + status.slice(1).toLowerCase()}
+        </span>
+      </div>
+
+      {/* Details grid */}
+      <div className="bg-gray-50 rounded-xl divide-y divide-gray-100 mb-4">
+        <DetailRow label="Relationship" value={request.relationship} />
+        <DetailRow label="Valid Date" value={formatDate(validDate)} />
+        {studentName && <DetailRow label="Student" value={studentName} />}
+        {request.remarks && <DetailRow label="Remarks" value={request.remarks} />}
+        <DetailRow
+          label="Submitted"
+          value={request.createdAt ? formatDate(request.createdAt) : "—"}
+        />
+      </div>
+
+      {/* Actions — only show if PENDING */}
+      {status === "PENDING" && (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => { onApprove(request); onClose(); }}
+            disabled={busy}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
+          >
+            <Check className="h-4 w-4" />
+            {approvingId === request.id ? "Approving…" : "Approve"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { onClose(); onReject(request); }}
+            disabled={busy}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors disabled:opacity-50"
+          >
+            <X className="h-4 w-4" />
+            Reject
+          </button>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-3 px-3 py-2.5">
+      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide flex-shrink-0">{label}</span>
+      <span className="text-sm text-gray-800 text-right">{value || "—"}</span>
+    </div>
+  );
+}
+
 // ─── Pending Request Card ─────────────────────────────────────────────────────
 
-function PendingRequestCard({ request, onApprove, onReject, approvingId, rejectingId }) {
+function PendingRequestCard({ request, onApprove, onReject, onView, approvingId, rejectingId }) {
   const busy = approvingId === request.id || rejectingId === request.id;
+  const photoUrl = request.photoUrl || request.photo_url;
+  const validDate = request.validDate || request.valid_date;
+  const studentName = request.studentName || request.student_name;
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onView}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onView()}
+      className="bg-white rounded-2xl border border-gray-100 p-4 cursor-pointer hover:border-orange-200 hover:shadow-sm transition-all"
+    >
       <div className="flex items-start gap-3 mb-3">
-        {request.photo_url ? (
+        {photoUrl ? (
           <img
-            src={request.photo_url}
+            src={photoUrl}
             alt={request.name}
             className="w-11 h-11 rounded-full object-cover flex-shrink-0 border border-gray-200"
           />
@@ -346,16 +336,18 @@ function PendingRequestCard({ request, onApprove, onReject, approvingId, rejecti
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900">{request.name}</p>
           <p className="text-xs text-gray-500">{request.relationship}</p>
-          {request.student_name && (
+          {studentName && (
             <p className="text-xs text-gray-400 mt-0.5">
-              Student:{" "}
-              <span className="font-medium text-gray-600">{request.student_name}</span>
+              Student: <span className="font-medium text-gray-600">{studentName}</span>
             </p>
           )}
         </div>
-        <div className="flex-shrink-0 flex items-center gap-1.5 text-xs text-gray-400">
-          <Calendar className="h-3.5 w-3.5" />
-          {formatDate(request.valid_date)}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1 text-xs text-gray-400">
+            <Calendar className="h-3.5 w-3.5" />
+            {formatDate(validDate)}
+          </div>
+          <ChevronRight className="h-4 w-4 text-gray-300" />
         </div>
       </div>
       {request.remarks && (
@@ -363,7 +355,7 @@ function PendingRequestCard({ request, onApprove, onReject, approvingId, rejecti
           "{request.remarks}"
         </p>
       )}
-      <div className="flex gap-2">
+      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={() => onApprove(request)}
@@ -466,7 +458,7 @@ function StudentPickupPanel({ student, onConfirm }) {
           <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
             Pre-Authorized Persons
           </p>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5 pb-16">
             {authorizedPersons.map((person) => (
               <div
                 key={person.id}
@@ -570,32 +562,64 @@ function StudentPickupPanel({ student, onConfirm }) {
 
 function PickupLogCard({ log }) {
   const { label, variant } = sourceBadge(log.source);
+
+  // Handle camelCase (API) with snake_case fallbacks
+  const personName = log.personName || log.person_name;
+  const personRelationship = log.personRelationship || log.person_relationship;
+  const pickedUpAt = log.pickedUpAt || log.picked_up_at || log.createdAt || log.created_at;
+  const photoUrl = log.pickupPhotoUrl || log.pickup_photo_url;
+
+  // Student name from nested object or flat field
+  const studentName = log.student
+    ? `${log.student.student_first_name || ""} ${log.student.student_last_name || ""}`.trim() ||
+      log.student.student_admission_no
+    : log.student_name;
+
+  // Teacher name from nested object or flat field
+  const teacherName = log.teacher
+    ? `${log.teacher.teacher_first_name || ""} ${log.teacher.teacher_last_name || ""}`.trim()
+    : null;
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-4">
       <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+          <User className="h-5 w-5 text-violet-500" />
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-semibold text-gray-900">{log.person_name}</p>
+            <p className="text-sm font-semibold text-gray-900">{personName}</p>
             <Badge variant={variant}>{label}</Badge>
           </div>
-          <p className="text-xs text-gray-500 mt-0.5">{log.person_relationship}</p>
-          {log.student_name && (
-            <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-gray-500 mt-0.5">{personRelationship}</p>
+          {studentName && (
+            <p className="text-xs text-gray-400 mt-1">
               Student:{" "}
-              <span className="font-medium text-gray-600">{log.student_name}</span>
+              <span className="font-medium text-gray-600">{studentName}</span>
+              {log.student?.student_admission_no && (
+                <span className="text-gray-400"> · #{log.student.student_admission_no}</span>
+              )}
             </p>
           )}
-          <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-400">
-            <Clock className="h-3.5 w-3.5" />
-            <span>{formatTime(log.picked_up_at || log.created_at)}</span>
+          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+            <div className="flex items-center gap-1 text-xs text-gray-400">
+              <Clock className="h-3.5 w-3.5" />
+              <span>{formatTime(pickedUpAt)}</span>
+            </div>
+            {teacherName && (
+              <span className="text-xs text-gray-400">
+                Confirmed by{" "}
+                <span className="font-medium text-gray-600">{teacherName}</span>
+              </span>
+            )}
           </div>
           {log.notes && (
             <p className="text-xs text-gray-400 mt-1 italic">"{log.notes}"</p>
           )}
         </div>
-        {log.pickup_photo_url && (
+        {photoUrl && (
           <img
-            src={log.pickup_photo_url}
+            src={photoUrl}
             alt="Pickup"
             className="w-16 h-16 object-cover rounded-xl border border-gray-200 flex-shrink-0"
           />
@@ -622,6 +646,7 @@ export default function StaffPickup() {
   const [approvingId, setApprovingId] = useState(null);
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
+  const [viewRequest, setViewRequest] = useState(null);
 
   // ── Confirm pickup ──────────────────────────────────────────────────────────
   const [studentSearch, setStudentSearch] = useState("");
@@ -696,7 +721,7 @@ export default function StaffPickup() {
     }
   }
 
-  async function handleConfirmPickup({ photoBlob, notes }) {
+  async function handleConfirmPickup({ photo_url, notes }) {
     if (!confirmTarget) return;
     setConfirming(true);
     try {
@@ -712,16 +737,7 @@ export default function StaffPickup() {
       if (confirmTarget.pickup_request_id)
         payload.pickup_request_id = confirmTarget.pickup_request_id;
       if (notes) payload.notes = notes;
-
-      // Upload photo: compress → GCS signed URL → process → final URL
-      if (photoBlob) {
-        const photoUrl = await uploadPickupPhoto(
-          photoBlob,
-          "pickup_log",
-          crypto.randomUUID(),
-        );
-        if (photoUrl) payload.pickup_photo_url = photoUrl;
-      }
+      if (photo_url) payload.pickup_photo_url = photo_url;
 
       await confirmPickup(payload);
       setConfirmTarget(null);
@@ -736,6 +752,14 @@ export default function StaffPickup() {
   // Student search filtered from teacher's permissions
   const allStudents = useMemo(() => permissions.students || [], [permissions.students]);
 
+  const sectionMap = useMemo(() => {
+    const map = {};
+    (permissions.sections || []).forEach((sec) => {
+      map[sec.section_id] = sec.section_name;
+    });
+    return map;
+  }, [permissions.sections]);
+
   const filteredStudents = useMemo(() => {
     const q = studentSearch.toLowerCase().trim();
     if (!q || selectedStudent) return [];
@@ -743,7 +767,7 @@ export default function StaffPickup() {
       .filter(
         (s) =>
           (s.student_name || "").toLowerCase().includes(q) ||
-          s.student_id.toLowerCase().includes(q)
+          (s.student_roll_no || "").toLowerCase().includes(q)
       )
       .slice(0, 8);
   }, [allStudents, studentSearch, selectedStudent]);
@@ -784,19 +808,19 @@ export default function StaffPickup() {
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
         {/* Tab bar */}
         <div className="flex border-b border-gray-100 overflow-x-auto">
-          {tabs.map(({ id, label, icon: Icon }) => (
+          {tabs.map((tab) => (
             <button
-              key={id}
+              key={tab.id}
               type="button"
-              onClick={() => setActiveTab(id)}
+              onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === id
+                activeTab === tab.id
                   ? "border-b-2 border-violet-500 text-violet-600 bg-violet-50"
                   : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
               }`}
             >
-              <Icon className="h-4 w-4" />
-              {label}
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
             </button>
           ))}
         </div>
@@ -832,16 +856,19 @@ export default function StaffPickup() {
                   {pendingRequests.length} request
                   {pendingRequests.length !== 1 ? "s" : ""} awaiting review
                 </p>
-                {pendingRequests.map((req) => (
-                  <PendingRequestCard
-                    key={req.id}
-                    request={req}
-                    onApprove={handleApprove}
-                    onReject={setRejectTarget}
-                    approvingId={approvingId}
-                    rejectingId={rejectingId}
-                  />
-                ))}
+                <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-0.5 pb-36">
+                  {pendingRequests.map((req) => (
+                    <PendingRequestCard
+                      key={req.id}
+                      request={req}
+                      onApprove={handleApprove}
+                      onReject={setRejectTarget}
+                      onView={() => setViewRequest(req)}
+                      approvingId={approvingId}
+                      rejectingId={rejectingId}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -871,7 +898,7 @@ export default function StaffPickup() {
 
               {/* Dropdown results */}
               {filteredStudents.length > 0 && (
-                <div className="mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-10 relative">
+                <div className="mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 relative max-h-60 overflow-y-auto">
                   {filteredStudents.map((s) => (
                     <button
                       key={s.student_id}
@@ -887,11 +914,13 @@ export default function StaffPickup() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {s.student_name || s.student_id}
+                          {s.student_name || s.student_roll_no || s.student_id}
                         </p>
-                        {s.section_id && (
-                          <p className="text-xs text-gray-400">{s.section_id}</p>
-                        )}
+                        <p className="text-xs text-gray-400">
+                          {s.student_roll_no && <span>{s.student_roll_no}</span>}
+                          {s.student_roll_no && s.section_id && <span> · </span>}
+                          {s.section_id && <span>{sectionMap[s.section_id] || s.section_id}</span>}
+                        </p>
                       </div>
                     </button>
                   ))}
@@ -969,9 +998,11 @@ export default function StaffPickup() {
                 <p className="text-xs text-gray-400 px-1">
                   {todayLogs.length} pickup{todayLogs.length !== 1 ? "s" : ""} confirmed today
                 </p>
-                {todayLogs.map((log, i) => (
-                  <PickupLogCard key={log.id || i} log={log} />
-                ))}
+                <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-0.5 pb-36">
+                  {todayLogs.map((log, i) => (
+                    <PickupLogCard key={log.id || i} log={log} />
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -979,7 +1010,18 @@ export default function StaffPickup() {
       </div>
 
       {/* Modals */}
+      <RequestDetailModal
+        request={viewRequest}
+        open={!!viewRequest}
+        onClose={() => setViewRequest(null)}
+        onApprove={handleApprove}
+        onReject={setRejectTarget}
+        approvingId={approvingId}
+        rejectingId={rejectingId}
+      />
+
       <RejectModal
+        key={rejectTarget?.id ?? "closed-reject"}
         open={!!rejectTarget}
         onClose={() => setRejectTarget(null)}
         onReject={handleReject}

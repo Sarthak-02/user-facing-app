@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Shield,
   Users,
@@ -9,15 +9,12 @@ import {
   Calendar,
   AlertCircle,
   User,
-  Camera,
-  ImageIcon,
-  X,
-  Loader2,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../../store/auth.store";
 import { Badge, Loader, Modal } from "../../ui-components";
 import Button from "../../ui-components/Button";
-import CameraCapture from "../../ui-components/CameraCapture";
+import PhotoPicker from "../../ui-components/PhotoPicker";
 import {
   listAuthorizedPersons,
   addAuthorizedPerson,
@@ -25,9 +22,7 @@ import {
   deleteAuthorizedPerson,
   createPickupRequest,
   listPickupRequests,
-  uploadPickupPhoto,
 } from "../../api/pickup.api";
-import { compressImage } from "../../utils/compressImage";
 
 const MAX_AUTHORIZED = 5;
 const todayStr = new Date().toISOString().split("T")[0];
@@ -60,125 +55,18 @@ function requestStatusVariant(status) {
 
 // ─── Photo Picker ─────────────────────────────────────────────────────────────
 // preview  – URL to display (remote URL when editing, object URL when new)
-// onChange – called with (blob: Blob, previewUrl: string) when a new image is picked
-// onRemove – called when the user removes the current photo
-
-function PhotoPicker({ preview, onChange, onRemove }) {
-  const cameraRef = useRef(null);
-  const galleryRef = useRef(null);
-  const [compressing, setCompressing] = useState(false);
-
-  async function handleFile(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = "";
-    setCompressing(true);
-    try {
-      const blob = await compressImage(file);
-      const previewUrl = URL.createObjectURL(blob);
-      onChange(blob, previewUrl);
-    } catch {
-      // Fallback: use original file uncompressed
-      const previewUrl = URL.createObjectURL(file);
-      onChange(file, previewUrl);
-    } finally {
-      setCompressing(false);
-    }
-  }
-
-  if (compressing) {
-    return (
-      <div className="w-full h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400">
-        <Loader2 className="h-5 w-5 animate-spin" />
-        <span className="text-xs font-medium">Processing image…</span>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <input
-        type="file"
-        accept="image/*"
-        capture="environment"
-        ref={cameraRef}
-        onChange={handleFile}
-        className="hidden"
-      />
-      <input
-        type="file"
-        accept="image/*"
-        ref={galleryRef}
-        onChange={handleFile}
-        className="hidden"
-      />
-      {preview ? (
-        <div className="relative">
-          <img
-            src={preview}
-            alt="Preview"
-            className="w-full h-36 object-cover rounded-xl border border-gray-200"
-          />
-          <button
-            type="button"
-            onClick={onRemove}
-            className="absolute top-2 right-2 bg-white rounded-full p-1 shadow border border-gray-200 text-gray-500 hover:text-red-500"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <div className="absolute bottom-2 right-2 flex gap-1.5">
-            <button
-              type="button"
-              onClick={() => cameraRef.current?.click()}
-              className="bg-white rounded-lg px-2.5 py-1.5 shadow border border-gray-200 text-xs font-medium text-gray-600 flex items-center gap-1 hover:bg-gray-50"
-            >
-              <Camera className="h-3.5 w-3.5" />
-              Retake
-            </button>
-            <button
-              type="button"
-              onClick={() => galleryRef.current?.click()}
-              className="bg-white rounded-lg px-2.5 py-1.5 shadow border border-gray-200 text-xs font-medium text-gray-600 flex items-center gap-1 hover:bg-gray-50"
-            >
-              <ImageIcon className="h-3.5 w-3.5" />
-              Gallery
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => cameraRef.current?.click()}
-            className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-4 text-gray-400 hover:border-indigo-400 hover:text-indigo-500 transition-colors"
-          >
-            <Camera className="h-5 w-5" />
-            <span className="text-xs font-medium">Take Photo</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => galleryRef.current?.click()}
-            className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-4 text-gray-400 hover:border-indigo-400 hover:text-indigo-500 transition-colors"
-          >
-            <ImageIcon className="h-5 w-5" />
-            <span className="text-xs font-medium">From Gallery</span>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Person Form Modal ────────────────────────────────────────────────────────
 
 function PersonFormModal({ open, onClose, onSave, initial, saving, error }) {
   const [form, setForm] = useState({
     name: initial?.name || "",
     relationship: initial?.relationship || "",
-    photoBlob: null,
-    photoPreview: initial?.photo_url || "",
+    photo_url: initial?.photo_url || "",
+    photo_preview: initial?.photo_url || "",
     remarks: initial?.remarks || "",
   });
+  // entityId is stable for the lifetime of this modal instance
+  const [entityId] = useState(() => initial?.id || crypto.randomUUID());
 
   const set = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -227,12 +115,14 @@ function PersonFormModal({ open, onClose, onSave, initial, saving, error }) {
             <span className="text-gray-400 font-normal">(optional)</span>
           </label>
           <PhotoPicker
-            preview={form.photoPreview}
-            onChange={(blob, previewUrl) =>
-              setForm((prev) => ({ ...prev, photoBlob: blob, photoPreview: previewUrl }))
+            entity="authorized_person"
+            entityId={entityId}
+            preview={form.photo_preview}
+            onPhotoUrl={(url, previewUrl) =>
+              setForm((prev) => ({ ...prev, photo_url: url, photo_preview: previewUrl }))
             }
             onRemove={() =>
-              setForm((prev) => ({ ...prev, photoBlob: null, photoPreview: "" }))
+              setForm((prev) => ({ ...prev, photo_url: "", photo_preview: "" }))
             }
           />
         </div>
@@ -281,10 +171,11 @@ function RequestFormModal({ open, onClose, onSave, saving, error }) {
     name: "",
     relationship: "",
     valid_date: todayStr,
-    photoBlob: null,
-    photoPreview: "",
+    photo_url: "",
+    photo_preview: "",
     remarks: "",
   });
+  const [entityId] = useState(() => crypto.randomUUID());
 
   const set = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -349,12 +240,14 @@ function RequestFormModal({ open, onClose, onSave, saving, error }) {
             <span className="text-gray-400 font-normal">(optional — for identity check)</span>
           </label>
           <PhotoPicker
-            preview={form.photoPreview}
-            onChange={(blob, previewUrl) =>
-              setForm((prev) => ({ ...prev, photoBlob: blob, photoPreview: previewUrl }))
+            entity="authorized_person"
+            entityId={entityId}
+            preview={form.photo_preview}
+            onPhotoUrl={(url, previewUrl) =>
+              setForm((prev) => ({ ...prev, photo_url: url, photo_preview: previewUrl }))
             }
             onRemove={() =>
-              setForm((prev) => ({ ...prev, photoBlob: null, photoPreview: "" }))
+              setForm((prev) => ({ ...prev, photo_url: "", photo_preview: "" }))
             }
           />
         </div>
@@ -437,11 +330,12 @@ function DeleteConfirmModal({ open, onClose, onConfirm, name, deleting }) {
 function PersonCard({ person, onEdit, onDelete }) {
   const initials = getInitials(person.name);
   const isActive = person.is_active !== false;
+  console.log("person",person)
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3">
       {person.photo_url ? (
         <img
-          src={person.photo_url}
+          src={person?.photo_url}
           alt={person.name}
           className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-gray-200"
         />
@@ -484,16 +378,88 @@ function PersonCard({ person, onEdit, onDelete }) {
   );
 }
 
+// ─── Request Detail Modal ─────────────────────────────────────────────────────
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="text-xs text-gray-400 w-24 flex-shrink-0 pt-0.5">{label}</span>
+      <span className="text-xs font-medium text-gray-800 flex-1">{value || "—"}</span>
+    </div>
+  );
+}
+
+function RequestDetailModal({ request, onClose }) {
+  if (!request) return null;
+  const status = (request.status || "PENDING").toUpperCase();
+  const photoUrl = request.photoUrl || request.photo_url;
+  const validDate = request.validDate || request.valid_date;
+  const createdAt = request.createdAt || request.created_at;
+  return (
+    <Modal open={!!request} onClose={onClose} className="max-w-sm">
+      <div className="flex flex-col items-center mb-5">
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt={request.name}
+            className="w-24 h-24 rounded-2xl object-cover border border-gray-200 mb-3"
+          />
+        ) : (
+          <div className="w-24 h-24 rounded-2xl bg-orange-100 flex items-center justify-center mb-3">
+            <User className="h-10 w-10 text-orange-300" />
+          </div>
+        )}
+        <h2 className="text-base font-bold text-gray-900">{request.name}</h2>
+        <div className="mt-1.5">
+          <Badge variant={requestStatusVariant(status)}>
+            {status.charAt(0) + status.slice(1).toLowerCase()}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="space-y-2.5 bg-gray-50 rounded-xl px-4 py-3 mb-4">
+        <DetailRow label="Relationship" value={request.relationship} />
+        <DetailRow label="Valid Date" value={formatDate(validDate)} />
+        {request.remarks && <DetailRow label="Remarks" value={request.remarks} />}
+        {createdAt && <DetailRow label="Submitted" value={formatDate(createdAt)} />}
+        {(request.rejectionNote || request.rejection_note) && (
+          <DetailRow label="Rejection Note" value={request.rejectionNote || request.rejection_note} />
+        )}
+      </div>
+
+      <Button variant="secondary" className="w-full" onClick={onClose}>
+        Close
+      </Button>
+    </Modal>
+  );
+}
+
 // ─── Request Card ─────────────────────────────────────────────────────────────
 
-function RequestCard({ request }) {
+function RequestCard({ request, onView }) {
   const initials = getInitials(request.name);
   const status = (request.status || "PENDING").toUpperCase();
+  const photoUrl = request.photoUrl || request.photo_url;
+  const validDate = request.validDate || request.valid_date;
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-start gap-3">
-      <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-orange-600">
-        {initials}
-      </div>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onView}
+      onKeyDown={(e) => e.key === "Enter" && onView()}
+      className="bg-white rounded-2xl border border-gray-100 p-4 flex items-start gap-3 cursor-pointer hover:bg-gray-50 hover:border-gray-200 transition-colors active:scale-[0.99]"
+    >
+      {photoUrl ? (
+        <img
+          src={photoUrl}
+          alt={request.name}
+          className="w-12 h-12 rounded-full object-cover border border-gray-200 flex-shrink-0"
+        />
+      ) : (
+        <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-orange-600">
+          {initials}
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-semibold text-gray-900">{request.name}</p>
@@ -504,19 +470,13 @@ function RequestCard({ request }) {
         <p className="text-xs text-gray-500 mt-0.5">{request.relationship}</p>
         <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-400">
           <Calendar className="h-3.5 w-3.5" />
-          <span>Valid: {formatDate(request.valid_date)}</span>
+          <span>Valid: {formatDate(validDate)}</span>
         </div>
         {request.remarks && (
           <p className="text-xs text-gray-400 mt-1 italic">"{request.remarks}"</p>
         )}
       </div>
-      {request.photo_url && (
-        <img
-          src={request.photo_url}
-          alt={request.name}
-          className="w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
-        />
-      )}
+      <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0 mt-0.5" />
     </div>
   );
 }
@@ -554,6 +514,9 @@ export default function StudentPickup() {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestSaving, setRequestSaving] = useState(false);
   const [requestFormError, setRequestFormError] = useState(null);
+
+  // Request detail view
+  const [viewRequest, setViewRequest] = useState(null);
 
   const loadPersons = useCallback(async () => {
     if (!studentId) return;
@@ -595,22 +558,12 @@ export default function StudentPickup() {
     setPersonFormError(null);
     setPersonSaving(true);
     try {
-      // Upload new photo if one was selected
-      let photo_url;
-      if (form.photoBlob) {
-        const entityId = editingPerson?.id || crypto.randomUUID();
-        photo_url = await uploadPickupPhoto(form.photoBlob, "authorized_person", entityId);
-      } else if (form.photoPreview && !form.photoPreview.startsWith("blob:")) {
-        // Existing remote URL — keep it
-        photo_url = form.photoPreview;
-      }
-
       if (editingPerson?.id) {
         const updates = {
           name: form.name.trim(),
           relationship: form.relationship.trim(),
         };
-        if (photo_url !== undefined) updates.photo_url = photo_url;
+        if (form.photo_url) updates.photo_url = form.photo_url;
         if (form.remarks.trim()) updates.remarks = form.remarks.trim();
         await updateAuthorizedPerson(editingPerson.id, updates);
       } else {
@@ -619,7 +572,7 @@ export default function StudentPickup() {
           name: form.name.trim(),
           relationship: form.relationship.trim(),
         };
-        if (photo_url) payload.photo_url = photo_url;
+        if (form.photo_url) payload.photo_url = form.photo_url;
         if (form.remarks.trim()) payload.remarks = form.remarks.trim();
         await addAuthorizedPerson(payload);
       }
@@ -651,16 +604,6 @@ export default function StudentPickup() {
     setRequestFormError(null);
     setRequestSaving(true);
     try {
-      // Upload photo if selected
-      let photo_url;
-      if (form.photoBlob) {
-        photo_url = await uploadPickupPhoto(
-          form.photoBlob,
-          "authorized_person",
-          crypto.randomUUID(),
-        );
-      }
-
       const payload = {
         student_id: studentId,
         requested_by: studentId,
@@ -668,7 +611,7 @@ export default function StudentPickup() {
         relationship: form.relationship.trim(),
         valid_date: form.valid_date,
       };
-      if (photo_url) payload.photo_url = photo_url;
+      if (form.photo_url) payload.photo_url = form.photo_url;
       if (form.remarks.trim()) payload.remarks = form.remarks.trim();
       await createPickupRequest(payload);
       await loadRequests();
@@ -691,7 +634,7 @@ export default function StudentPickup() {
   const statusFilterTabs = ["ALL", "PENDING", "APPROVED", "REJECTED", "COMPLETED"];
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pb-24 md:pb-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pb-16 md:pb-6">
       {/* Hero */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl px-5 py-5 shadow-sm">
         <div className="flex items-center gap-3">
@@ -711,7 +654,7 @@ export default function StudentPickup() {
       </div>
 
       {/* Tab container */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm ">
         {/* Tab bar */}
         <div className="flex border-b border-gray-100">
           <button
@@ -802,7 +745,7 @@ export default function StudentPickup() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-96 pr-0.5">
                 {persons.map((person) => (
                   <PersonCard
                     key={person.id}
@@ -895,7 +838,7 @@ export default function StudentPickup() {
             ) : (
               <div className="space-y-3">
                 {filteredRequests.map((req) => (
-                  <RequestCard key={req.id} request={req} />
+                  <RequestCard key={req.id} request={req} onView={() => setViewRequest(req)} />
                 ))}
               </div>
             )}
@@ -932,6 +875,11 @@ export default function StudentPickup() {
         onConfirm={handleDeletePerson}
         name={deletingPerson?.name}
         deleting={deleteInProgress}
+      />
+
+      <RequestDetailModal
+        request={viewRequest}
+        onClose={() => setViewRequest(null)}
       />
     </div>
   );
