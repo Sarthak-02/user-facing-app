@@ -3,14 +3,19 @@
  *
  * Strategy
  * ─────────
- * • PNG  → output as PNG (Canvas round-trips pixel-perfect → truly lossless).
- * • JPEG / WebP / HEIC / anything else
- *        → output as JPEG at quality 0.92.
- *          At this quality level the difference is invisible to the human eye
- *          (industry "visually lossless" threshold) while file size typically
- *          drops 30–60 %.  True mathematical losslessness for photos is not
- *          practical: a 12 MP camera JPEG (~3 MB) re-encoded as PNG becomes
- *          ~15–20 MB.
+ * All inputs → WebP at quality 0.92 (visually lossless threshold).
+ *
+ * Why WebP over PNG or JPEG:
+ *   • WebP 0.92  ≈ 65–70 % the size of an equivalent JPEG at 0.92
+ *   • WebP 0.92  ≈ 10–20 % the size of a lossless PNG of the same photo
+ *   • Quality 0.92 is imperceptible to the human eye for face/ID photos
+ *
+ * Note: canvas.toBlob('image/webp', quality) always produces lossy WebP —
+ * the Canvas API does not expose lossless WebP encoding.  Lossless WebP would
+ * be no better than PNG for photographs anyway.
+ *
+ * Fallback: if the browser does not support WebP encoding (rare — all modern
+ * browsers do), canvas.toBlob returns null and we fall back to JPEG 0.92.
  *
  * Resizing
  * ────────
@@ -18,10 +23,11 @@
  * No upscaling ever occurs.  1 920 px is enough for clear face / ID photos.
  *
  * @param {File|Blob} file  Source image.
- * @returns {Promise<Blob>} Compressed image blob with correct MIME type.
+ * @returns {Promise<Blob>} Compressed WebP (or JPEG fallback) blob.
  */
 
 const MAX_SIDE = 1920;
+const QUALITY = 0.92;
 
 export function compressImage(file) {
   return new Promise((resolve, reject) => {
@@ -44,21 +50,27 @@ export function compressImage(file) {
       const canvas = document.createElement("canvas");
       canvas.width = w;
       canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, w, h);
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
 
-      // PNG → lossless PNG; everything else → high-quality JPEG
-      const isPng = file.type === "image/png";
-      const outputMime = isPng ? "image/png" : "image/jpeg";
-      const quality = isPng ? undefined : 0.92;
-
+      // Try WebP first; fall back to JPEG if the browser doesn't support it
       canvas.toBlob(
         (blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error("Canvas compression produced no output"));
+          if (blob) {
+            resolve(blob);
+          } else {
+            // WebP not supported — fall back to JPEG
+            canvas.toBlob(
+              (jpegBlob) => {
+                if (jpegBlob) resolve(jpegBlob);
+                else reject(new Error("Canvas compression produced no output"));
+              },
+              "image/jpeg",
+              QUALITY,
+            );
+          }
         },
-        outputMime,
-        quality,
+        "image/webp",
+        QUALITY,
       );
     };
 
