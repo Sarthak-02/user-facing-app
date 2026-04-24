@@ -381,11 +381,55 @@ function PendingRequestCard({ request, onApprove, onReject, onView, approvingId,
 
 // ─── Student Pickup Panel ─────────────────────────────────────────────────────
 
+// ─── Person Profile Modal ─────────────────────────────────────────────────────
+
+function PersonProfileModal({ person, onClose }) {
+  if (!person) return null;
+  const isActive = person.is_active !== false;
+  return (
+    <Modal open={!!person} onClose={onClose} className="max-w-sm">
+      <div className="flex flex-col items-center mb-5">
+        {person.photo_url ? (
+          <img
+            src={person.photo_url}
+            alt={person.name}
+            className="w-24 h-24 rounded-2xl object-cover border border-gray-200 mb-3"
+          />
+        ) : (
+          <div className="w-24 h-24 rounded-2xl bg-green-100 flex items-center justify-center mb-3">
+            <User className="h-10 w-10 text-green-400" />
+          </div>
+        )}
+        <h2 className="text-base font-bold text-gray-900">{person.name}</h2>
+        <p className="text-sm text-gray-500 mt-0.5">{person.relationship}</p>
+        <div className="mt-2">
+          <Badge variant={isActive ? "success" : "error"}>
+            {isActive ? "Active" : "Inactive"}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="space-y-2.5 bg-gray-50 rounded-xl px-4 py-3 mb-4">
+        <DetailRow label="Relationship" value={person.relationship} />
+        {person.remarks && <DetailRow label="Remarks" value={person.remarks} />}
+        {person.phone && <DetailRow label="Phone" value={person.phone} />}
+      </div>
+
+      <Button variant="secondary" className="w-full" onClick={onClose}>
+        Close
+      </Button>
+    </Modal>
+  );
+}
+
+// ─── Student Pickup Panel ─────────────────────────────────────────────────────
+
 function StudentPickupPanel({ student, onConfirm }) {
   const [authorizedPersons, setAuthorizedPersons] = useState([]);
   const [approvedRequests, setApprovedRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewPerson, setViewPerson] = useState(null);
 
   useEffect(() => {
     if (!student?.student_id) return;
@@ -451,7 +495,7 @@ function StudentPickupPanel({ student, onConfirm }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-0">
       {/* Pre-authorized persons */}
       {authorizedPersons.length > 0 && (
         <div>
@@ -479,23 +523,32 @@ function StudentPickupPanel({ student, onConfirm }) {
                   <p className="text-sm font-semibold text-gray-900">{person.name}</p>
                   <p className="text-xs text-gray-500">{person.relationship}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onConfirm({
-                      type: "AUTHORIZED_PERSON",
-                      person_name: person.name,
-                      person_relationship: person.relationship,
-                      authorized_person_id: person.id,
-                      photo_url: person.photo_url,
-                      student_id: student.student_id,
-                      student_name: student.student_name || student.student_id,
-                    })
-                  }
-                  className="flex-shrink-0 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
-                >
-                  Confirm
-                </button>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setViewPerson(person)}
+                    className="px-2.5 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors"
+                  >
+                    View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onConfirm({
+                        type: "AUTHORIZED_PERSON",
+                        person_name: person.name,
+                        person_relationship: person.relationship,
+                        authorized_person_id: person.id,
+                        photo_url: person.photo_url,
+                        student_id: student.student_id,
+                        student_name: student.student_name || student.student_id,
+                      })
+                    }
+                    className="px-2.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
+                  >
+                    Confirm
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -554,6 +607,8 @@ function StudentPickupPanel({ student, onConfirm }) {
           </div>
         </div>
       )}
+
+      <PersonProfileModal person={viewPerson} onClose={() => setViewPerson(null)} />
     </div>
   );
 }
