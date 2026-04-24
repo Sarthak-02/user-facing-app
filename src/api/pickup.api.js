@@ -7,7 +7,8 @@ export async function listAuthorizedPersons(student_id, include_inactive = false
     const response = await api.get("/pickup/authorized-persons", {
       params: { student_id, include_inactive },
     });
-    return response.data?.data ?? response.data ?? [];
+    // Return full response so callers can access already_picked_up / today_pickup
+    return response.data ?? {};
   } catch (err) {
     console.error("Error fetching authorized persons:", err.response?.data);
     throw err.response?.data || err;

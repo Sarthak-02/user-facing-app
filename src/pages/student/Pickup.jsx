@@ -523,8 +523,9 @@ export default function StudentPickup() {
     setPersonsLoading(true);
     setPersonsError(null);
     try {
-      const data = await listAuthorizedPersons(studentId, true);
-      setPersons(Array.isArray(data) ? data : []);
+      const result = await listAuthorizedPersons(studentId, true);
+      const data = Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : [];
+      setPersons(data);
     } catch (err) {
       setPersonsError(err?.message || err?.error || "Failed to load authorized persons");
     } finally {

@@ -427,6 +427,8 @@ function PersonProfileModal({ person, onClose }) {
 function StudentPickupPanel({ student, onConfirm }) {
   const [authorizedPersons, setAuthorizedPersons] = useState([]);
   const [approvedRequests, setApprovedRequests] = useState([]);
+  const [alreadyPickedUp, setAlreadyPickedUp] = useState(false);
+  const [todayPickup, setTodayPickup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewPerson, setViewPerson] = useState(null);
@@ -439,14 +441,20 @@ function StudentPickupPanel({ student, onConfirm }) {
       setLoading(true);
       setError(null);
       try {
-        const [persons, requests] = await Promise.all([
+        const [personsResult, requests] = await Promise.all([
           listAuthorizedPersons(student.student_id),
           listPickupRequests(student.student_id, todayStr, "APPROVED"),
         ]);
         if (!cancelled) {
-          setAuthorizedPersons(
-            Array.isArray(persons) ? persons.filter((p) => p.is_active !== false) : []
-          );
+          const persons = Array.isArray(personsResult)
+            ? personsResult
+            : Array.isArray(personsResult?.data)
+            ? personsResult.data
+            : [];
+          // camelCase from API: isActive; snake_case fallback
+          setAuthorizedPersons(persons.filter((p) => (p.isActive ?? p.is_active) !== false));
+          setAlreadyPickedUp(personsResult?.already_picked_up ?? false);
+          setTodayPickup(personsResult?.today_pickup ?? null);
           setApprovedRequests(Array.isArray(requests) ? requests : []);
         }
       } catch (err) {
@@ -458,9 +466,7 @@ function StudentPickupPanel({ student, onConfirm }) {
     }
 
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [student?.student_id]);
 
   if (loading) {
@@ -494,8 +500,38 @@ function StudentPickupPanel({ student, onConfirm }) {
     );
   }
 
+  const teacherName = todayPickup?.teacher
+    ? `${todayPickup.teacher.teacher_first_name || ""} ${todayPickup.teacher.teacher_last_name || ""}`.trim()
+    : null;
+
   return (
-    <div className="space-y-0">
+    <div className="space-y-4">
+      {/* Already picked up banner */}
+      {alreadyPickedUp && todayPickup && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <ShieldCheck className="h-4 w-4 text-green-600 flex-shrink-0" />
+            <p className="text-sm font-bold text-green-800">Already Picked Up Today</p>
+          </div>
+          <div className="space-y-1 text-xs text-green-700">
+            <p>
+              <span className="font-semibold">{todayPickup.personName}</span>
+              {todayPickup.personRelationship && (
+                <span className="text-green-600"> · {todayPickup.personRelationship}</span>
+              )}
+            </p>
+            <p>
+              Time: <span className="font-semibold">{formatTime(todayPickup.pickedUpAt)}</span>
+            </p>
+            {teacherName && (
+              <p>
+                Confirmed by: <span className="font-semibold">{teacherName}</span>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Pre-authorized persons */}
       {authorizedPersons.length > 0 && (
         <div>
@@ -503,20 +539,23 @@ function StudentPickupPanel({ student, onConfirm }) {
             Pre-Authorized Persons
           </p>
           <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5 pb-16">
-            {authorizedPersons.map((person) => (
+            {authorizedPersons.map((person) => {
+              // API returns camelCase; fall back to snake_case
+              const photoUrl = person.photoUrl || person.photo_url;
+              return (
               <div
                 key={person.id}
                 className="bg-white rounded-2xl border border-gray-100 p-3 flex items-center gap-3"
               >
-                {person.photo_url ? (
+                {photoUrl ? (
                   <img
-                    src={person.photo_url}
+                    src={photoUrl}
                     alt={person.name}
                     className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-200"
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <User className="h-4.5 w-4.5 text-green-600" />
+                    <User className="h-5 w-5 text-green-600" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -526,31 +565,34 @@ function StudentPickupPanel({ student, onConfirm }) {
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button
                     type="button"
-                    onClick={() => setViewPerson(person)}
+                    onClick={() => setViewPerson({ ...person, photo_url: photoUrl })}
                     className="px-2.5 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors"
                   >
                     View
                   </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onConfirm({
-                        type: "AUTHORIZED_PERSON",
-                        person_name: person.name,
-                        person_relationship: person.relationship,
-                        authorized_person_id: person.id,
-                        photo_url: person.photo_url,
-                        student_id: student.student_id,
-                        student_name: student.student_name || student.student_id,
-                      })
-                    }
-                    className="px-2.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
-                  >
-                    Confirm
-                  </button>
+                  {!alreadyPickedUp && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onConfirm({
+                          type: "AUTHORIZED_PERSON",
+                          person_name: person.name,
+                          person_relationship: person.relationship,
+                          authorized_person_id: person.id,
+                          photo_url: photoUrl,
+                          student_id: student.student_id,
+                          student_name: student.student_name || student.student_id,
+                        })
+                      }
+                      className="px-2.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
+                    >
+                      Confirm
+                    </button>
+                  )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -585,23 +627,25 @@ function StudentPickupPanel({ student, onConfirm }) {
                     One-time
                   </Badge>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onConfirm({
-                      type: "ONE_TIME_REQUEST",
-                      person_name: req.name,
-                      person_relationship: req.relationship,
-                      pickup_request_id: req.id,
-                      photo_url: req.photo_url,
-                      student_id: student.student_id,
-                      student_name: student.student_name || student.student_id,
-                    })
-                  }
-                  className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Confirm
-                </button>
+                {!alreadyPickedUp && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onConfirm({
+                        type: "ONE_TIME_REQUEST",
+                        person_name: req.name,
+                        person_relationship: req.relationship,
+                        pickup_request_id: req.id,
+                        photo_url: req.photo_url,
+                        student_id: student.student_id,
+                        student_name: student.student_name || student.student_id,
+                      })
+                    }
+                    className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Confirm
+                  </button>
+                )}
               </div>
             ))}
           </div>
