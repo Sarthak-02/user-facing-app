@@ -14,6 +14,7 @@ import {
   Megaphone,
   MessageCircle,
   NotebookPen,
+  Shield,
 } from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
@@ -47,6 +48,7 @@ export default function Layout() {
         { label: "Announcements", icon: Megaphone, path: "/student/announcements" },
         { label: "Exams", icon: FileText, path: "/student/exams" },
         { label: "Messages", icon: MessageCircle, path: "/student/chat" },
+        { label: "Pickup", icon: Shield, path: "/student/pickup" },
         { label: "Reporting", icon: BarChart3, path: "/student/reporting" },
         { label: "Study", icon: Sparkles, path: "/student/study" },
       ];
@@ -59,6 +61,7 @@ export default function Layout() {
         { label: "Lesson plans", icon: NotebookPen, path: "/staff/lesson-plans" },
         { label: "Exams", icon: FileText, path: "/staff/exams" },
         { label: "Messages", icon: MessageCircle, path: "/staff/chat" },
+        { label: "Pickup", icon: Shield, path: "/staff/pickup" },
         { label: "Broadcast", icon: Bell, path: "/broadcast" },
       ];
     }
