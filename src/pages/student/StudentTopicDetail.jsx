@@ -66,39 +66,41 @@ export default function StudentTopicDetail() {
   const { state } = useLocation();
 
   const [topic, setTopic] = useState(state?.topic ?? null);
-  const [loading, setLoading] = useState(!state?.topic);
+  const [loading, setLoading] = useState(!!state?.classPlanId);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (state?.topic) return;
-    if (!topicId || !state?.classPlanId) {
-      setError("Topic data not available. Please go back and try again.");
+    const classPlanId = state?.classPlanId;
+    if (!classPlanId || !topicId) {
+      if (!state?.topic) {
+        setError("Topic data not available. Please go back and try again.");
+      }
       setLoading(false);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const plan = await getClassPlanById(state.classPlanId);
+        const plan = await getClassPlanById(classPlanId);
         const found = (plan?.topics ?? []).find(
           (t) => String(t.id ?? t.class_plan_topic_id) === String(topicId)
         );
         if (!cancelled) {
           if (found) setTopic(found);
-          else setError("Topic not found.");
+          else if (!state?.topic) setError("Topic not found.");
         }
       } catch (e) {
-        if (!cancelled) setError(e?.message || "Failed to load topic.");
+        if (!cancelled && !state?.topic) setError(e?.message || "Failed to load topic.");
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [topicId, state]);
+  }, [topicId, state?.classPlanId]);
 
   const goBack = () => navigate(`/student/lesson-plans/subject/${subjectId}`);
 
-  if (loading) {
+  if (loading && !topic) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center">
         <Loader />
@@ -134,7 +136,9 @@ export default function StudentTopicDetail() {
 
   const sc = topicStatusConfig(topic.status);
   const { Icon } = sc;
-  const assignments = topic.assignments ?? [];
+  const assignments = (topic.assignments ?? []).filter(
+    (a) => !a.status || a.status === "PUBLISHED" || a.status === "CLOSED"
+  );
   const quizzes = topic.quizzes ?? [];
   const materials = topic.materials ?? [];
   const chapterTitle = state?.chapterTitle ?? topic.chapter_title ?? "";
@@ -166,7 +170,7 @@ export default function StudentTopicDetail() {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="max-w-2xl mx-auto p-4 pb-10 space-y-4">
+        <div className="max-w-2xl mx-auto p-4 pb-24 space-y-4">
 
           {/* Hero banner */}
           <div className={`bg-gradient-to-br ${sc.headerGradient} rounded-2xl p-5 text-white`}>
