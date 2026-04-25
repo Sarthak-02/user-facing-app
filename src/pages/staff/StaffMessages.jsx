@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { MessageSquare } from "lucide-react";
 import ChatInbox from "../../components/chat/ChatInbox";
 import ChatThread from "../../components/chat/ChatThread";
 
@@ -7,11 +8,34 @@ const BASE = "/staff/chat";
 export default function StaffMessages() {
   const { conversationId } = useParams();
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-row">
+      {/* Inbox sidebar — hidden on mobile when a thread is open */}
+      <div
+        className={`flex min-h-0 flex-col border-r border-[var(--color-border)] md:w-80 md:shrink-0 ${
+          conversationId ? "hidden md:flex" : "flex w-full"
+        }`}
+      >
+        <ChatInbox
+          mode="staff"
+          threadBase={BASE}
+          activeId={conversationId ?? ""}
+        />
+      </div>
+
+      {/* Thread panel */}
       {conversationId ? (
-        <ChatThread conversationId={conversationId} backTo={BASE} />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <ChatThread conversationId={conversationId} backTo={BASE} />
+        </div>
       ) : (
-        <ChatInbox mode="staff" threadBase={BASE} />
+        <div className="hidden md:flex md:flex-1 md:items-center md:justify-center md:bg-[var(--color-background)]">
+          <div className="text-center">
+            <MessageSquare size={40} className="mx-auto mb-3 text-gray-300" />
+            <p className="text-sm text-gray-400">
+              Select a conversation to start chatting
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

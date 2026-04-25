@@ -3,11 +3,48 @@ export function messageTimeLabel(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString(undefined, {
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  }
+  return (
+    d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
+    " · " +
+    d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+  );
+}
+
+/** @param {string | undefined} iso */
+export function relativeTimeLabel(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "Yesterday";
+  if (days < 7) return d.toLocaleDateString(undefined, { weekday: "short" });
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+/** @param {string | undefined} iso */
+export function messageDateLabel(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return "Today";
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return d.toLocaleDateString(undefined, {
+    weekday: "long",
     month: "short",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -88,6 +125,7 @@ export function conversationTitle(c, currentUserId) {
   if (!c || typeof c !== "object") return "Chat";
   const t = c.title || c.name || c.display_name;
   if (t) return String(t);
+  if (c.receiver?.name) return String(c.receiver.name);
   const peer =
     c.other_user ||
     c.peer ||
@@ -105,6 +143,19 @@ export function conversationTitle(c, currentUserId) {
     [peer?.first_name, peer?.last_name].filter(Boolean).join(" ");
   if (peerName) return String(peerName);
   return "Direct message";
+}
+
+/** @param {object} c */
+export function conversationLastMessage(c) {
+  const lm = c?.last_message;
+  if (!lm) return "";
+  return typeof lm.body === "string" ? lm.body : "";
+}
+
+/** @param {object} c */
+export function conversationUnreadCount(c) {
+  const n = c?.unread_count;
+  return typeof n === "number" && n > 0 ? n : 0;
 }
 
 /**

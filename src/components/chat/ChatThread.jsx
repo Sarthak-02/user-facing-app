@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, SendHorizontal } from "lucide-react";
-import { Card, Button } from "../../ui-components";
+import { ChevronLeft, SendHorizontal, ChevronsDown, MessageSquare } from "lucide-react";
+import { Button } from "../../ui-components";
 import Loader from "../../ui-components/Loader";
 import { useAuth } from "../../store/auth.store";
 import {
@@ -15,6 +15,7 @@ import {
   isMessageFromCurrentUser,
   messageBody,
   messageCreatedAt,
+  messageDateLabel,
   messageId,
   messageTimeLabel,
 } from "./chatUtils";
@@ -71,24 +72,38 @@ export default function ChatThread({ conversationId, backTo }) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
 
   const bottomRef = useRef(null);
   const scrollAreaRef = useRef(null);
   const pollAfterRef = useRef("");
+  const textareaRef = useRef(null);
+  const atBottomRef = useRef(true);
+  const isInitialScrollRef = useRef(true);
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((behavior = "smooth") => {
     const area = scrollAreaRef.current;
     if (area) {
-      area.scrollTo({ top: area.scrollHeight, behavior: "smooth" });
+      area.scrollTo({ top: area.scrollHeight, behavior });
       return;
     }
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior });
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const area = scrollAreaRef.current;
+    if (!area) return;
+    const nearBottom =
+      area.scrollHeight - area.scrollTop - area.clientHeight < 100;
+    atBottomRef.current = nearBottom;
+    setShowScrollBtn(!nearBottom);
   }, []);
 
   const loadInitial = useCallback(async () => {
     if (!conversationId) return;
     setLoading(true);
     setError(null);
+    isInitialScrollRef.current = true;
     try {
       const [conv, msgs] = await Promise.all([
         getConversation(conversationId).catch(() => null),
@@ -100,6 +115,7 @@ export default function ChatThread({ conversationId, backTo }) {
       const sorted = sortChrono(msgs);
       setMessages(sorted);
       pollAfterRef.current = latestCreatedAtIso(sorted);
+      atBottomRef.current = true;
       await markConversationRead(conversationId).catch(() => {});
     } catch (e) {
       const msg =
@@ -149,9 +165,22 @@ export default function ChatThread({ conversationId, backTo }) {
     };
   }, [conversationId, loading]);
 
+  // Auto-scroll only when near bottom; instant on initial load
   useEffect(() => {
-    scrollToBottom();
+    if (atBottomRef.current) {
+      const behavior = isInitialScrollRef.current ? "instant" : "smooth";
+      isInitialScrollRef.current = false;
+      scrollToBottom(behavior);
+    }
   }, [messages, scrollToBottom]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 160) + "px";
+  }, [draft]);
 
   const onSend = async (e) => {
     e.preventDefault();
@@ -162,6 +191,7 @@ export default function ChatThread({ conversationId, backTo }) {
     try {
       const created = await sendChatMessage(conversationId, text);
       setDraft("");
+      atBottomRef.current = true;
       if (created && typeof created === "object") {
         const outgoing = isMessageFromCurrentUser(created, currentUserId)
           ? created
@@ -187,94 +217,149 @@ export default function ChatThread({ conversationId, backTo }) {
     }
   };
 
-  const rows = useMemo(() => messages, [messages]);
+  // Insert date separators between messages from different days
+  const rowsWithSeparators = useMemo(() => {
+    const result = [];
+    let lastLabel = null;
+    for (const m of messages) {
+      const label = messageDateLabel(messageCreatedAt(m));
+      if (label && label !== lastLabel) {
+        result.push({ _isSeparator: true, label });
+        lastLabel = label;
+      }
+      result.push(m);
+    }
+    return result;
+  }, [messages]);
 
   if (!conversationId) {
     return null;
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[var(--color-background)]">
-      <header className="shrink-0 border-b border-gray-100 bg-white px-3 py-3 dark:border-gray-800 dark:bg-gray-900">
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Header */}
+      <header className="shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
         <div className="mx-auto flex max-w-3xl items-center gap-2">
           <Link
             to={backTo}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-800 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 md:hidden"
             aria-label="Back to conversations"
           >
-            <ChevronLeft size={22} />
+            <ChevronLeft size={20} />
           </Link>
-          <h1 className="min-w-0 flex-1 truncate text-base font-bold text-gray-950 dark:text-gray-100">
+          <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800">
             {title}
           </h1>
         </div>
       </header>
 
-      <div
-        ref={scrollAreaRef}
-        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-4"
-      >
-        <div className="mx-auto max-w-3xl space-y-3">
-          {loading ? (
-            <div className="flex justify-center py-16">
-              <Loader />
-            </div>
-          ) : null}
+      {/* Scroll area */}
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-gray-50">
+        <div
+          ref={scrollAreaRef}
+          onScroll={handleScroll}
+          className="h-full overflow-y-auto overflow-x-hidden px-4 py-4"
+        >
+          <div className="mx-auto max-w-3xl space-y-1">
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <Loader />
+              </div>
+            ) : null}
 
-          {error ? (
-            <Card className="border border-error-200 bg-error-50/80 p-4 dark:border-error-900 dark:bg-error-950/40">
-              <p className="text-sm font-semibold text-error-800 dark:text-error-200">
-                {error}
-              </p>
-            </Card>
-          ) : null}
+            {error ? (
+              <div className="rounded-lg border border-red-100 bg-red-50 p-3">
+                <p className="text-xs text-red-500">{error}</p>
+              </div>
+            ) : null}
 
-          {!loading &&
-            rows.map((m) => {
-              const sentByMe = isMessageFromCurrentUser(m, currentUserId);
-              const body = messageBody(m);
-              const when = messageTimeLabel(messageCreatedAt(m));
-              return (
-                <div
-                  key={messageId(m) || `${when}-${body.slice(0, 12)}`}
-                  className={`flex w-full ${sentByMe ? "justify-end" : "justify-start"}`}
-                >
+            {!loading && messages.length === 0 && !error ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <MessageSquare size={36} className="mb-3 text-gray-300" />
+                <p className="text-sm text-gray-400">
+                  No messages yet. Say hello!
+                </p>
+              </div>
+            ) : null}
+
+            {!loading &&
+              rowsWithSeparators.map((item, idx) => {
+                if (item._isSeparator) {
+                  return (
+                    <div
+                      key={`sep-${item.label}`}
+                      className="flex items-center gap-3 py-3"
+                    >
+                      <div className="flex-1 border-t border-gray-200" />
+                      <span className="shrink-0 text-[11px] text-gray-400">
+                        {item.label}
+                      </span>
+                      <div className="flex-1 border-t border-gray-200" />
+                    </div>
+                  );
+                }
+                const m = item;
+                const sentByMe = isMessageFromCurrentUser(m, currentUserId);
+                const body = messageBody(m);
+                const when = messageTimeLabel(messageCreatedAt(m));
+                return (
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm ${
-                      sentByMe
-                        ? "rounded-br-md bg-primary-600 text-white"
-                        : "rounded-bl-md border border-gray-100 bg-white text-gray-950 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                    }`}
+                    key={messageId(m) || `${when}-${body.slice(0, 12)}-${idx}`}
+                    className={`flex w-full py-0.5 ${sentByMe ? "justify-end" : "justify-start"}`}
                   >
-                    <p className="whitespace-pre-wrap break-words text-left leading-relaxed">
-                      {body}
-                    </p>
-                    <p
-                      className={`mt-1 text-left text-[10px] font-semibold uppercase tracking-wide ${
-                        sentByMe ? "text-primary-100" : "text-gray-500 dark:text-gray-400"
+                    <div
+                      className={`max-w-[78%] rounded-2xl px-3.5 py-2 text-sm ${
+                        sentByMe
+                          ? "rounded-br-sm bg-primary-600 text-white"
+                          : "rounded-bl-sm border border-gray-200 bg-white text-gray-800 shadow-sm"
                       }`}
                     >
-                      {when}
-                    </p>
+                      <p className="whitespace-pre-wrap break-words leading-relaxed">
+                        {body}
+                      </p>
+                      <p
+                        className={`mt-1 text-[10px] ${
+                          sentByMe ? "text-white/60" : "text-gray-400"
+                        }`}
+                      >
+                        {when}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          <div ref={bottomRef} />
+                );
+              })}
+            <div ref={bottomRef} />
+          </div>
         </div>
+
+        {showScrollBtn && (
+          <button
+            type="button"
+            onClick={() => {
+              atBottomRef.current = true;
+              setShowScrollBtn(false);
+              scrollToBottom();
+            }}
+            className="absolute bottom-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-500 shadow-md hover:shadow-lg"
+            aria-label="Scroll to latest"
+          >
+            <ChevronsDown size={16} />
+          </button>
+        )}
       </div>
 
-      <footer className="shrink-0 border-t border-gray-100 bg-white p-3 pb-24 dark:border-gray-800 dark:bg-gray-900 md:pb-3">
-        <form
-          onSubmit={onSend}
-          className="mx-auto flex max-w-3xl gap-2"
-        >
+      {/* Footer */}
+      <footer className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] p-3 pb-24 md:pb-3">
+        <form onSubmit={onSend} className="mx-auto flex max-w-3xl gap-2">
           <textarea
+            ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Write a message…"
+            title="Enter to send · Shift+Enter for new line"
             rows={1}
-            className="min-h-[44px] flex-1 resize-none rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-950 shadow-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+            className="min-h-[40px] flex-1 resize-none rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-gray-800 outline-none placeholder:text-gray-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
             disabled={sending || loading}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -286,12 +371,12 @@ export default function ChatThread({ conversationId, backTo }) {
           <Button
             type="submit"
             disabled={sending || loading || !draft.trim()}
-            className="h-11 shrink-0 self-end px-4"
+            className="h-10 shrink-0 self-end px-3"
           >
             {sending ? (
               <span className="text-xs">…</span>
             ) : (
-              <SendHorizontal size={18} />
+              <SendHorizontal size={16} />
             )}
           </Button>
         </form>
