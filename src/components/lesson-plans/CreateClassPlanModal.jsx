@@ -58,7 +58,7 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
 
       <div className="mt-5 space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Subject</label>
+          <label className="mb-1 block text-sm font-medium text-gray-900">Subject</label>
           <Input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
@@ -67,7 +67,7 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Class</label>
+          <label className="mb-1 block text-sm font-medium text-gray-900">Class</label>
           <Input
             value={className}
             onChange={(e) => setClassName(e.target.value)}
@@ -76,7 +76,7 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Academic year</label>
+          <label className="mb-1 block text-sm font-medium text-gray-900">Academic year</label>
           <Input
             value={academicYear}
             onChange={(e) => setAcademicYear(e.target.value)}

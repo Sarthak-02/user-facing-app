@@ -185,6 +185,50 @@ export async function uploadLessonPlanFile(file, lessonPlanId) {
   };
 }
 
+// ─── Class Plan normalizers ───────────────────────────────────────────────────
+
+function normalizeClassPlanTopic(raw) {
+  if (!raw || typeof raw !== "object") return raw;
+  const normalizeItem = (item) => ({
+    ...item,
+    due_date: item.dueDate ?? item.due_date ?? null,
+    file_url: item.fileUrl ?? item.file_url ?? null,
+    file_name: item.fileName ?? item.file_name ?? null,
+    generated_by_ai: item.generatedByAi ?? item.generated_by_ai ?? false,
+  });
+  return {
+    ...raw,
+    chapter_title: raw.chapterTitle ?? raw.chapter_title ?? "",
+    chapter_number: raw.chapterNumber ?? raw.chapter_number ?? null,
+    display_order: raw.displayOrder ?? raw.display_order ?? 0,
+    scheduled_date: raw.scheduledDate ?? raw.scheduled_date ?? null,
+    completed_on: raw.completedOn ?? raw.completed_on ?? null,
+    actual_duration_mins: raw.actualDurationMins ?? raw.actual_duration_mins ?? null,
+    teacher_notes: raw.teacherNotes ?? raw.teacher_notes ?? null,
+    is_added_by_teacher: raw.isAddedByTeacher ?? raw.is_added_by_teacher ?? false,
+    class_plan_id: raw.classPlanId ?? raw.class_plan_id,
+    assignments: (raw.assignments ?? []).map(normalizeItem),
+    quizzes: (raw.quizzes ?? []).map(normalizeItem),
+    materials: (raw.materials ?? raw.study_materials ?? []).map(normalizeItem),
+  };
+}
+
+function normalizeClassPlan(raw) {
+  if (!raw || typeof raw !== "object") return raw;
+  return {
+    ...raw,
+    master_plan_id: raw.masterPlanId ?? raw.master_plan_id ?? null,
+    campus_id: raw.campusId ?? raw.campus_id,
+    teacher_id: raw.teacherId ?? raw.teacher_id,
+    class_name: raw.className ?? raw.class_name,
+    academic_year: raw.academicYear ?? raw.academic_year,
+    is_published: raw.isPublished ?? raw.is_published ?? false,
+    created_at: raw.createdAt ?? raw.created_at,
+    updated_at: raw.updatedAt ?? raw.updated_at,
+    topics: (raw.topics ?? []).map(normalizeClassPlanTopic),
+  };
+}
+
 // ─── Class Plans ─────────────────────────────────────────────────────────────
 
 /**
@@ -193,7 +237,8 @@ export async function uploadLessonPlanFile(file, lessonPlanId) {
 export async function listClassPlans(params) {
   const response = await api.get("/class-plans", { params });
   const d = response.data?.data ?? response.data;
-  return Array.isArray(d) ? d : (d?.class_plans ?? d?.plans ?? d?.items ?? []);
+  const arr = Array.isArray(d) ? d : (d?.class_plans ?? d?.plans ?? d?.items ?? []);
+  return arr.map(normalizeClassPlan);
 }
 
 /**
@@ -201,7 +246,8 @@ export async function listClassPlans(params) {
  */
 export async function getClassPlanById(classPlanId) {
   const response = await api.get(`/class-plans/${classPlanId}`);
-  return response.data?.data ?? response.data;
+  const d = response.data?.data ?? response.data;
+  return d != null ? normalizeClassPlan(d) : d;
 }
 
 /**
@@ -209,7 +255,8 @@ export async function getClassPlanById(classPlanId) {
  */
 export async function createClassPlan(body) {
   const response = await api.post("/class-plans", body);
-  return response.data?.data ?? response.data;
+  const d = response.data?.data ?? response.data;
+  return d != null ? normalizeClassPlan(d) : d;
 }
 
 /**
@@ -218,7 +265,8 @@ export async function createClassPlan(body) {
  */
 export async function updateClassPlan(classPlanId, body) {
   const response = await api.patch(`/class-plans/${classPlanId}`, body);
-  return response.data?.data ?? response.data;
+  const d = response.data?.data ?? response.data;
+  return d != null ? normalizeClassPlan(d) : d;
 }
 
 /**
@@ -235,7 +283,8 @@ export async function deleteClassPlan(classPlanId) {
  */
 export async function seedClassPlanFromMaster(body) {
   const response = await api.post("/class-plans/seed-from-master", body);
-  return response.data?.data ?? response.data;
+  const d = response.data?.data ?? response.data;
+  return d != null ? normalizeClassPlan(d) : d;
 }
 
 // ─── Topics ──────────────────────────────────────────────────────────────────

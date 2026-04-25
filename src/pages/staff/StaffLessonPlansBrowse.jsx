@@ -6,10 +6,11 @@ import { useAuth } from "../../store/auth.store";
 import {
   listClassPlans,
   deleteClassPlanTopic,
+  createClassPlan,
+  updateClassPlan,
 } from "../../api/lessonPlans.api";
 import TopicFormModal from "../../components/lesson-plans/TopicFormModal";
 import MasterPlanModal from "../../components/lesson-plans/MasterPlanModal";
-import CreateClassPlanModal from "../../components/lesson-plans/CreateClassPlanModal";
 import Loader from "../../ui-components/Loader";
 import {
   ArrowLeft,
@@ -217,16 +218,20 @@ export default function StaffLessonPlansBrowse() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [expandedChapters, setExpandedChapters] = useState(new Set());
-  const [createPlanOpen, setCreatePlanOpen] = useState(false);
+  const [creatingPlan, setCreatingPlan] = useState(false);
 
   // Topic form
   const [topicFormOpen, setTopicFormOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState(null);
   const [prefillChapterTitle, setPrefillChapterTitle] = useState("");
   const [prefillChapterNumber, setPrefillChapterNumber] = useState(null);
+  const [lockChapter, setLockChapter] = useState(false);
 
   // Master plan seed modal
   const [masterPlanOpen, setMasterPlanOpen] = useState(false);
+
+  // Publish
+  const [publishing, setPublishing] = useState(false);
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -234,7 +239,8 @@ export default function StaffLessonPlansBrowse() {
 
   const section = (permissions.sections || []).find((s) => s.section_id === sectionId);
   const classId = section?.class_id || "";
-  const className = section?.class_name || "";
+  const classObj = (permissions.classes || []).find((c) => c.class_id === classId);
+  const className = classObj?.class_name || "";
 
   const subjectsInSection = useMemo(
     () => (sectionId ? getSubjectsBySection(sectionId) : []),
@@ -319,6 +325,7 @@ export default function StaffLessonPlansBrowse() {
     setEditingTopic(null);
     setPrefillChapterTitle(chapterTitle);
     setPrefillChapterNumber(chapterNumber);
+    setLockChapter(!!chapterTitle);
     setTopicFormOpen(true);
     if (chapterTitle) {
       setExpandedChapters((prev) => new Set([...prev, chapterTitle]));
@@ -329,12 +336,40 @@ export default function StaffLessonPlansBrowse() {
     setEditingTopic(topic);
     setPrefillChapterTitle(topic.chapter_title || "");
     setPrefillChapterNumber(topic.chapter_number ?? null);
+    setLockChapter(false);
     setTopicFormOpen(true);
   };
 
-  const handlePlanCreated = (plan) => {
-    setClassPlan(plan);
-    setCreatePlanOpen(false);
+  const handleCreateBlankPlan = async () => {
+    setCreatingPlan(true);
+    try {
+      const plan = await createClassPlan({
+        campus_id: context.campusId,
+        teacher_id: context.teacherId,
+        class_name: context.className,
+        subject: context.subjectName,
+        academic_year: context.academicYear,
+        is_published: false,
+      });
+      setClassPlan(plan);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCreatingPlan(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!classPlan?.id) return;
+    setPublishing(true);
+    try {
+      await updateClassPlan(classPlan.id, { is_published: true });
+      setClassPlan((prev) => ({ ...prev, is_published: true }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const handleTopicSaved = () => {
@@ -342,6 +377,7 @@ export default function StaffLessonPlansBrowse() {
     setEditingTopic(null);
     setPrefillChapterTitle("");
     setPrefillChapterNumber(null);
+    setLockChapter(false);
     fetchClassPlan();
   };
 
@@ -371,7 +407,7 @@ export default function StaffLessonPlansBrowse() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 md:p-6">
       <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
         <ArrowLeft className="h-4 w-4" />
         Back
@@ -387,13 +423,14 @@ export default function StaffLessonPlansBrowse() {
         </div>
         {classPlan && (
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" className="gap-2" onClick={() => setMasterPlanOpen(true)}>
-              <Download className="h-4 w-4" />
-              Pull from Master Plan
-            </Button>
+            {!classPlan.is_published && (
+              <Button variant="secondary" loading={publishing} onClick={handlePublish}>
+                Publish
+              </Button>
+            )}
             <Button className="gap-2" onClick={() => handleAddTopic()}>
               <Plus className="h-4 w-4" />
-              Add Topic
+              Add Chapter
             </Button>
           </div>
         )}
@@ -423,7 +460,7 @@ export default function StaffLessonPlansBrowse() {
               <Download className="h-4 w-4" />
               Pull from Master Plan
             </Button>
-            <Button className="gap-2" onClick={() => setCreatePlanOpen(true)}>
+            <Button className="gap-2" loading={creatingPlan} onClick={handleCreateBlankPlan}>
               <Plus className="h-4 w-4" />
               Create blank plan
             </Button>
@@ -440,18 +477,14 @@ export default function StaffLessonPlansBrowse() {
             <p className="mt-1 text-sm text-gray-500">Add your first topic to get started.</p>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
-            <Button variant="secondary" className="gap-2" onClick={() => setMasterPlanOpen(true)}>
-              <Download className="h-4 w-4" />
-              Pull from Master Plan
-            </Button>
             <Button className="gap-2" onClick={() => handleAddTopic()}>
               <Plus className="h-4 w-4" />
-              Add Topic
+              Add Chapter
             </Button>
           </div>
         </div>
       ) : (
-        <div className="mt-6 space-y-3">
+        <div className="mt-6 min-h-0 flex-1 overflow-y-auto space-y-3 pb-24">
           {chapters.map((chapter) => (
             <ChapterSection
               key={chapter.title}
@@ -466,25 +499,8 @@ export default function StaffLessonPlansBrowse() {
               subjectId={subjectId}
             />
           ))}
-          {/* Add topic to a new chapter */}
-          <button
-            type="button"
-            onClick={() => handleAddTopic()}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-gray-300 py-3 text-sm text-gray-500 transition-colors hover:border-primary-400 hover:text-primary-600"
-          >
-            <Plus className="h-4 w-4" />
-            Add new chapter / topic
-          </button>
         </div>
       )}
-
-      {/* Create class plan modal */}
-      <CreateClassPlanModal
-        open={createPlanOpen}
-        onClose={() => setCreatePlanOpen(false)}
-        onCreated={handlePlanCreated}
-        context={context}
-      />
 
       {/* Topic form */}
       <TopicFormModal
@@ -494,12 +510,14 @@ export default function StaffLessonPlansBrowse() {
           setEditingTopic(null);
           setPrefillChapterTitle("");
           setPrefillChapterNumber(null);
+          setLockChapter(false);
         }}
         onSaved={handleTopicSaved}
         topic={editingTopic}
         classPlanId={classPlan?.id ?? null}
         prefillChapterTitle={prefillChapterTitle}
         prefillChapterNumber={prefillChapterNumber}
+        lockChapter={lockChapter}
         existingTopicsCount={classPlan?.topics?.length ?? 0}
       />
 

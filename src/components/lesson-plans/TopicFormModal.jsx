@@ -17,18 +17,6 @@ function toDateInputValue(iso) {
   return d.toISOString().slice(0, 10);
 }
 
-/**
- * @param {{
- *   open: boolean,
- *   onClose: () => void,
- *   onSaved: () => void,
- *   topic: object | null,          // null = create mode
- *   classPlanId: string | null,    // required for create
- *   prefillChapterTitle: string,
- *   prefillChapterNumber: number | null,
- *   existingTopicsCount: number,
- * }} props
- */
 export default function TopicFormModal({
   open,
   onClose,
@@ -37,6 +25,7 @@ export default function TopicFormModal({
   classPlanId,
   prefillChapterTitle = "",
   prefillChapterNumber = null,
+  lockChapter = false,
   existingTopicsCount = 0,
 }) {
   const isEdit = !!topic;
@@ -124,37 +113,47 @@ export default function TopicFormModal({
   return (
     <Modal open={open} onClose={onClose} className="w-full max-w-lg">
       <h2 className="pr-10 text-lg font-semibold text-gray-900">
-        {isEdit ? "Edit topic" : "New topic"}
+        {isEdit ? "Edit topic" : lockChapter ? "Add topic" : "New chapter"}
       </h2>
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         {/* Chapter info */}
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Chapter title <span className="text-error-500">*</span>
-            </label>
-            <Input
-              value={chapterTitle}
-              onChange={(e) => setChapterTitle(e.target.value)}
-              placeholder="e.g. Number Systems"
-              required
-            />
+        {lockChapter ? (
+          <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-border px-3 py-2">
+            <span className="text-xs font-medium text-gray-500 shrink-0">Chapter</span>
+            <span className="font-medium text-gray-900 text-sm truncate">{chapterTitle}</span>
+            {chapterNumber && (
+              <span className="ml-auto shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-600">#{chapterNumber}</span>
+            )}
           </div>
-          <div className="w-24">
-            <label className="mb-1 block text-sm font-medium text-gray-700">Chapter #</label>
-            <Input
-              type="number"
-              min={1}
-              value={chapterNumber}
-              onChange={(e) => setChapterNumber(e.target.value)}
-              placeholder="e.g. 1"
-            />
+        ) : (
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="mb-1 block text-sm font-medium text-gray-900">
+                Chapter title <span className="text-error-500">*</span>
+              </label>
+              <Input
+                value={chapterTitle}
+                onChange={(e) => setChapterTitle(e.target.value)}
+                placeholder="e.g. Number Systems"
+                required
+              />
+            </div>
+            <div className="w-24">
+              <label className="mb-1 block text-sm font-medium text-gray-900">Chapter #</label>
+              <Input
+                type="number"
+                min={1}
+                value={chapterNumber}
+                onChange={(e) => setChapterNumber(e.target.value)}
+                placeholder="e.g. 1"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Topic title */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+          <label className="mb-1 block text-sm font-medium text-gray-900">
             Topic title <span className="text-error-500">*</span>
           </label>
           <Input
@@ -168,11 +167,11 @@ export default function TopicFormModal({
         {/* Status + scheduled date row */}
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
+            <label className="mb-1 block text-sm font-medium text-gray-900">Status</label>
             <Dropdown options={STATUS_OPTIONS} selected={status} onChange={setStatus} placeholder="Status" />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-gray-700">Scheduled date</label>
+            <label className="mb-1 block text-sm font-medium text-gray-900">Scheduled date</label>
             <Input
               type="date"
               value={scheduledDate}
@@ -183,7 +182,7 @@ export default function TopicFormModal({
 
         {/* Teacher notes */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Teacher notes (optional)</label>
+          <label className="mb-1 block text-sm font-medium text-gray-900">Teacher notes (optional)</label>
           <Textarea
             value={teacherNotes}
             onChange={(e) => setTeacherNotes(e.target.value)}

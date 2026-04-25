@@ -16,9 +16,10 @@ export default function Textarea({
           {...props}
           className={`
             w-full rounded-lg border px-3 py-2 text-sm
-            bg-[rgb(var(--color-surface))]
-            border-[rgb(var(--color-border))]
-            focus:ring-2 focus:ring-[rgb(var(--color-primary-600))]
+            bg-surface text-gray-900 
+            border-border
+            placeholder:text-gray-400
+            focus:outline-none focus:ring-2 focus:ring-primary-600
             ${error ? "border-red-500" : ""}
             ${className}
           `}

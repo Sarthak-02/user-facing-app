@@ -1,53 +1,58 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Badge } from "../../ui-components";
 import { useAuth } from "../../store/auth.store";
-import { listLessonPlans, normalizeLessonPlanList } from "../../api/lessonPlans.api";
+import { listClassPlans, getClassPlanById } from "../../api/lessonPlans.api";
 import { fetchStudentProfile } from "../../api/auth.api";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  BookOpen,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  MinusCircle,
+  Zap,
+} from "lucide-react";
+
 import Loader from "../../ui-components/Loader";
 
-function studentSectionId(auth) {
-  return (
-    auth.details?.student_section_id ||
-    auth.details?.sections?.[0]?.value ||
-    auth.sections?.[0]?.value ||
-    ""
-  );
-}
-
 function formatDate(d) {
-  if (!d) return "—";
+  if (!d) return null;
   const x = new Date(d);
   if (Number.isNaN(x.getTime())) return String(d);
   return x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function statusConfig(status) {
+function topicStatusConfig(status) {
   switch (status) {
     case "COMPLETED":
-      return { variant: "success", label: "Completed", border: "border-l-green-400", bg: "bg-green-50", dot: "bg-green-400" };
+      return { Icon: CheckCircle2, color: "text-green-500", badge: "bg-green-100 text-green-700", label: "Completed" };
+    case "IN_PROGRESS":
+      return { Icon: Zap, color: "text-blue-500", badge: "bg-blue-100 text-blue-700", label: "In Progress" };
     case "SKIPPED":
-      return { variant: "warning", label: "Skipped", border: "border-l-amber-400", bg: "bg-amber-50", dot: "bg-amber-400" };
-    case "PARTIALLY_COMPLETED":
-      return { variant: "warning", label: "Partial", border: "border-l-amber-400", bg: "bg-amber-50", dot: "bg-amber-400" };
+      return { Icon: MinusCircle, color: "text-gray-400", badge: "bg-gray-100 text-gray-400", label: "Skipped" };
     default:
-      return { variant: "info", label: "Scheduled", border: "border-l-teal-400", bg: "bg-teal-50", dot: "bg-teal-400" };
+      return { Icon: Clock, color: "text-amber-400", badge: "bg-amber-100 text-amber-700", label: "Upcoming" };
   }
 }
 
-function teacherDisplayName(teacher) {
-  if (!teacher || typeof teacher !== "object") return "";
-  const parts = [teacher.teacher_first_name, teacher.teacher_middle_name, teacher.teacher_last_name].filter(Boolean);
-  if (parts.length) return parts.join(" ");
-  return teacher.teacher_employee_code || teacher.teacher_id || "";
-}
-
-function truncateText(text, max) {
-  if (!text || typeof text !== "string") return "";
-  const t = text.trim();
-  if (t.length <= max) return t;
-  return `${t.slice(0, max).trimEnd()}…`;
+function groupTopicsByChapter(topics) {
+  const map = new Map();
+  const ordered = [];
+  for (const t of topics ?? []) {
+    const key = t.chapter_title || "General";
+    if (!map.has(key)) {
+      const chapter = { title: key, number: t.chapter_number, topics: [] };
+      map.set(key, chapter);
+      ordered.push(chapter);
+    }
+    map.get(key).topics.push(t);
+  }
+  for (const ch of ordered) {
+    ch.topics.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+  }
+  return ordered;
 }
 
 export default function StudentLessonPlansBrowse() {
@@ -57,94 +62,95 @@ export default function StudentLessonPlansBrowse() {
 
   const [subjectName, setSubjectName] = useState("");
   const [subjectCount, setSubjectCount] = useState(0);
-  const [plans, setPlans] = useState([]);
+  const [classPlan, setClassPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+  const [expandedChapters, setExpandedChapters] = useState({});
 
-  const sectionId = useMemo(() => studentSectionId(auth), [auth]);
-
-  const fetchSubjectMeta = useCallback(async () => {
-    const map = new Map();
-    try {
-      const rawProfile = await fetchStudentProfile(auth.userId);
-      const data = rawProfile?.data ?? rawProfile;
-      const fromProfile = data?.subjects || data?.details?.subjects || data?.extras?.subjects;
-      if (Array.isArray(fromProfile)) {
-        for (const s of fromProfile) {
-          const id = typeof s === "string" ? s : s.subject_id || s.id;
-          if (!id) continue;
-          const name = typeof s === "string" ? s : s.subject_name || s.name || id;
-          map.set(id, name);
-        }
-      }
-    } catch (_) { /* ignore */ }
-    if (auth.campus_id && sectionId) {
-      try {
-        const rawPlans = await listLessonPlans({ campus_id: auth.campus_id, section_id: sectionId, limit: 200 });
-        const list = normalizeLessonPlanList(rawPlans);
-        for (const p of list) {
-          const sid = p.subject;
-          const name = p.subject_name || sid;
-          if (sid) map.set(sid, name || sid);
-          else if (name) map.set(name, name);
-        }
-      } catch (_) { /* ignore */ }
-    }
-    setSubjectCount(map.size);
-    if (subjectId && map.has(subjectId)) setSubjectName(map.get(subjectId));
-    else if (subjectId) setSubjectName(subjectId);
-  }, [auth.userId, auth.campus_id, sectionId, subjectId]);
-
-  const fetchPlans = useCallback(async () => {
-    if (!subjectId || !auth.campus_id || !sectionId) {
-      setPlans([]);
+  const load = useCallback(async () => {
+    if (!subjectId || !auth.campus_id) {
       setLoading(false);
       return;
     }
     setLoading(true);
     setLoadError(null);
+
     try {
-      const raw = await listLessonPlans({
+      // Resolve subject name from student profile
+      let resolvedName = subjectId;
+      const subjectMap = new Map();
+      try {
+        const rawProfile = await fetchStudentProfile(auth.userId);
+        const data = rawProfile?.data ?? rawProfile;
+        const fromProfile = data?.subjects || data?.details?.subjects || data?.extras?.subjects;
+        if (Array.isArray(fromProfile)) {
+          for (const s of fromProfile) {
+            const id = typeof s === "string" ? s : s.subject_id || s.id;
+            const name = typeof s === "string" ? s : s.subject_name || s.name || id;
+            if (id) subjectMap.set(id, name);
+          }
+        }
+      } catch (_) {}
+      setSubjectCount(subjectMap.size);
+      if (subjectMap.has(subjectId)) resolvedName = subjectMap.get(subjectId);
+      setSubjectName(resolvedName);
+
+      // Fetch the class plan (curriculum) for this subject
+      const allPlans = await listClassPlans({
         campus_id: auth.campus_id,
-        section_id: sectionId,
-        subject: subjectId,
-        limit: 200,
+        is_published: true,
+        limit: 100,
       });
-      const list = normalizeLessonPlanList(raw);
-      list.sort((a, b) => {
-        const da = new Date(a.lesson_date ?? a.lessonDate ?? 0).getTime();
-        const db = new Date(b.lesson_date ?? b.lessonDate ?? 0).getTime();
-        return db - da;
-      });
-      setPlans(list);
+      const match = allPlans.find(
+        (p) =>
+          p.subject === subjectId ||
+          p.subject === resolvedName ||
+          (p.subject && resolvedName && p.subject.toLowerCase() === resolvedName.toLowerCase())
+      );
+      if (match) {
+        const planId = match.id ?? match.class_plan_id;
+        const full = await getClassPlanById(planId);
+        setClassPlan(full);
+        // Use class plan's subject as the display name if we don't have a better one
+        if (resolvedName === subjectId && match.subject) setSubjectName(match.subject);
+      }
     } catch (err) {
-      console.error(err);
-      setLoadError(err?.message || err?.error || "Failed to load lesson plans");
-      setPlans([]);
+      setLoadError(err?.message || "Failed to load");
     } finally {
       setLoading(false);
     }
-  }, [subjectId, auth.campus_id, sectionId]);
+  }, [subjectId, auth.campus_id, auth.userId]);
 
-  useEffect(() => { fetchSubjectMeta(); }, [fetchSubjectMeta]);
-  useEffect(() => { fetchPlans(); }, [fetchPlans]);
+  useEffect(() => { load(); }, [load]);
+
+  // Auto-expand the first chapter
+  useEffect(() => {
+    if (!classPlan?.topics?.length) return;
+    const chapters = groupTopicsByChapter(classPlan.topics);
+    if (chapters.length > 0) {
+      setExpandedChapters({ [chapters[0].title]: true });
+    }
+  }, [classPlan]);
+
+  const chapters = useMemo(
+    () => (classPlan?.topics ? groupTopicsByChapter(classPlan.topics) : []),
+    [classPlan]
+  );
+
+  const toggleChapter = (title) =>
+    setExpandedChapters((p) => ({ ...p, [title]: !p[title] }));
 
   const goBack = () => {
     if (subjectCount > 1) navigate("/student/lesson-plans");
     else navigate("/home");
   };
 
-  if (!subjectId) {
-    return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-        <p className="text-sm text-gray-600">Missing subject.</p>
-      </div>
-    );
-  }
+  const totalTopics = classPlan?.topics?.length ?? 0;
+  const completedTopics = (classPlan?.topics ?? []).filter((t) => t.status === "COMPLETED").length;
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
-      {/* Sticky Header */}
+      {/* Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
         <button
           type="button"
@@ -155,114 +161,175 @@ export default function StudentLessonPlansBrowse() {
         </button>
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-bold text-gray-900 truncate">
-            {subjectName || "Lesson Plans"}
+            {subjectName || subjectId}
           </h1>
-          {!loading && (
+          {!loading && chapters.length > 0 && (
             <p className="text-xs text-gray-500">
-              {plans.length} {plans.length === 1 ? "lesson" : "lessons"}
+              {chapters.length} chapter{chapters.length !== 1 ? "s" : ""} · {totalTopics} topic{totalTopics !== 1 ? "s" : ""}
             </p>
           )}
         </div>
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto min-h-0 p-4">
-        {!sectionId && (
-          <div className="mb-4 flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-700">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Your section is not set; lesson plans may not load correctly.
-          </div>
-        )}
-
+      <div className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
+          <div className="flex items-center justify-center py-20">
             <Loader />
           </div>
         ) : loadError ? (
-          <div className="text-center py-12">
-            <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="flex flex-col items-center justify-center py-20 px-4">
+            <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-3">
+              <svg className="h-7 w-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-sm text-red-600">{loadError}</p>
+            <p className="text-sm text-red-500">{loadError}</p>
           </div>
-        ) : plans.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-              </svg>
+        ) : chapters.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4">
+            <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+              <BookOpen className="h-8 w-8 text-indigo-300" />
             </div>
-            <p className="text-sm font-medium text-gray-700 mb-1">No lesson plans yet</p>
-            <p className="text-xs text-gray-400">Lesson plans will appear here once your teacher publishes them.</p>
+            <p className="text-sm font-semibold text-gray-700 mb-1">No content yet</p>
+            <p className="text-xs text-gray-400 text-center max-w-xs">
+              Your teacher hasn&apos;t published lessons for this subject yet.
+            </p>
           </div>
         ) : (
-          <div className="space-y-3 max-w-3xl mx-auto pb-8">
-            {plans.map((p) => {
-              const id = p.lesson_plan_id || p.id;
-              const title = p.chapter_topic ?? p.chapterTopic ?? "Untitled";
-              const dateVal = p.lesson_date ?? p.lessonDate;
-              const teacher = teacherDisplayName(p.teacher);
-              const desc = truncateText(p.description, 110);
-              const cfg = statusConfig(p.status);
-              const hasObjectives = Array.isArray(p.learning_objectives) && p.learning_objectives.length > 0;
-              const hasActivities = Array.isArray(p.activities) && p.activities.length > 0;
+          <div className="max-w-2xl mx-auto p-4 pb-10 space-y-5">
 
-              return (
-                <div
-                  key={id}
-                  onClick={() => navigate(`/student/lesson-plans/subject/${subjectId}/plan/${id}`)}
-                  className={`bg-white rounded-xl border border-gray-200 border-l-4 ${cfg.border} cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden`}
-                >
-                  <div className="p-4 pb-3">
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2">{title}</h3>
-                        {teacher && (
-                          <p className="text-xs text-gray-400 mt-0.5 truncate">{teacher}</p>
-                        )}
-                      </div>
-                      <Badge variant={cfg.variant}>{cfg.label}</Badge>
-                    </div>
-
-                    {desc && (
-                      <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{desc}</p>
-                    )}
-
-                    {/* Pill indicators */}
-                    {(hasObjectives || hasActivities) && (
-                      <div className="flex gap-2 mt-3">
-                        {hasObjectives && (
-                          <span className="text-xs bg-teal-50 text-teal-700 rounded-full px-2.5 py-0.5 font-medium">
-                            {p.learning_objectives.length} objective{p.learning_objectives.length !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                        {hasActivities && (
-                          <span className="text-xs bg-indigo-50 text-indigo-700 rounded-full px-2.5 py-0.5 font-medium">
-                            {p.activities.length} {p.activities.length === 1 ? "activity" : "activities"}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={`px-4 py-2.5 ${cfg.bg} border-t border-gray-100 flex items-center justify-between`}>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-3.5 w-3.5 ${cfg.dot.replace("bg-", "text-")}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="font-medium">{formatDate(dateVal)}</span>
-                    </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
+            {/* Progress bar (only if class plan exists) */}
+            {chapters.length > 0 && totalTopics > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Progress</p>
+                  <p className="text-xs font-semibold text-indigo-600">
+                    {completedTopics}/{totalTopics} topics completed
+                  </p>
                 </div>
-              );
-            })}
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-indigo-400 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.round((completedTopics / totalTopics) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Curriculum section */}
+            {chapters.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-0.5">
+                  Curriculum
+                </p>
+                <div className="space-y-2.5">
+                  {chapters.map((chapter, chIdx) => {
+                    const isOpen = !!expandedChapters[chapter.title];
+                    const total = chapter.topics.length;
+                    const done = chapter.topics.filter((t) => t.status === "COMPLETED").length;
+                    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+                    return (
+                      <div key={chapter.title} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => toggleChapter(chapter.title)}
+                          className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-bold text-indigo-700">
+                              {chapter.number ?? chIdx + 1}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{chapter.title}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[100px]">
+                                <div
+                                  className="h-full bg-indigo-400 rounded-full transition-all"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-400">{done}/{total}</span>
+                            </div>
+                          </div>
+                          {isOpen
+                            ? <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            : <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />}
+                        </button>
+
+                        {isOpen && (
+                          <div className="border-t border-gray-100 divide-y divide-gray-50">
+                            {chapter.topics.map((topic) => {
+                              const tid = topic.id ?? topic.class_plan_topic_id;
+                              const sc = topicStatusConfig(topic.status);
+                              const { Icon } = sc;
+                              const assignments = topic.assignments ?? [];
+                              const quizzes = topic.quizzes ?? [];
+                              const materials = topic.materials ?? [];
+                              const resourceCount = assignments.length + quizzes.length + materials.length;
+                              const isSkipped = topic.status === "SKIPPED";
+                              const planId = classPlan?.id ?? classPlan?.class_plan_id;
+
+                              return (
+                                <button
+                                  key={tid}
+                                  type="button"
+                                  onClick={() =>
+                                    navigate(
+                                      `/student/lesson-plans/subject/${subjectId}/topic/${tid}`,
+                                      {
+                                        state: {
+                                          topic,
+                                          chapterTitle: chapter.title,
+                                          chapterNumber: chapter.number,
+                                          classPlanId: planId,
+                                        },
+                                      }
+                                    )
+                                  }
+                                  className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                                >
+                                  <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${sc.color}`} />
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-sm font-medium ${isSkipped ? "line-through text-gray-400" : "text-gray-900"}`}>
+                                      {topic.title}
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sc.badge}`}>
+                                        {sc.label}
+                                      </span>
+                                      {topic.scheduled_date && (
+                                        <span className="flex items-center gap-1 text-xs text-gray-400">
+                                          <Calendar className="h-3 w-3" />
+                                          {formatDate(topic.scheduled_date)}
+                                        </span>
+                                      )}
+                                      {resourceCount > 0 && (
+                                        <span className="text-xs text-gray-400">
+                                          {[
+                                            assignments.length && `${assignments.length} task${assignments.length > 1 ? "s" : ""}`,
+                                            quizzes.length && `${quizzes.length} quiz${quizzes.length > 1 ? "zes" : ""}`,
+                                            materials.length && `${materials.length} file${materials.length > 1 ? "s" : ""}`,
+                                          ].filter(Boolean).join(" · ")}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <ChevronRight className="h-3.5 w-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
       </div>

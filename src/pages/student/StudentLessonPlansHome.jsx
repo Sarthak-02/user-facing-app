@@ -1,19 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
 import { fetchStudentProfile } from "../../api/auth.api";
-import { listLessonPlans, normalizeLessonPlanList } from "../../api/lessonPlans.api";
+import { listClassPlans } from "../../api/lessonPlans.api";
 import { ChevronRight } from "lucide-react";
 import Loader from "../../ui-components/Loader";
-
-function studentSectionId(auth) {
-  return (
-    auth.details?.student_section_id ||
-    auth.details?.sections?.[0]?.value ||
-    auth.sections?.[0]?.value ||
-    ""
-  );
-}
 
 function normalizeSubjectEntry(s) {
   if (!s) return null;
@@ -42,8 +33,6 @@ export default function StudentLessonPlansHome() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const sectionId = useMemo(() => studentSectionId(auth), [auth]);
-
   useEffect(() => {
     let cancelled = false;
 
@@ -53,6 +42,8 @@ export default function StudentLessonPlansHome() {
       const map = new Map();
 
       try {
+        const campusId = auth.campus_id;
+
         try {
           const rawProfile = await fetchStudentProfile(auth.userId);
           const data = rawProfile?.data ?? rawProfile;
@@ -68,23 +59,23 @@ export default function StudentLessonPlansHome() {
           console.warn("Student profile subjects unavailable", e);
         }
 
-        const campusId = auth.campus_id;
-        if (sectionId && campusId) {
+        if (campusId) {
           try {
-            const rawPlans = await listLessonPlans({
+            const classPlans = await listClassPlans({
               campus_id: campusId,
-              section_id: sectionId,
-              limit: 200,
+              is_published: true,
+              limit: 100,
             });
-            const plans = normalizeLessonPlanList(rawPlans);
-            for (const p of plans) {
-              const sid = p.subject_id;
-              const name = p.subject_name || sid;
-              if (sid) map.set(sid, { subject_id: sid, subject_name: name || sid });
-              else if (name) map.set(name, { subject_id: name, subject_name: name });
+            for (const p of classPlans) {
+              if (p.subject) {
+                const key = p.subject;
+                if (!map.has(key)) {
+                  map.set(key, { subject_id: key, subject_name: key });
+                }
+              }
             }
           } catch (e) {
-            console.warn("Lesson plans list for subjects failed", e);
+            console.warn("Class plans subjects fetch failed", e);
           }
         }
 
@@ -95,11 +86,7 @@ export default function StudentLessonPlansHome() {
         );
         setSubjects(list);
         if (list.length === 0) {
-          setError(
-            sectionId
-              ? null
-              : "Your section is not set on your profile, so subjects could not be loaded."
-          );
+          setError(null);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -110,7 +97,7 @@ export default function StudentLessonPlansHome() {
     else setLoading(false);
 
     return () => { cancelled = true; };
-  }, [auth.userId, auth.campus_id, sectionId]);
+  }, [auth.userId, auth.campus_id]);
 
   useEffect(() => {
     if (!loading && subjects.length === 1) {

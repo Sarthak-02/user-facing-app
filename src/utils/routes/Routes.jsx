@@ -40,7 +40,7 @@ import StaffLessonPlanDetail from "../../pages/staff/StaffLessonPlanDetail";
 import StaffTopicDetail from "../../pages/staff/StaffTopicDetail";
 import StudentLessonPlansHome from "../../pages/student/StudentLessonPlansHome";
 import StudentLessonPlansBrowse from "../../pages/student/StudentLessonPlansBrowse";
-import StudentLessonPlanDetail from "../../pages/student/StudentLessonPlanDetail";
+import StudentTopicDetail from "../../pages/student/StudentTopicDetail";
 
 export const routes = [
   {
@@ -274,10 +274,10 @@ export const routes = [
         ),
       },
       {
-        path: "student/lesson-plans/subject/:subjectId/plan/:planId",
+        path: "student/lesson-plans/subject/:subjectId/topic/:topicId",
         element: (
           <RoleBasedRoute allowedRoles={["student"]}>
-            <StudentLessonPlanDetail />
+            <StudentTopicDetail />
           </RoleBasedRoute>
         ),
       },
