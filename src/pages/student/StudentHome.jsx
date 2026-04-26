@@ -1,5 +1,5 @@
 import { createElement, useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card } from "../../ui-components";
 import Modal from "../../ui-components/Modal";
 import Loader from "../../ui-components/Loader";
@@ -10,7 +10,6 @@ import {
 } from "../../api/receiver.api";
 import {
   AlertCircle,
-  Bell,
   BookOpen,
   CalendarDays,
   CheckCircle2,
@@ -238,19 +237,6 @@ function getUpcomingEvents(campus, limit = 5) {
     .slice(0, limit);
 }
 
-function SectionTitle({ icon, title, wrapperClassName = "mb-4 flex items-center gap-2.5" }) {
-  return (
-    <div className={wrapperClassName}>
-      <span
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600"
-        aria-hidden
-      >
-        {createElement(icon, { size: 16, strokeWidth: 2 })}
-      </span>
-      <h2 className="text-base font-bold tracking-tight text-gray-900">{title}</h2>
-    </div>
-  );
-}
 
 function QuickStatContent({ icon, label, value, colorClass, hint }) {
   return createElement(
@@ -290,6 +276,7 @@ function QuickStat({ icon, label, value, colorClass, onClick, hint }) {
 
 export default function StudentHome() {
   const { auth } = useAuth();
+  const navigate = useNavigate();
   const [summaryPayload, setSummaryPayload] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -297,6 +284,9 @@ export default function StudentHome() {
   const todayDayId = useMemo(() => getTodayDayId(), []);
   const [selectedDayId, setSelectedDayId] = useState(todayDayId);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isHomeworkModalOpen, setIsHomeworkModalOpen] = useState(false);
+  const [isAnnouncementsModalOpen, setIsAnnouncementsModalOpen] = useState(false);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
   const firstName = useMemo(() => {
     const fromAuth = auth?.details?.student_first_name?.trim();
@@ -534,8 +524,42 @@ export default function StudentHome() {
           </div>
         </div>
 
+        {/* Next event strip */}
+        {upcomingEvents.length > 0 && (() => {
+          const ev = upcomingEvents[0];
+          const days = daysUntil(ev.start_date);
+          const style = EVENT_TYPE_STYLE[ev.type] ?? EVENT_TYPE_STYLE.other;
+          const isRange = ev.end_date && ev.end_date !== ev.start_date;
+          const dateLabel = isRange
+            ? `${formatEventDate(ev.start_date)} – ${formatEventDate(ev.end_date)}`
+            : formatEventDate(ev.start_date);
+          return (
+            <button
+              type="button"
+              onClick={() => setIsCalendarModalOpen(true)}
+              className="flex w-full items-center gap-2.5 rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-[0.99]"
+            >
+              <CalendarDays size={15} className="shrink-0 text-gray-400" aria-hidden />
+              <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${style.className}`}>
+                {style.label}
+              </span>
+              <p className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-gray-900">{ev.title}</p>
+              <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                days === 0
+                  ? "bg-red-100 text-red-700"
+                  : days === 1
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-gray-100 text-gray-500"
+              }`}>
+                {days === 0 ? "Today" : days === 1 ? "Tomorrow" : dateLabel}
+              </span>
+              <ChevronRight size={14} className="shrink-0 text-gray-400" aria-hidden />
+            </button>
+          );
+        })()}
+
         {/* Quick stats row */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <QuickStat
             icon={Clock}
             label="Classes today"
@@ -549,203 +573,89 @@ export default function StudentHome() {
             label="Due soon"
             value={upcomingHomework.length}
             colorClass="bg-amber-100 text-amber-600"
+            onClick={() => setIsHomeworkModalOpen(true)}
+            hint="View homework →"
+          />
+          <QuickStat
+            icon={Megaphone}
+            label="Announcements"
+            value={announcements.length}
+            colorClass="bg-purple-100 text-purple-600"
+            onClick={() => setIsAnnouncementsModalOpen(true)}
+            hint="View announcements →"
           />
           <QuickStat
             icon={MessageCircle}
             label="Unread"
             value={messagesUnreadTotal}
             colorClass="bg-emerald-100 text-emerald-600"
+            onClick={() => navigate("/student/chat")}
+            hint="View messages →"
           />
         </div>
 
-        {/* Messages nav card */}
-        <Link to="/student/chat" className="block">
-          <Card className="border border-gray-100 bg-white shadow-sm transition-all hover:border-primary-300 hover:shadow-md">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
-                  <MessageCircle size={20} strokeWidth={2} />
-                </span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-bold text-gray-900">Messages</h2>
-                    {messagesUnreadTotal > 0 ? (
-                      <span className="rounded-full bg-primary-600 px-2 py-0.5 text-xs font-bold text-white">
-                        {messagesUnreadTotal > 99 ? "99+" : messagesUnreadTotal}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-0.5 text-sm text-gray-500">Chat with your teachers</p>
-                </div>
-              </div>
-              <ChevronRight className="shrink-0 text-gray-400" size={20} aria-hidden />
-            </div>
-          </Card>
-        </Link>
-
-        {/* Homework */}
-        <Card className="border border-gray-100 bg-white shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <SectionTitle
-                icon={BookOpen}
-                title="Homework"
-                wrapperClassName="mb-0 flex items-center gap-2.5"
-              />
-              <Link
-                to="/student/homework"
-                className="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold text-primary-600 hover:text-primary-700"
-              >
-                View all
-                <ChevronRight size={13} />
-              </Link>
-            </div>
-            {upcomingHomework.length === 0 ? (
-              <p className="text-sm text-gray-500">No upcoming homework due.</p>
-            ) : (
-              <ul className="space-y-2">
-                {upcomingHomework.map((h) => {
-                  const days = daysUntil(h.dueDate || h.due_date);
-                  return (
-                    <li key={h.id}>
-                      <Link
-                        to={`/student/homework/${h.id}`}
-                        className="block rounded-lg border border-gray-100 p-3 transition-all hover:border-primary-300 hover:bg-primary-50/50"
-                      >
-                        {h.subject ? (
-                          <span className="inline-block rounded-md bg-primary-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-700">
-                            {h.subject}
-                          </span>
-                        ) : null}
-                        <p className="mt-1.5 font-semibold text-gray-900">{h.title}</p>
-                        <div className="mt-1.5 flex items-center gap-2">
-                          {days !== null ? (
-                            <span
-                              className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-                                days === 0
-                                  ? "bg-red-100 text-red-700"
-                                  : days === 1
-                                    ? "bg-amber-100 text-amber-700"
-                                    : "bg-gray-100 text-gray-600"
-                              }`}
-                            >
-                              {days === 0 ? "Due today" : days === 1 ? "Tomorrow" : `${days}d left`}
-                            </span>
-                          ) : null}
-                          <p className="text-xs text-gray-500">
-                            {formatShortDue(h.dueDate || h.due_date)}
-                          </p>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Card>
-
-        {/* Announcements */}
-        <Card className="border border-gray-100 bg-white shadow-sm">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <SectionTitle
-              icon={Megaphone}
-              title="Announcements"
-              wrapperClassName="mb-0 flex items-center gap-2.5"
-            />
-            <Link
-              to="/student/announcements"
-              className="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold text-primary-600 hover:text-primary-700"
-            >
-              View all
-              <ChevronRight size={13} />
-            </Link>
-          </div>
-          {announcements.length === 0 ? (
-            <p className="text-sm text-gray-500">No announcements from the last two days.</p>
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {announcements.map((a) => (
-                <li key={a.id} className="py-3 first:pt-0 last:pb-0">
-                  <Link
-                    to={`/student/announcements/${a.id}`}
-                    className="-mx-1.5 flex gap-3 rounded-lg p-1.5 outline-none transition-colors hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary-500"
-                  >
-                    <span
-                      className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600"
-                      aria-hidden
-                    >
-                      <Bell size={15} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-900">{a.title}</p>
-                      {a.body ? (
-                        <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{a.body}</p>
-                      ) : null}
-                      {a.date ? (
-                        <p className="mt-1 text-xs text-gray-400">{formatShortDue(a.date)}</p>
-                      ) : null}
-                    </div>
-                    <ChevronRight size={16} className="mt-0.5 shrink-0 text-gray-300" aria-hidden />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        {/* Upcoming Events — only rendered when academic calendar has future events */}
-        {upcomingEvents.length > 0 && (
-          <Card className="border border-gray-100 bg-white shadow-sm">
-            <SectionTitle icon={CalendarDays} title="Upcoming Events" />
-            <ul className="space-y-2">
-              {upcomingEvents.map((ev) => {
-                const days = daysUntil(ev.start_date);
-                const style = EVENT_TYPE_STYLE[ev.type] ?? EVENT_TYPE_STYLE.other;
-                const isRange = ev.end_date && ev.end_date !== ev.start_date;
-                const dateLabel = isRange
-                  ? `${formatEventDate(ev.start_date)} – ${formatEventDate(ev.end_date)}`
-                  : formatEventDate(ev.start_date);
-                return (
-                  <li
-                    key={ev.id}
-                    className="flex items-start gap-3 rounded-lg border border-gray-100 p-3"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span
-                          className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${style.className}`}
-                        >
-                          {style.label}
-                        </span>
-                        {days !== null && (
-                          <span
-                            className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-                              days === 0
-                                ? "bg-red-100 text-red-700"
-                                : days === 1
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-gray-100 text-gray-500"
-                            }`}
-                          >
-                            {days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 font-semibold text-gray-900">{ev.title}</p>
-                      {ev.description ? (
-                        <p className="mt-0.5 line-clamp-1 text-xs text-gray-500">{ev.description}</p>
-                      ) : null}
-                    </div>
-                    <p className="shrink-0 text-right text-xs font-semibold text-gray-400">
-                      {dateLabel}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-        )}
       </div>
     </div>
+
+    {/* Homework modal */}
+    <Modal
+      open={isHomeworkModalOpen}
+      onClose={() => setIsHomeworkModalOpen(false)}
+      className="max-w-sm"
+    >
+      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Homework due</h2>
+      {upcomingHomework.length === 0 ? (
+        <p className="py-4 text-center text-sm text-gray-500">No upcoming homework due.</p>
+      ) : (
+        <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
+          {upcomingHomework.map((h) => {
+            const days = daysUntil(h.dueDate || h.due_date);
+            return (
+              <li key={h.id}>
+                <Link
+                  to={`/student/homework/${h.id}`}
+                  onClick={() => setIsHomeworkModalOpen(false)}
+                  className="block rounded-lg border border-gray-100 p-3 transition-all hover:border-primary-300 hover:bg-primary-50/50"
+                >
+                  {h.subject ? (
+                    <span className="inline-block rounded-md bg-primary-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-700">
+                      {h.subject}
+                    </span>
+                  ) : null}
+                  <p className="mt-1.5 font-semibold text-gray-900">{h.title}</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    {days !== null ? (
+                      <span
+                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                          days === 0
+                            ? "bg-red-100 text-red-700"
+                            : days === 1
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {days === 0 ? "Due today" : days === 1 ? "Tomorrow" : `${days}d left`}
+                      </span>
+                    ) : null}
+                    <p className="text-xs text-gray-500">
+                      {formatShortDue(h.dueDate || h.due_date)}
+                    </p>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <Link
+        to="/student/homework"
+        onClick={() => setIsHomeworkModalOpen(false)}
+        className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-primary-200 bg-primary-50 py-2 text-sm font-bold text-primary-700 hover:bg-primary-100"
+      >
+        View all homework
+        <ChevronRight size={14} />
+      </Link>
+    </Modal>
 
     {/* Schedule modal */}
     <Modal
@@ -837,6 +747,113 @@ export default function StudentHome() {
           })}
         </ul>
       )}
+    </Modal>
+
+    {/* Announcements modal */}
+    <Modal
+      open={isAnnouncementsModalOpen}
+      onClose={() => setIsAnnouncementsModalOpen(false)}
+      className="max-w-sm"
+    >
+      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Announcements</h2>
+      {announcements.length === 0 ? (
+        <p className="py-4 text-center text-sm text-gray-500">No announcements from the last two days.</p>
+      ) : (
+        <ul className="max-h-[60vh] divide-y divide-gray-100 overflow-y-auto">
+          {announcements.map((a) => (
+            <li key={a.id} className="py-3 first:pt-0 last:pb-0">
+              <Link
+                to={`/student/announcements/${a.id}`}
+                onClick={() => setIsAnnouncementsModalOpen(false)}
+                className="flex gap-3 rounded-lg outline-none transition-colors hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary-500"
+              >
+                <span
+                  className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600"
+                  aria-hidden
+                >
+                  <Megaphone size={15} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-gray-900">{a.title}</p>
+                  {a.body ? (
+                    <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{a.body}</p>
+                  ) : null}
+                  {a.date ? (
+                    <p className="mt-1 text-xs text-gray-400">{formatShortDue(a.date)}</p>
+                  ) : null}
+                </div>
+                <ChevronRight size={16} className="mt-0.5 shrink-0 text-gray-300" aria-hidden />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link
+        to="/student/announcements"
+        onClick={() => setIsAnnouncementsModalOpen(false)}
+        className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-primary-200 bg-primary-50 py-2 text-sm font-bold text-primary-700 hover:bg-primary-100"
+      >
+        View all announcements
+        <ChevronRight size={14} />
+      </Link>
+    </Modal>
+
+    {/* Academic calendar modal */}
+    <Modal
+      open={isCalendarModalOpen}
+      onClose={() => setIsCalendarModalOpen(false)}
+      className="max-w-sm"
+    >
+      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Academic Calendar</h2>
+      {(() => {
+        const allEvents = (auth.campus?.academic_calendar?.events || [])
+          .filter((ev) => ev.start_date)
+          .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+        if (allEvents.length === 0) {
+          return <p className="py-4 text-center text-sm text-gray-500">No events in the calendar.</p>;
+        }
+        return (
+          <ul className="max-h-[65vh] space-y-2 overflow-y-auto">
+            {allEvents.map((ev) => {
+              const days = daysUntil(ev.start_date);
+              const style = EVENT_TYPE_STYLE[ev.type] ?? EVENT_TYPE_STYLE.other;
+              const isRange = ev.end_date && ev.end_date !== ev.start_date;
+              const dateLabel = isRange
+                ? `${formatEventDate(ev.start_date)} – ${formatEventDate(ev.end_date)}`
+                : formatEventDate(ev.start_date);
+              const isPast = days !== null && days < 0;
+              return (
+                <li
+                  key={ev.id}
+                  className={`rounded-lg border p-3 ${isPast ? "border-gray-100 bg-gray-50 opacity-60" : "border-gray-100 bg-white"}`}
+                >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${style.className}`}>
+                      {style.label}
+                    </span>
+                    {days !== null && !isPast && (
+                      <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                        days === 0
+                          ? "bg-red-100 text-red-700"
+                          : days === 1
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-gray-100 text-gray-500"
+                      }`}>
+                        {days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`}
+                      </span>
+                    )}
+                    <span className="ml-auto text-xs font-medium text-gray-400">{dateLabel}</span>
+                  </div>
+                  <p className="mt-1.5 font-semibold text-gray-900">{ev.title}</p>
+                  {ev.description ? (
+                    <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{ev.description}</p>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        );
+      })()}
     </Modal>
     </>
   );
