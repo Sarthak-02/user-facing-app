@@ -11,7 +11,17 @@ const TARGET_OPTIONS = [
   { value: "STUDENT", label: "Student"},
 ];
 
-export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework, isSubmitting, submitError }) {
+export default function HomeworkFormModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  homework,
+  isSubmitting,
+  submitError,
+  defaultSectionId,
+  defaultSubjectKey,
+  defaultStudentId,
+}) {
 
   // Get permissions data from store
   const {
@@ -220,21 +230,54 @@ export default function HomeworkFormModal({ isOpen, onClose, onSubmit, homework,
         status: homework.status || "DRAFT",
       });
     } else {
-      // Reset form for new homework
-      setFormData({
-        title: "",
-        subject: null,
-        description: "",
-        dueDate: "",
-        targetType: { value: "SECTION", label: "Section" },
-        sectionId: null,
-        studentId: [],
-        classId: null,
-        attachments: [],
-        status: "DRAFT",
-      });
+      const sec =
+        defaultSectionId &&
+        (permissions.sections || []).find((s) => s.section_id === defaultSectionId);
+      const cls =
+        sec && (permissions.classes || []).find((c) => c.class_id === sec.class_id);
+      const subjectOption =
+        defaultSubjectKey != null && String(defaultSubjectKey).length > 0
+          ? { value: defaultSubjectKey, label: defaultSubjectKey }
+          : null;
+      const studentRow =
+        defaultStudentId &&
+        (permissions.students || []).find((s) => s.student_id === defaultStudentId);
+      const studentInSection =
+        studentRow &&
+        defaultSectionId &&
+        studentRow.section_id === defaultSectionId;
+
+      if (studentInSection && sec) {
+        setFormData({
+          title: "",
+          subject: subjectOption,
+          description: "",
+          dueDate: "",
+          targetType: { value: "STUDENT", label: "Student" },
+          sectionId: { value: sec.section_id, label: sec.section_name },
+          studentId: [
+            { value: studentRow.student_id, label: studentRow.student_name || studentRow.student_id },
+          ],
+          classId: cls ? { value: cls.class_id, label: cls.class_name } : null,
+          attachments: [],
+          status: "DRAFT",
+        });
+      } else {
+        setFormData({
+          title: "",
+          subject: subjectOption,
+          description: "",
+          dueDate: "",
+          targetType: { value: "SECTION", label: "Section" },
+          sectionId: sec ? { value: sec.section_id, label: sec.section_name } : null,
+          studentId: [],
+          classId: cls ? { value: cls.class_id, label: cls.class_name } : null,
+          attachments: [],
+          status: "DRAFT",
+        });
+      }
     }
-  }, [homework, isOpen, permissions]);
+  }, [homework, isOpen, permissions, defaultSectionId, defaultSubjectKey, defaultStudentId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

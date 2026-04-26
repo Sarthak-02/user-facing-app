@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Button, Modal, Select } from "../../ui-components";
-import { SlidersHorizontal, Calendar } from "lucide-react";
+import { Button, Select } from "../../ui-components";
+import { Calendar } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 
@@ -31,24 +31,10 @@ export default function FiltersModal({
   setCustomDateRange,
   periodOptions = [{ label: "All Periods", value: "ALL" }],
 }) {
-  const [showModal, setShowModal] = useState(false);
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
   const startCalendarRef = useRef(null);
   const endCalendarRef = useRef(null);
-
-  // Local state for mobile filters (only applied when Apply is clicked)
-  const [localPeriod, setLocalPeriod] = useState(period);
-  const [localDateRange, setLocalDateRange] = useState(dateRange);
-  const [localCustomDateRange, setLocalCustomDateRange] = useState(customDateRange);
-
-  // Function to open modal and initialize local state
-  const handleOpenModal = () => {
-    setLocalPeriod(period);
-    setLocalDateRange(dateRange);
-    setLocalCustomDateRange(customDateRange);
-    setShowModal(true);
-  };
 
   // Close calendar on outside click
   useEffect(() => {
@@ -74,273 +60,97 @@ export default function FiltersModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showStartCalendar, showEndCalendar]);
 
-  const handleApply = () => {
-    // Apply local filters to parent state
-    setPeriod(localPeriod);
-    setDateRange(localDateRange);
-    setCustomDateRange(localCustomDateRange);
-    setShowModal(false);
-  };
-
-  const handleReset = () => {
-    const resetValues = {
-      period: "ALL",
-      dateRange: "30",
-      customDateRange: { start: null, end: null }
-    };
-    
-    // Update local state
-    setLocalPeriod(resetValues.period);
-    setLocalDateRange(resetValues.dateRange);
-    setLocalCustomDateRange(resetValues.customDateRange);
-  };
-
   return (
-    <>
-      {/* Mobile: Floating Action Button */}
-      <button
-        onClick={handleOpenModal}
-        className="md:hidden fixed bottom-14 right-4 z-30 bg-primary-600 text-white rounded-full p-4 shadow-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 transition-all"
-        aria-label="Filters"
-      >
-        <SlidersHorizontal size={24} />
-      </button>
-
-      {/* Desktop: Inline filters */}
-      <div className="hidden md:flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-            Period:
-          </label>
-          <Select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            options={periodOptions}
-            className="min-w-[140px]"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-            Date Range:
-          </label>
-          <Select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            options={DATE_RANGE_OPTIONS}
-            className="min-w-[140px]"
-          />
-        </div>
-
-        {/* Custom Date Range */}
-        {dateRange === "custom" && (
-          <div className="flex items-center gap-2 relative">
-            <Button
-              onClick={() => setShowStartCalendar((v) => !v)}
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-primary-600"
-            >
-              <Calendar size={16} />
-              <span className="text-gray-500">
-                {customDateRange.start
-                  ? formatDate(customDateRange.start)
-                  : "Start Date"}
-              </span>
-            </Button>
-
-            {showStartCalendar && (
-              <div
-                ref={startCalendarRef}
-                className="absolute top-full mt-2 z-50 rounded-lg border border-border bg-surface p-2 shadow-lg"
-              >
-                <DayPicker
-                  mode="single"
-                  selected={customDateRange.start}
-                  onSelect={(date) => {
-                    if (!date) return;
-                    setCustomDateRange((prev) => ({ ...prev, start: date }));
-                    setShowStartCalendar(false);
-                  }}
-                  disabled={{ after: new Date() }}
-                />
-              </div>
-            )}
-
-            <span className="text-gray-500">to</span>
-
-            <Button
-              onClick={() => setShowEndCalendar((v) => !v)}
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-primary-600"
-            >
-              <Calendar size={16} />
-              <span className="text-gray-500">
-                {customDateRange.end
-                  ? formatDate(customDateRange.end)
-                  : "End Date"}
-              </span>
-            </Button>
-
-            {showEndCalendar && (
-              <div
-                ref={endCalendarRef}
-                className="absolute top-full mt-2 z-50 rounded-lg border border-border bg-surface p-2 shadow-lg right-0"
-              >
-                <DayPicker
-                  mode="single"
-                  selected={customDateRange.end}
-                  onSelect={(date) => {
-                    if (!date) return;
-                    setCustomDateRange((prev) => ({ ...prev, end: date }));
-                    setShowEndCalendar(false);
-                  }}
-                  disabled={{
-                    before: customDateRange.start || undefined,
-                    after: new Date(),
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        )}
+    <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2">
+        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+          Period:
+        </label>
+        <Select
+          value={period}
+          onChange={(e) => setPeriod(e.target.value)}
+          options={periodOptions}
+          className="min-w-[140px]"
+        />
       </div>
 
-      {/* Mobile: Modal */}
-      <Modal open={showModal}>
-        <div className="space-y-5">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Filters</h2>
-            <button
-              onClick={handleReset}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+      <div className="flex items-center gap-2">
+        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+          Date Range:
+        </label>
+        <Select
+          value={dateRange}
+          onChange={(e) => setDateRange(e.target.value)}
+          options={DATE_RANGE_OPTIONS}
+          className="min-w-[140px]"
+        />
+      </div>
+
+      {/* Custom Date Range */}
+      {dateRange === "custom" && (
+        <div className="flex items-center gap-2 relative">
+          <Button
+            onClick={() => setShowStartCalendar((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-primary-600"
+          >
+            <Calendar size={16} />
+            <span className="text-gray-500">
+              {customDateRange.start ? formatDate(customDateRange.start) : "Start Date"}
+            </span>
+          </Button>
+
+          {showStartCalendar && (
+            <div
+              ref={startCalendarRef}
+              className="absolute top-full mt-2 z-50 rounded-lg border border-border bg-surface p-2 shadow-lg"
             >
-              Reset All
-            </button>
-          </div>
-
-          {/* Period Filter */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Period
-            </label>
-            <Select
-              value={localPeriod}
-              onChange={(e) => setLocalPeriod(e.target.value)}
-              options={periodOptions}
-            />
-          </div>
-
-          {/* Date Range Filter */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Date Range
-            </label>
-            <Select
-              value={localDateRange}
-              onChange={(e) => setLocalDateRange(e.target.value)}
-              options={DATE_RANGE_OPTIONS}
-            />
-          </div>
-
-          {/* Custom Date Range */}
-          {localDateRange === "custom" && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Start Date
-                </label>
-                <div className="relative">
-                  <Button
-                    onClick={() => setShowStartCalendar((v) => !v)}
-                    className="w-full inline-flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-gray-700 hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  >
-                    <span>
-                      {localCustomDateRange.start
-                        ? formatDate(localCustomDateRange.start)
-                        : "Select start date"}
-                    </span>
-                    <Calendar size={16} />
-                  </Button>
-
-                  {showStartCalendar && (
-                    <div
-                      ref={startCalendarRef}
-                      className="absolute top-full mt-2 z-50 rounded-lg border border-border bg-surface p-2 shadow-lg left-0"
-                    >
-                      <DayPicker
-                        mode="single"
-                        selected={localCustomDateRange.start}
-                        onSelect={(date) => {
-                          if (!date) return;
-                          setLocalCustomDateRange((prev) => ({
-                            ...prev,
-                            start: date,
-                          }));
-                          setShowStartCalendar(false);
-                        }}
-                        disabled={{ after: new Date() }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  End Date
-                </label>
-                <div className="relative">
-                  <Button
-                    onClick={() => setShowEndCalendar((v) => !v)}
-                    className="w-full inline-flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-gray-700 hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  >
-                    <span>
-                      {localCustomDateRange.end
-                        ? formatDate(localCustomDateRange.end)
-                        : "Select end date"}
-                    </span>
-                    <Calendar size={16} />
-                  </Button>
-
-                  {showEndCalendar && (
-                    <div
-                      ref={endCalendarRef}
-                      className="absolute top-full mt-2 z-50 rounded-lg border border-border bg-surface p-2 shadow-lg left-0"
-                    >
-                      <DayPicker
-                        mode="single"
-                        selected={localCustomDateRange.end}
-                        onSelect={(date) => {
-                          if (!date) return;
-                          setLocalCustomDateRange((prev) => ({ ...prev, end: date }));
-                          setShowEndCalendar(false);
-                        }}
-                        disabled={{
-                          before: localCustomDateRange.start || undefined,
-                          after: new Date(),
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+              <DayPicker
+                mode="single"
+                selected={customDateRange.start}
+                onSelect={(date) => {
+                  if (!date) return;
+                  setCustomDateRange((prev) => ({ ...prev, start: date }));
+                  setShowStartCalendar(false);
+                }}
+                disabled={{ after: new Date() }}
+              />
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="secondary"
-              className="flex-1"
-              onClick={() => setShowModal(false)}
+          <span className="text-gray-500">to</span>
+
+          <Button
+            onClick={() => setShowEndCalendar((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-primary-600"
+          >
+            <Calendar size={16} />
+            <span className="text-gray-500">
+              {customDateRange.end ? formatDate(customDateRange.end) : "End Date"}
+            </span>
+          </Button>
+
+          {showEndCalendar && (
+            <div
+              ref={endCalendarRef}
+              className="absolute top-full mt-2 z-50 rounded-lg border border-border bg-surface p-2 shadow-lg right-0"
             >
-              Cancel
-            </Button>
-            <Button variant="primary" className="flex-1" onClick={handleApply}>
-              Apply
-            </Button>
-          </div>
+              <DayPicker
+                mode="single"
+                selected={customDateRange.end}
+                onSelect={(date) => {
+                  if (!date) return;
+                  setCustomDateRange((prev) => ({ ...prev, end: date }));
+                  setShowEndCalendar(false);
+                }}
+                disabled={{
+                  before: customDateRange.start || undefined,
+                  after: new Date(),
+                }}
+              />
+            </div>
+          )}
         </div>
-      </Modal>
-    </>
+      )}
+    </div>
   );
 }

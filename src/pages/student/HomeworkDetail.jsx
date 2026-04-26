@@ -1,27 +1,15 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Card, Badge, Button } from "../../ui-components";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Badge, Button } from "../../ui-components";
 import { getHomeworkDetail } from "../../api/homework.api";
 import Loader from "../../ui-components/Loader";
 
 function formatDate(date) {
   if (!date) return "";
-  const formattedDate = new Date(date).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-  return formattedDate;
-}
-
-function formatDateTime(date) {
-  if (!date) return "";
   return new Date(date).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -41,20 +29,16 @@ function classSectionLabel(hw) {
     pickString(hw?.section_name) ||
     pickString(typeof hw?.section === "string" ? hw.section : "");
 
-  if (classPart && sectionPart) return `${classPart} - ${sectionPart}`;
+  if (classPart && sectionPart) return `${classPart} · ${sectionPart}`;
   if (classPart) return classPart;
   if (sectionPart) return sectionPart;
 
   if (hw?.targets?.length) {
     return hw.targets
-      .map((t) =>
-        t.target_name ||
-        [t.class_name, t.section_name].filter(Boolean).join(" - ")
-      )
+      .map((t) => t.target_name || [t.class_name, t.section_name].filter(Boolean).join(" · "))
       .filter(Boolean)
       .join(", ");
   }
-
   return "—";
 }
 
@@ -69,34 +53,28 @@ function assignedByLabel(hw) {
 }
 
 function assignedDateValue(hw) {
-  return (
-    hw?.assignedDate ||
-    hw?.assigned_at ||
-    hw?.published_at ||
-    hw?.createdAt ||
-    hw?.created_at ||
-    ""
-  );
+  return hw?.assignedDate || hw?.assigned_at || hw?.published_at || hw?.createdAt || hw?.created_at || "";
 }
 
-function StatusBadge({ status, dueDate }) {
+function getStatusConfig(status, dueDate) {
   const now = new Date();
-  const due = new Date(dueDate);
-  
-  if (status === "SUBMITTED") {
-    return <Badge variant="success">Submitted</Badge>;
-  } else if (due < now && status !== "SUBMITTED") {
-    return <Badge variant="error">Overdue</Badge>;
-  } else if (status === "ASSIGNED") {
-    return <Badge variant="info">Assigned</Badge>;
-  }
-  return <Badge variant="default">{status}</Badge>;
+  const due = dueDate ? new Date(dueDate) : null;
+  if (status === "SUBMITTED") return { badge: "success", label: "Submitted", gradient: "from-green-500 to-emerald-600" };
+  if (due && due < now) return { badge: "error", label: "Overdue", gradient: "from-red-500 to-rose-600" };
+  return { badge: "info", label: "Assigned", gradient: "from-blue-500 to-indigo-600" };
+}
+
+function isDueSoon(dueDate) {
+  if (!dueDate) return false;
+  const diff = new Date(dueDate) - new Date();
+  return diff > 0 && diff < 3 * 24 * 60 * 60 * 1000;
 }
 
 export default function HomeworkDetail() {
   const { homeworkId } = useParams();
   const navigate = useNavigate();
-  
+  const location = useLocation();
+
   const [homework, setHomework] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -105,7 +83,6 @@ export default function HomeworkDetail() {
     const fetchHomeworkDetail = async () => {
       setLoading(true);
       setError(null);
-      
       try {
         const data = await getHomeworkDetail(homeworkId);
         setHomework(data);
@@ -116,16 +93,11 @@ export default function HomeworkDetail() {
         setLoading(false);
       }
     };
-    
-    if (homeworkId) {
-      fetchHomeworkDetail();
-    }
+
+    if (homeworkId) fetchHomeworkDetail();
   }, [homeworkId]);
 
-  const handleGoBack = () => {
-    navigate("/student/homework");
-  };
-
+  const handleGoBack = () => navigate(location.state?.from || "/student/homework");
 
   if (loading) {
     return (
@@ -137,285 +109,145 @@ export default function HomeworkDetail() {
 
   if (error || !homework) {
     return (
-      <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6">
-        <Card>
-          <div className="text-center py-12">
-            <div className="text-red-500 mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-12 w-12 mx-auto mb-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
+      <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+          <button onClick={handleGoBack} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-base font-bold text-gray-900">Homework</h1>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center">
+            <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <h2 className="text-xl font-semibold">
-                {error || "Homework not found"}
-              </h2>
             </div>
-            <Button onClick={() => navigate("/student/homework")}>
-              Back to Homework List
-            </Button>
+            <p className="text-sm text-gray-500 mb-4">{error || "Homework not found"}</p>
+            <Button onClick={handleGoBack}>Back to Homework</Button>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
 
+  const dueDate = homework.dueDate || homework.due_date;
+  const cfg = getStatusConfig(homework.status, dueDate);
+  const dueSoon = isDueSoon(dueDate);
+
   return (
-    <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6 pb-30 md:pb-6 overflow-y-auto">
-      {/* Back Button */}
-      <div>
-        <button
-          onClick={handleGoBack}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      {/* Sticky Header */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+        <button onClick={handleGoBack} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span className="font-medium">Back to Homework</span>
         </button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-bold text-gray-900 truncate">{homework.title}</h1>
+          <p className="text-xs text-gray-500">{homework.subject}</p>
+        </div>
+        <Badge variant={cfg.badge}>{cfg.label}</Badge>
       </div>
 
-      {/* Header Card */}
-      <Card>
-        <div className="space-y-4">
-          {/* Subject and Status */}
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                {homework.subject}
-              </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mt-1">
-                {homework.title}
-              </h1>
-            </div>
-          </div>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="max-w-3xl mx-auto p-4 space-y-4 pb-8">
 
-          {/* Info Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
-            <div>
-              <div className="text-xs text-gray-500 mb-1">Class / Section</div>
-              <div className="text-sm font-medium text-gray-900">
-                {classSectionLabel(homework)}
+          {/* Hero Banner */}
+          <div className={`bg-gradient-to-br ${cfg.gradient} rounded-xl p-5 text-white`}>
+            <p className="text-xs font-semibold uppercase tracking-widest opacity-80 mb-1">
+              {homework.subject}
+            </p>
+            <h2 className="text-xl font-bold leading-tight">{homework.title}</h2>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+              <div className="bg-white/15 backdrop-blur-sm rounded-lg p-2.5">
+                <p className="text-xs opacity-75 mb-0.5">Class / Section</p>
+                <p className="text-sm font-semibold">{classSectionLabel(homework)}</p>
               </div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500 mb-1">Assigned By</div>
-              <div className="text-sm font-medium text-gray-900">
-                {assignedByLabel(homework)}
+              <div className="bg-white/15 backdrop-blur-sm rounded-lg p-2.5">
+                <p className="text-xs opacity-75 mb-0.5">Assigned by</p>
+                <p className="text-sm font-semibold truncate">{assignedByLabel(homework)}</p>
               </div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500 mb-1">Assigned Date</div>
-              <div className="text-sm font-medium text-gray-900">
-                {formatDate(assignedDateValue(homework)) || "—"}
+              <div className="bg-white/15 backdrop-blur-sm rounded-lg p-2.5">
+                <p className="text-xs opacity-75 mb-0.5">Assigned</p>
+                <p className="text-sm font-semibold">{formatDate(assignedDateValue(homework)) || "—"}</p>
               </div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500 mb-1">Due Date</div>
-              <div className="text-sm font-medium text-gray-900">
-                {formatDate(homework.dueDate || homework.due_date)}
+              <div className={`rounded-lg p-2.5 ${dueSoon ? "bg-amber-400/30" : "bg-white/15 backdrop-blur-sm"}`}>
+                <p className="text-xs opacity-75 mb-0.5">Due date</p>
+                <p className="text-sm font-semibold">
+                  {formatDate(dueDate) || "—"}
+                  {dueSoon && <span className="ml-1 text-xs font-normal opacity-90">· Soon</span>}
+                </p>
               </div>
             </div>
           </div>
-        </div>
-      </Card>
 
-      {/* Description */}
-      <Card title="Description">
-        <p className="text-gray-700 leading-relaxed">{homework.description}</p>
-      </Card>
-
-      {/* Instructions */}
-      {homework.instructions && homework.instructions.length > 0 && (
-        <Card title="Instructions">
-          <ul className="space-y-2">
-            {homework.instructions.map((instruction, index) => (
-              <li key={index} className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-medium mt-0.5">
-                  {index + 1}
-                </span>
-                <span className="text-gray-700">{instruction}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-
-      {/* Attachments */}
-      {homework.attachments && homework.attachments.length > 0 && (
-        <Card title="Attachments" >
-          <div className="space-y-2">
-            {homework.attachments.map((attachment, index) => (
-              <a
-                key={attachment.id || index}
-                href={attachment.fileUrl}
-                className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-blue-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {attachment.fileName}
-                    </div>
-                    <div className="text-xs text-gray-500">{attachment.fileSize}</div>
-                  </div>
-                </div>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-              </a>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {/* Submission Details (if submitted)
-      {homework.submission && (
-        <Card title="Your Submission">
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-green-900">
-                  Submitted on {formatDateTime(homework.submission.submittedDate)}
-                </div>
-                {homework.submission.remarks && (
-                  <div className="text-sm text-green-700 mt-1">
-                    {homework.submission.remarks}
-                  </div>
-                )}
-              </div>
+          {/* Description */}
+          {homework.description && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Description</h3>
+              <p className="text-gray-700 leading-relaxed text-sm">{homework.description}</p>
             </div>
+          )}
 
-            {homework.submission.submittedFiles &&
-              homework.submission.submittedFiles.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-sm font-medium text-gray-700">
-                    Submitted Files:
-                  </div>
-                  {homework.submission.submittedFiles.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-gray-50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-green-600"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {file.name}
-                          </div>
-                          <div className="text-xs text-gray-500">{file.size}</div>
-                        </div>
+          {/* Instructions */}
+          {homework.instructions && homework.instructions.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Instructions</h3>
+              <ol className="space-y-2">
+                {homework.instructions.map((instruction, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold mt-0.5">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm text-gray-700 leading-relaxed">{instruction}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {/* Attachments */}
+          {homework.attachments && homework.attachments.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Attachments ({homework.attachments.length})
+              </h3>
+              <div className="space-y-2">
+                {homework.attachments.map((attachment, index) => (
+                  <a
+                    key={attachment.id || index}
+                    href={attachment.fileUrl}
+                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-blue-50 hover:border-blue-100 transition-colors group"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-gray-800 truncate">{attachment.fileName}</div>
+                        {attachment.fileSize && <div className="text-xs text-gray-400">{attachment.fileSize}</div>}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-          </div>
-        </Card>
-      )} */}
-
-      {/* Submit Button (if not submitted) */}
-      {/* {homework.status !== "SUBMITTED" && (
-        <Card>
-          <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-            <div className="text-sm text-gray-600">
-              {new Date(homework.dueDate) < new Date() ? (
-                <span className="text-red-600 font-medium">
-                  This homework is overdue!
-                </span>
-              ) : (
-                <span>
-                  Time remaining:{" "}
-                  {Math.ceil(
-                    (new Date(homework.dueDate) - new Date()) /
-                      (1000 * 60 * 60 * 24)
-                  )}{" "}
-                  days
-                </span>
-              )}
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </a>
+                ))}
+              </div>
             </div>
-            <Button onClick={handleSubmit} className="w-full md:w-auto">
-              Submit Homework
-            </Button>
-          </div>
-        </Card>
-      )} */}
+          )}
+        </div>
+      </div>
     </div>
   );
 }

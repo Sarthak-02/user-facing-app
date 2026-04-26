@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { Avatar, Badge, Card, Button } from "../../ui-components";
 
 export default function MobileListing({
@@ -7,7 +8,12 @@ export default function MobileListing({
   editMode,
 }) {
   return (
-    <div className="h-full overflow-y-auto space-y-3 pb-32">
+    <div
+      className={clsx(
+        "h-full space-y-3 overflow-y-auto",
+        editMode ? "pb-[9.5rem]" : "pb-20"
+      )}
+    >
       {STUDENTS.map((student) => {
         const status = attendance[student.student_id];
 

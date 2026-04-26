@@ -154,7 +154,7 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
         <div className="flex items-center justify-end gap-2">
           <button
             onClick={() => onView(exam)}
-            className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+            className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
           >
             View
           </button>
@@ -162,13 +162,13 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
             <>
               <button
                 onClick={() => onEdit(exam)}
-                className="text-gray-600 hover:text-gray-800 font-medium text-sm"
+                className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
               >
                 Edit
               </button>
               <button
                 onClick={() => onPublish(exam)}
-                className="text-green-600 hover:text-green-800 font-medium text-sm"
+                className="px-3 py-1.5 text-xs font-medium rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
               >
                 Publish
               </button>

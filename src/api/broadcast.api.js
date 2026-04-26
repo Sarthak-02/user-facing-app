@@ -63,6 +63,7 @@ export async function getBroadcastDetail(broadcastId) {
  * @param {string} payload.targets[].targetId - Target ID
  * @param {Array} payload.attachmentUrls - Optional attachment URLs
  * @param {string} payload.campusId - Campus ID
+ * @param {string} [payload.category] - Announcement category (e.g. general, sports, fun, urgent)
  * @returns {Promise<Object>} Created broadcast
  */
 export async function createBroadcast(payload) {
@@ -85,6 +86,7 @@ export async function createBroadcast(payload) {
  * @param {Array} [payload.targets] - Target audience array (optional)
  * @param {string} [payload.targets[].targetType] - Target type (CAMPUS, CLASS, SECTION, STUDENT)
  * @param {string} [payload.targets[].targetId] - Target ID
+ * @param {string} [payload.category] - Announcement category (e.g. general, sports, fun, urgent)
  * @returns {Promise<Object>} Updated broadcast
  */
 export async function updateBroadcast(broadcastId, payload) {

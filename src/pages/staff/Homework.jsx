@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Card, Button, DateRange } from "../../ui-components";
 import DesktopListing from "../../components/staff-homework/DesktopListing";
 import MobileListing from "../../components/staff-homework/MobileListing";
@@ -7,10 +8,72 @@ import Dropdown from "../../ui-components/Dropdown";
 import { createHomework, getHomeworkDetail, getTeacherHomeworkAll } from "../../api/homework.api";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
+import { ArrowLeft } from "lucide-react";
 
+function homeworkAppliesToSection(homework, sectionId, sectionRecord, permissions) {
+  if (!sectionId || !sectionRecord) return false;
+  const targets = homework.targets || [];
+  if (targets.length === 0) {
+    const cls = (permissions.classes || []).find((c) => c.class_id === sectionRecord.class_id);
+    const className = homework.className || homework.class_name;
+    const sectionName = homework.section || homework.section_name;
+    if (sectionName && sectionName === sectionRecord.section_name) {
+      if (!className || !cls || className === cls.class_name) return true;
+    }
+    return false;
+  }
+  for (const t of targets) {
+    const type = String(t.target_type || t.targetType || "").toUpperCase();
+    const tid = t.target_id || t.targetId || "";
+    if (type === "SECTION" && tid === sectionId) return true;
+    if (type === "CLASS" && tid === sectionRecord.class_id) return true;
+    if (type === "STUDENT") {
+      const st = (permissions.students || []).find((s) => s.student_id === tid);
+      if (st?.section_id === sectionId) return true;
+    }
+  }
+  return false;
+}
+
+function homeworkMatchesSubject(homework, subjectIdKey, subjectDisplayName) {
+  const subj = homework.subject || "";
+  const hid = homework.subject_id || homework.subjectId;
+  if (subjectIdKey && (subj === subjectIdKey || hid === subjectIdKey)) return true;
+  if (subjectDisplayName && subj === subjectDisplayName) return true;
+  return false;
+}
+
+function homeworkAppliesToStudent(homework, studentId, sectionId, sectionRecord) {
+  if (!studentId) return true;
+  const targets = homework.targets || [];
+  if (targets.length === 0) return true;
+  let hasStudentTarget = false;
+  let matchedStudent = false;
+  let appliesSectionOrClass = false;
+  for (const t of targets) {
+    const type = String(t.target_type || t.targetType || "").toUpperCase();
+    const tid = t.target_id || t.targetId || "";
+    if (type === "STUDENT") {
+      hasStudentTarget = true;
+      if (tid === studentId) matchedStudent = true;
+    } else if (type === "SECTION" && tid === sectionId) {
+      appliesSectionOrClass = true;
+    } else if (type === "CLASS" && sectionRecord && tid === sectionRecord.class_id) {
+      appliesSectionOrClass = true;
+    }
+  }
+  if (hasStudentTarget) return matchedStudent || appliesSectionOrClass;
+  return appliesSectionOrClass;
+}
 
 export default function TeacherHomework() {
   const { auth } = useAuth();
+  const { sectionId, subjectId: subjectIdParam, studentId: studentIdParam } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const subjectIdKey = subjectIdParam || "";
+  const studentIdKey = studentIdParam || "";
   const [statusFilter] = useState("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState(null);
@@ -25,13 +88,11 @@ export default function TeacherHomework() {
   const [searchQuery, setSearchQuery] = useState("");
   
   // Temporary filter states (for user selection before apply)
-  const [tempSubjectFilter, setTempSubjectFilter] = useState(null);
   const [tempStatusFilterDropdown, setTempStatusFilterDropdown] = useState(null);
   const [tempDateRangeStart, setTempDateRangeStart] = useState("");
   const [tempDateRangeEnd, setTempDateRangeEnd] = useState("");
   
   // Active filter states (actually applied filters)
-  const [subjectFilter, setSubjectFilter] = useState(null);
   const [statusFilterDropdown, setStatusFilterDropdown] = useState(null);
   const [dateRangeStart, setDateRangeStart] = useState("");
   const [dateRangeEnd, setDateRangeEnd] = useState("");
@@ -46,13 +107,32 @@ export default function TeacherHomework() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
-  const { permissions } = usePermissions();
+  const { permissions, getSubjectsBySection, getStudentsBySection } = usePermissions();
 
-  const subjects = useMemo(() => {return permissions.teacher_subjects.map((subject) => ({
-      value: subject,
-      label: subject
-    }));
-  }, [permissions.teacher_subjects]);
+  const section = useMemo(
+    () => (permissions.sections || []).find((s) => s.section_id === sectionId),
+    [permissions.sections, sectionId]
+  );
+
+  const subjectsInSection = useMemo(
+    () => (sectionId ? getSubjectsBySection(sectionId) : null) || [],
+    [sectionId, getSubjectsBySection, permissions.sections, permissions.teacher_subjects]
+  );
+
+  const subjectMeta = useMemo(
+    () => subjectsInSection.find((s) => s.subject_id === subjectIdKey),
+    [subjectsInSection, subjectIdKey]
+  );
+
+  const studentsInSection = useMemo(
+    () => (sectionId ? getStudentsBySection(sectionId) : null) || [],
+    [sectionId, getStudentsBySection, permissions.students]
+  );
+
+  const studentRecord = useMemo(
+    () => studentsInSection.find((s) => s.student_id === studentIdKey),
+    [studentsInSection, studentIdKey]
+  );
 
   const statusOptions = [
     { value: "", label: "All Status" },
@@ -60,9 +140,25 @@ export default function TeacherHomework() {
     { value: "PUBLISHED", label: "Published" },
   ];
 
+  const sectionSubjectHomework = useMemo(() => {
+    if (!sectionId || !subjectIdKey || !section) return [];
+    return homeworkList.filter(
+      (hw) =>
+        homeworkAppliesToSection(hw, sectionId, section, permissions) &&
+        homeworkMatchesSubject(hw, subjectIdKey, subjectMeta?.subject_name)
+    );
+  }, [homeworkList, sectionId, subjectIdKey, section, permissions, subjectMeta]);
+
+  const scopedHomework = useMemo(() => {
+    if (!studentIdKey) return [];
+    return sectionSubjectHomework.filter((hw) =>
+      homeworkAppliesToStudent(hw, studentIdKey, sectionId, section)
+    );
+  }, [sectionSubjectHomework, studentIdKey, sectionId, section]);
+
   // Filter homework based on status and mobile filters
   const filteredHomework = useMemo(() => {
-    let filtered = [...homeworkList];
+    let filtered = [...scopedHomework];
 
     // Status filter
     if (statusFilter !== "ALL") {
@@ -85,15 +181,10 @@ export default function TeacherHomework() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((hw) =>
-        hw.title.toLowerCase().includes(query) ||
-        hw.description.toLowerCase().includes(query) ||
-        hw.subject.toLowerCase().includes(query)
+        (hw.title || "").toLowerCase().includes(query) ||
+        (hw.description || "").toLowerCase().includes(query) ||
+        (hw.subject || "").toLowerCase().includes(query)
       );
-    }
-
-    // Subject filter
-    if (subjectFilter?.value) {
-      filtered = filtered.filter((hw) => hw.subject === subjectFilter.value);
     }
 
     // Status filter
@@ -113,7 +204,7 @@ export default function TeacherHomework() {
     filtered.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
     return filtered;
-  }, [homeworkList, statusFilter, searchQuery, subjectFilter, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
+  }, [scopedHomework, statusFilter, searchQuery, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
 
   // Calculate summary statistics
   const _summary = useMemo(() => {
@@ -336,7 +427,6 @@ export default function TeacherHomework() {
 
   const handleApplyFilters = () => {
     // Copy temporary filter states to active filter states
-    setSubjectFilter(tempSubjectFilter);
     setStatusFilterDropdown(tempStatusFilterDropdown);
     setDateRangeStart(tempDateRangeStart);
     setDateRangeEnd(tempDateRangeEnd);
@@ -346,17 +436,21 @@ export default function TeacherHomework() {
   const handleClearFilters = () => {
     // Clear both temporary and active filters
     setSearchQuery("");
-    setTempSubjectFilter(null);
     setTempStatusFilterDropdown(null);
     setTempDateRangeStart("");
     setTempDateRangeEnd("");
-    setSubjectFilter(null);
     setStatusFilterDropdown(null);
     setDateRangeStart("");
     setDateRangeEnd("");
   };
 
-  const hasActiveFilters = searchQuery || subjectFilter || statusFilterDropdown || dateRangeStart || dateRangeEnd;
+  const hasActiveFilters = searchQuery || statusFilterDropdown || dateRangeStart || dateRangeEnd;
+
+  const subjectPathEnc = encodeURIComponent(subjectIdKey);
+
+  const goBack = () => {
+    navigate(`/staff/homework/section/${sectionId}/subject/${subjectPathEnc}`);
+  };
 
   // Fetch homework list
   const fetchHomework = async () => {
@@ -404,45 +498,62 @@ export default function TeacherHomework() {
   // Sync temporary filters with active filters when modal opens
   useEffect(() => {
     if (isFilterModalOpen) {
-      setTempSubjectFilter(subjectFilter);
       setTempStatusFilterDropdown(statusFilterDropdown);
       setTempDateRangeStart(dateRangeStart);
       setTempDateRangeEnd(dateRangeEnd);
     }
-  }, [isFilterModalOpen, subjectFilter, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
+  }, [isFilterModalOpen, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
+
+  const listFromPath = location.pathname;
+
+  const routeInvalid =
+    !sectionId ||
+    !subjectIdKey ||
+    !studentIdKey ||
+    !section ||
+    (subjectsInSection.length > 0 && !subjectMeta) ||
+    !studentRecord;
+
+  if (routeInvalid) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+        <p className="text-sm text-gray-600">Invalid homework route.</p>
+        <Button variant="secondary" className="mt-4 w-fit" onClick={() => navigate("/staff/homework")}>
+          Back
+        </Button>
+      </div>
+    );
+  }
+
+  const headerSubtitle = subjectMeta?.subject_name || subjectIdKey || "Subject";
+  const studentLine = studentRecord?.student_name || studentIdKey;
 
   return (
-    <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6">
+    <div className="h-screen md:min-h-screen flex flex-col gap-3 px-4 pb-4 pt-2 md:pt-3">
+      <div className="relative flex shrink-0 flex-col items-center justify-center py-0.5">
+        <Button
+          variant="ghost"
+          className="absolute left-0 top-1/2 h-8 min-h-0 -translate-y-1/2 gap-1.5 px-0 py-0"
+          onClick={goBack}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+        <div className="mx-10 max-w-[min(100%,calc(100%-5.5rem))] text-center md:mx-14">
+          <h1 className="text-xl font-bold text-gray-900 md:text-2xl">
+            <span className="block truncate">{headerSubtitle}</span>
+          </h1>
+          <p className="mt-0.5 truncate text-sm text-gray-600">{studentLine}</p>
+        </div>
+      </div>
+
       {/* Desktop Header with Filters */}
       <Card className="hidden md:block">
         <div className="space-y-4">
-          {/* Title and Create Button Row */}
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">My Homework</h1>
-
-            <Button onClick={handleCreateHomework}>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Create Homework
-            </Button>
-          </div>
-
           {/* Search and Filters Row */}
           <div className="grid grid-cols-12 gap-4">
             {/* Search Bar */}
-            <div className="col-span-3">
+            <div className="col-span-4">
               <div className="relative">
                 <input
                   type="text"
@@ -466,16 +577,6 @@ export default function TeacherHomework() {
                   />
                 </svg>
               </div>
-            </div>
-
-            {/* Subject Filter */}
-            <div className="col-span-2">
-              <Dropdown
-                selected={tempSubjectFilter}
-                onChange={setTempSubjectFilter}
-                options={subjects}
-                placeholder="Subject"
-              />
             </div>
 
             {/* Status Filter */}
@@ -647,6 +748,7 @@ export default function TeacherHomework() {
             homeworkList={filteredHomework}
             onEdit={handleEditHomework}
             onPublish={handlePublishHomework}
+            listFromPath={listFromPath}
           />
         </div>
       )}
@@ -658,14 +760,16 @@ export default function TeacherHomework() {
             homeworkList={filteredHomework}
             onEdit={handleEditHomework}
             onPublish={handlePublishHomework}
+            listFromPath={listFromPath}
           />
         </div>
       )}
 
       {/* Floating Action Button (Mobile Only) */}
       <button
+        type="button"
         onClick={handleCreateHomework}
-        className="md:hidden fixed bottom-20 right-6 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 active:bg-blue-700 transition-all duration-200 flex items-center justify-center z-40 hover:scale-110 active:scale-95"
+        className="md:hidden fixed bottom-20 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-blue-600 active:scale-95 active:bg-blue-700"
         aria-label="Create new homework"
       >
         <svg
@@ -692,6 +796,9 @@ export default function TeacherHomework() {
         homework={editingHomework}
         isSubmitting={isSubmitting}
         submitError={submitError}
+        defaultSectionId={sectionId}
+        defaultSubjectKey={subjectIdKey}
+        defaultStudentId={studentIdKey}
       />
 
       {/* Filter Modal (Mobile Only) */}
@@ -725,18 +832,6 @@ export default function TeacherHomework() {
 
             {/* Modal Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* Subject Filter */}
-              <div>
-                <Dropdown
-                  label="Subject"
-                  selected={tempSubjectFilter}
-                  onChange={setTempSubjectFilter}
-                  options={subjects}
-                  placeholder="Select subject"
-                  maxHeight="max-h-50"
-                />
-              </div>
-
               {/* Status Filter */}
               <div>
                 <Dropdown

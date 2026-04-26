@@ -9,7 +9,7 @@ export default function Input({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+        <label className="text-sm font-medium text-gray-900 ">
           {label}
         </label>
       )}
@@ -18,7 +18,7 @@ export default function Input({
         {...props}
         className={clsx(
           "w-full rounded-lg px-3 py-2 text-sm transition",
-          "bg-surface border border-border text-gray-900 dark:text-gray-100",
+          "bg-white border border-gray-300 text-gray-900",
           "focus:outline-none focus:ring-2 focus:ring-primary-600",
           "placeholder:text-gray-400",
           {

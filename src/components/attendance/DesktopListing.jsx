@@ -61,7 +61,7 @@ export default function DesktopListing({
                   <Button
                     size="sm"
                     variant={status === "ABSENT" ? "danger" : "secondary"}
-                    onClick={() => markAttendance(row.id, "ABSENT")}
+                    onClick={() => markAttendance(row.student_id, "ABSENT")}
                   >
                     {status === "ABSENT" && "✓ "}Absent
                   </Button>

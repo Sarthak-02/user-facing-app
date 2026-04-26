@@ -103,7 +103,7 @@ export default function StaffProfile() {
   };
 
   return (
-    <div className="min-h-full bg-[var(--color-background)] p-4 md:p-6 space-y-6 pb-20 md:pb-6">
+    <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--color-background)] space-y-6 p-4 pb-20 md:p-6 md:pb-6">
       {/* Header Card */}
       <Card className="p-6 md:p-8">
         <div className="flex flex-col md:flex-row gap-6">

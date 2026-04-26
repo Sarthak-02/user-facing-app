@@ -126,7 +126,7 @@ export default function Dropdown({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              className="w-full px-2 py-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+              className="w-full px-2 py-1 border rounded text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
             />
           </div>
 
@@ -160,7 +160,7 @@ export default function Dropdown({
                     active ? "bg-blue-50" : ""
                   }`}
                 >
-                  <span>{opt.label}</span>
+                  <span className="text-gray-900">{opt.label}</span>
                   {active && (
                     <span className="text-blue-600 text-sm font-bold">✓</span>
                   )}
