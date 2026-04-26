@@ -1,6 +1,7 @@
 import { createElement, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "../../ui-components";
+import Modal from "../../ui-components/Modal";
 import Loader from "../../ui-components/Loader";
 import { useAuth } from "../../store/auth.store";
 import {
@@ -31,6 +32,41 @@ const JS_DAY_TO_API_DAY_ID = {
   5: "day-5",
   6: "day-6",
 };
+
+const DAY_SHORT = {
+  Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed",
+  Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun",
+};
+
+const FALLBACK_DAY_TABS = [
+  { id: "day-1", label: "Mon" },
+  { id: "day-2", label: "Tue" },
+  { id: "day-3", label: "Wed" },
+  { id: "day-4", label: "Thu" },
+  { id: "day-5", label: "Fri" },
+];
+
+function buildDayTabs(timetable) {
+  const days = timetable?.days;
+  if (!Array.isArray(days) || !days.length) return FALLBACK_DAY_TABS;
+  return days
+    .filter((d) => d.isActive)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((d) => ({ id: d.id, label: DAY_SHORT[d.label] ?? d.label }));
+}
+
+const EVENT_TYPE_STYLE = {
+  exam:     { label: "Exam",     className: "bg-red-100 text-red-700"        },
+  holiday:  { label: "Holiday",  className: "bg-green-100 text-green-700"    },
+  sports:   { label: "Sports",   className: "bg-orange-100 text-orange-700"  },
+  cultural: { label: "Cultural", className: "bg-purple-100 text-purple-700"  },
+  meeting:  { label: "Meeting",  className: "bg-blue-100 text-blue-700"      },
+  other:    { label: "Other",    className: "bg-gray-100 text-gray-600"      },
+};
+
+function getTodayDayId() {
+  return JS_DAY_TO_API_DAY_ID[new Date().getDay()] ?? "day-1";
+}
 
 function timeToMinutes(hhmm) {
   if (!hhmm || typeof hhmm !== "string") return 0;
@@ -72,36 +108,62 @@ function formatShortDue(iso) {
   }
 }
 
-/**
- * @param {object} timetable - API timetable { days, slots, entries }
- * @param {Date} [now]
- */
-function buildTodaysPeriods(timetable, now = new Date()) {
-  if (!timetable?.entries?.length || !timetable?.slots?.length) return [];
+function formatEventDate(iso) {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
 
-  const dayId = JS_DAY_TO_API_DAY_ID[now.getDay()];
-  const slotById = new Map(timetable.slots.map((s) => [s.id, s]));
+const NON_CLASS_SLOT_TYPES = new Set(["assembly", "lunch", "break"]);
 
-  const todayEntries = timetable.entries.filter((e) => e.dayId === dayId);
-  todayEntries.sort((a, b) => {
-    const sa = slotById.get(a.slotId);
-    const sb = slotById.get(b.slotId);
-    return (sa?.order ?? 0) - (sb?.order ?? 0);
-  });
+const NON_CLASS_SLOT_LABEL = {
+  assembly: "Assembly",
+  lunch: "Lunch",
+  break: "Break",
+};
 
-  return todayEntries.map((entry) => {
-    const slot = slotById.get(entry.slotId);
-    const start = slot?.startTime ?? "";
-    const end = slot?.endTime ?? "";
+const NON_CLASS_SLOT_STYLE = {
+  assembly: "bg-purple-50 border-purple-100 text-purple-800",
+  lunch:    "bg-green-50 border-green-100 text-green-800",
+  break:    "bg-amber-50 border-amber-100 text-amber-800",
+};
+
+function buildPeriodsForDay(timetable, dayId) {
+  if (!timetable?.slots?.length) return [];
+
+  // Map entries for this day by slotId
+  const entryBySlot = new Map(
+    (timetable.entries || [])
+      .filter((e) => e.dayId === dayId)
+      .map((e) => [e.slotId, e])
+  );
+
+  // Include class slots that have an entry + all non-class slots (assembly/lunch/break)
+  const visibleSlots = timetable.slots.filter(
+    (slot) => entryBySlot.has(slot.id) || NON_CLASS_SLOT_TYPES.has(slot.type)
+  );
+
+  visibleSlots.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  return visibleSlots.map((slot) => {
+    const entry = entryBySlot.get(slot.id);
     const subject =
-      entry.subject?.trim() ||
-      (slot?.type === "lunch" ? "Lunch" : slot?.label?.split(" - ")[0] || "—");
+      NON_CLASS_SLOT_LABEL[slot.type] ??
+      entry?.subject?.trim() ??
+      slot?.label?.split(" - ")[0] ??
+      "—";
     return {
-      start,
-      end,
+      start: slot.startTime ?? "",
+      end: slot.endTime ?? "",
       subject,
-      room: entry.room?.trim() || "—",
-      slotType: slot?.type,
+      room: entry?.room?.trim() || "",
+      slotType: slot.type,
     };
   });
 }
@@ -160,6 +222,22 @@ function daysUntil(iso) {
   }
 }
 
+function getUpcomingEvents(campus, limit = 5) {
+  const events = campus?.academic_calendar?.events;
+  if (!Array.isArray(events) || !events.length) return [];
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return events
+    .filter((ev) => {
+      const dateStr = ev.end_date || ev.start_date;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      return !isNaN(d.getTime()) && d >= todayStart;
+    })
+    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
+    .slice(0, limit);
+}
+
 function SectionTitle({ icon, title, wrapperClassName = "mb-4 flex items-center gap-2.5" }) {
   return (
     <div className={wrapperClassName}>
@@ -174,14 +252,38 @@ function SectionTitle({ icon, title, wrapperClassName = "mb-4 flex items-center 
   );
 }
 
-function QuickStat({ icon: Icon, label, value, colorClass }) {
+function QuickStatContent({ icon, label, value, colorClass, hint }) {
+  return createElement(
+    "span",
+    { className: "contents" },
+    createElement(
+      "span",
+      { className: `flex h-8 w-8 items-center justify-center rounded-full ${colorClass}` },
+      createElement(icon, { size: 16, strokeWidth: 2 })
+    ),
+    createElement("p", { className: "text-xl font-bold tabular-nums text-gray-900" }, value),
+    createElement("p", { className: "text-center text-[10px] font-semibold leading-tight text-gray-500" }, label),
+    hint
+      ? createElement("p", { className: "text-center text-[9px] font-medium text-primary-500 mt-0.5" }, hint)
+      : null
+  );
+}
+
+function QuickStat({ icon, label, value, colorClass, onClick, hint }) {
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-95"
+      >
+        <QuickStatContent icon={icon} label={label} value={value} colorClass={colorClass} hint={hint} />
+      </button>
+    );
+  }
   return (
     <div className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
-      <span className={`flex h-8 w-8 items-center justify-center rounded-full ${colorClass}`}>
-        <Icon size={16} strokeWidth={2} />
-      </span>
-      <p className="text-xl font-bold tabular-nums text-gray-900">{value}</p>
-      <p className="text-center text-[10px] font-semibold leading-tight text-gray-500">{label}</p>
+      <QuickStatContent icon={icon} label={label} value={value} colorClass={colorClass} />
     </div>
   );
 }
@@ -191,6 +293,10 @@ export default function StudentHome() {
   const [summaryPayload, setSummaryPayload] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const todayDayId = useMemo(() => getTodayDayId(), []);
+  const [selectedDayId, setSelectedDayId] = useState(todayDayId);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   const firstName = useMemo(() => {
     const fromAuth = auth?.details?.student_first_name?.trim();
@@ -243,7 +349,35 @@ export default function StudentHome() {
     loadSummary();
   }, [loadSummary]);
 
-  const { summary, periods, currentPeriodIndex, upcomingHomework, announcements } =
+  // Periods for the selected day tab
+  const periods = useMemo(() => {
+    const tt = summaryPayload?.timetable;
+    return tt ? buildPeriodsForDay(tt, selectedDayId) : [];
+  }, [summaryPayload, selectedDayId]);
+
+  // Today's period count for the quick stat (independent of selected tab)
+  const todayPeriods = useMemo(() => {
+    const tt = summaryPayload?.timetable;
+    return tt ? buildPeriodsForDay(tt, todayDayId) : [];
+  }, [summaryPayload, todayDayId]);
+
+  const dayTabs = useMemo(
+    () => buildDayTabs(summaryPayload?.timetable),
+    [summaryPayload]
+  );
+
+  // Current period index only meaningful when viewing today
+  const currentPeriodIndex = useMemo(() => {
+    if (selectedDayId !== todayDayId) return -1;
+    return currentPeriodIndexFor(periods);
+  }, [periods, selectedDayId, todayDayId]);
+
+  const upcomingEvents = useMemo(
+    () => getUpcomingEvents(auth.campus),
+    [auth.campus]
+  );
+
+  const { summary, upcomingHomework, announcements } =
     useMemo(() => {
       const now = new Date();
       const weekday = now.getDay();
@@ -275,10 +409,6 @@ export default function StudentHome() {
         }
       }
 
-      const tt = summaryPayload?.timetable;
-      const periodsToday = tt ? buildTodaysPeriods(tt, now) : [];
-      const idx = currentPeriodIndexFor(periodsToday);
-
       const hwRaw =
         Array.isArray(summaryPayload?.homeworkDueNext7Days) &&
         summaryPayload.homeworkDueNext7Days.length > 0
@@ -297,8 +427,6 @@ export default function StudentHome() {
 
       return {
         summary: { greeting, firstName, dayLine, attendanceLine, attendanceVariant },
-        periods: periodsToday,
-        currentPeriodIndex: idx,
         upcomingHomework,
         announcements,
       };
@@ -362,8 +490,10 @@ export default function StudentHome() {
   }
 
   const currentNowMinutes = nowMinutes();
+  const isViewingToday = selectedDayId === todayDayId;
 
   return (
+    <>
     <div className="min-h-full bg-[var(--color-background)] p-4 pb-30 md:p-6">
       <div className="mx-auto max-w-5xl space-y-4">
         {loading ? (
@@ -409,8 +539,10 @@ export default function StudentHome() {
           <QuickStat
             icon={Clock}
             label="Classes today"
-            value={periods.length}
+            value={todayPeriods.filter((p) => !NON_CLASS_SLOT_TYPES.has(p.slotType)).length}
             colorClass="bg-indigo-100 text-indigo-600"
+            onClick={() => setIsScheduleModalOpen(true)}
+            hint="View schedule →"
           />
           <QuickStat
             icon={BookOpen}
@@ -451,63 +583,8 @@ export default function StudentHome() {
           </Card>
         </Link>
 
-        {/* Schedule + Homework grid */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          {/* Today's schedule */}
-          <Card className="border border-gray-100 bg-white shadow-sm">
-            <SectionTitle icon={Clock} title="Today's schedule" />
-            {periods.length === 0 ? (
-              <p className="text-sm text-gray-500">No classes scheduled for today.</p>
-            ) : (
-              <ul className="space-y-2">
-                {periods.map((p, i) => {
-                  const isCurrent = i === currentPeriodIndex;
-                  const isPast = !isCurrent && timeToMinutes(p.end) < currentNowMinutes;
-                  return (
-                    <li
-                      key={`${p.start}-${p.end}-${p.subject}-${i}`}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                        isCurrent
-                          ? "border-l-[3px] border-primary-600 bg-primary-50 pl-[9px]"
-                          : isPast
-                            ? "bg-gray-50 opacity-60"
-                            : "border border-gray-100 bg-white"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                          isCurrent
-                            ? "bg-primary-600 text-white"
-                            : isPast
-                              ? "bg-gray-200 text-gray-400"
-                              : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {i + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className={`truncate font-semibold ${isCurrent ? "text-primary-900" : "text-gray-900"}`}>
-                          {p.subject}
-                          {isCurrent ? (
-                            <span className="ml-2 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                              Now
-                            </span>
-                          ) : null}
-                        </p>
-                        <p className="text-xs text-gray-500">{p.room}</p>
-                      </div>
-                      <p className="shrink-0 font-mono text-xs font-semibold tabular-nums text-gray-400">
-                        {p.start}–{p.end}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Card>
-
-          {/* Homework */}
-          <Card className="border border-gray-100 bg-white shadow-sm">
+        {/* Homework */}
+        <Card className="border border-gray-100 bg-white shadow-sm">
             <div className="mb-4 flex items-center justify-between gap-3">
               <SectionTitle
                 icon={BookOpen}
@@ -565,7 +642,6 @@ export default function StudentHome() {
               </ul>
             )}
           </Card>
-        </div>
 
         {/* Announcements */}
         <Card className="border border-gray-100 bg-white shadow-sm">
@@ -615,7 +691,153 @@ export default function StudentHome() {
             </ul>
           )}
         </Card>
+
+        {/* Upcoming Events — only rendered when academic calendar has future events */}
+        {upcomingEvents.length > 0 && (
+          <Card className="border border-gray-100 bg-white shadow-sm">
+            <SectionTitle icon={CalendarDays} title="Upcoming Events" />
+            <ul className="space-y-2">
+              {upcomingEvents.map((ev) => {
+                const days = daysUntil(ev.start_date);
+                const style = EVENT_TYPE_STYLE[ev.type] ?? EVENT_TYPE_STYLE.other;
+                const isRange = ev.end_date && ev.end_date !== ev.start_date;
+                const dateLabel = isRange
+                  ? `${formatEventDate(ev.start_date)} – ${formatEventDate(ev.end_date)}`
+                  : formatEventDate(ev.start_date);
+                return (
+                  <li
+                    key={ev.id}
+                    className="flex items-start gap-3 rounded-lg border border-gray-100 p-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${style.className}`}
+                        >
+                          {style.label}
+                        </span>
+                        {days !== null && (
+                          <span
+                            className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                              days === 0
+                                ? "bg-red-100 text-red-700"
+                                : days === 1
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-gray-100 text-gray-500"
+                            }`}
+                          >
+                            {days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 font-semibold text-gray-900">{ev.title}</p>
+                      {ev.description ? (
+                        <p className="mt-0.5 line-clamp-1 text-xs text-gray-500">{ev.description}</p>
+                      ) : null}
+                    </div>
+                    <p className="shrink-0 text-right text-xs font-semibold text-gray-400">
+                      {dateLabel}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        )}
       </div>
     </div>
+
+    {/* Schedule modal */}
+    <Modal
+      open={isScheduleModalOpen}
+      onClose={() => setIsScheduleModalOpen(false)}
+      className="max-w-sm"
+    >
+      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Schedule</h2>
+
+      {/* Day tabs */}
+      <div className="mb-3 flex gap-1 rounded-lg bg-gray-100 p-1">
+        {dayTabs.map((tab) => {
+          const isToday = tab.id === todayDayId;
+          const isSelected = tab.id === selectedDayId;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setSelectedDayId(tab.id)}
+              className={`relative flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-all ${
+                isSelected
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab.label}
+              {isToday ? (
+                <span
+                  className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${
+                    isSelected ? "bg-primary-500" : "bg-gray-400"
+                  }`}
+                />
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      {periods.length === 0 ? (
+        <p className="py-4 text-center text-sm text-gray-500">No classes scheduled for this day.</p>
+      ) : (
+        <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
+          {periods.map((p, i) => {
+            const isCurrent = isViewingToday && i === currentPeriodIndex;
+            const isPast =
+              isViewingToday && !isCurrent && timeToMinutes(p.end) < currentNowMinutes;
+            return (
+              <li
+                key={`${p.start}-${p.end}-${p.subject}-${i}`}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  isCurrent
+                    ? "border-l-[3px] border-primary-600 bg-primary-50 pl-[9px]"
+                    : NON_CLASS_SLOT_TYPES.has(p.slotType)
+                      ? `border ${isPast ? "opacity-50" : ""} ${NON_CLASS_SLOT_STYLE[p.slotType]}`
+                      : isPast
+                        ? "bg-gray-50 opacity-60"
+                        : "border border-gray-100 bg-white"
+                }`}
+              >
+                {!NON_CLASS_SLOT_TYPES.has(p.slotType) && (
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                      isCurrent
+                        ? "bg-primary-600 text-white"
+                        : isPast
+                          ? "bg-gray-200 text-gray-400"
+                          : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className={`truncate font-semibold ${isCurrent ? "text-primary-900" : ""}`}>
+                    {p.subject}
+                    {isCurrent ? (
+                      <span className="ml-2 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                        Now
+                      </span>
+                    ) : null}
+                  </p>
+                  {p.room ? <p className="text-xs opacity-60">{p.room}</p> : null}
+                </div>
+                <p className="shrink-0 font-mono text-xs font-semibold tabular-nums text-gray-400">
+                  {p.start}–{p.end}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Modal>
+    </>
   );
 }
