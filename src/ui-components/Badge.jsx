@@ -4,6 +4,7 @@ export default function Badge({ variant = "info", children }) {
     warning: "bg-warning-100 text-warning-600",
     error: "bg-error-100 text-error-600",
     info: "bg-info-100 text-info-600",
+    neutral: "bg-gray-100 text-gray-500",
   };
   
     return (

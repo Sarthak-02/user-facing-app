@@ -59,6 +59,20 @@ export function unwrapTeacherSummaryResponse(res) {
 }
 
 /**
+ * @param {string} campusId
+ * @param {string} sectionId
+ * @returns {Promise<Array>}
+ */
+export async function listTeachersBySection(campusId, sectionId) {
+  const res = await api.post("/teacher/list-by-section", {
+    campus_id: campusId,
+    section_id: sectionId,
+  });
+  const data = res.data?.data ?? res.data ?? [];
+  return Array.isArray(data) ? data : [];
+}
+
+/**
  * Teacher home summary (timetable and related dashboard fields).
  * @param {Object} params
  * @param {string} params.campusId

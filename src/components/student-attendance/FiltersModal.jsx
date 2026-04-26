@@ -5,6 +5,7 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 
 const DATE_RANGE_OPTIONS = [
+  { label: "Full Term", value: "ALL" },
   { label: "Last 7 Days", value: "7" },
   { label: "Last 15 Days", value: "15" },
   { label: "Last 30 Days", value: "30" },

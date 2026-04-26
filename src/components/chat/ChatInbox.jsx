@@ -5,7 +5,7 @@ import { Button } from "../../ui-components";
 import Loader from "../../ui-components/Loader";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
-import { getStudentHomeworkAll } from "../../api/homework.api";
+import { listTeachersBySection } from "../../api/teacher.api";
 import {
   listConversations,
   createDirectConversation,
@@ -39,30 +39,6 @@ function Avatar({ name }) {
   );
 }
 
-function homeworkTeacherRows(homeworkList) {
-  const map = new Map();
-  for (const h of homeworkList || []) {
-    const id = String(
-      h.teacher_id ||
-        h.teacherId ||
-        h.teacher?.teacher_id ||
-        h.teacher?.id ||
-        h.created_by?.id ||
-        h.created_by ||
-        ""
-    ).trim();
-    if (!id) continue;
-    const name = String(
-      h.teacher?.teacher_name ||
-        h.teacher_name ||
-        h.assignedBy ||
-        h.created_by?.name ||
-        "Teacher"
-    ).trim();
-    if (!map.has(id)) map.set(id, name);
-  }
-  return [...map.entries()].map(([userId, name]) => ({ userId, name }));
-}
 
 /**
  * @param {{ mode: 'student' | 'staff', threadBase: string, activeId?: string }} props
@@ -111,20 +87,24 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
   }, [loadConversations]);
 
   useEffect(() => {
-    if (mode !== "student" || !auth.userId) return;
+    const campusId = auth.campus_id;
+    const sectionId = auth.sections?.[0]?.value;
+    if (mode !== "student" || !campusId || !sectionId) return;
     let cancelled = false;
     (async () => {
       setContactsLoading(true);
       try {
-        const res = await getStudentHomeworkAll({
-          student_id: auth.userId,
-          status: "PUBLISHED",
-          limit: 100,
-          offset: 0,
-        });
-        const rows = res?.data ?? res ?? [];
-        const list = Array.isArray(rows) ? rows : [];
-        if (!cancelled) setContacts(homeworkTeacherRows(list));
+        const list = await listTeachersBySection(campusId, sectionId);
+        if (!cancelled) {
+          setContacts(
+            list.map((t) => ({
+              userId: String(t.teacher_id ?? t.id ?? "").trim(),
+              name: [t.teacher_first_name, t.teacher_middle_name, t.teacher_last_name]
+                .filter(Boolean)
+                .join(" ") || "Teacher",
+            })).filter((t) => t.userId)
+          );
+        }
       } catch {
         if (!cancelled) setContacts([]);
       } finally {
@@ -134,7 +114,7 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
     return () => {
       cancelled = true;
     };
-  }, [mode, auth.userId]);
+  }, [mode, auth.campus_id, auth.sections]);
 
   const staffStudents = useMemo(() => {
     if (mode !== "staff") return [];

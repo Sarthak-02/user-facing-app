@@ -23,18 +23,13 @@ function classSectionLine(hw) {
   return null;
 }
 
-function getStatusConfig(status, dueDate) {
+function getStatusConfig(dueDate) {
+  if (!dueDate) return { badge: "info", label: "Upcoming", border: "border-l-blue-400", bg: "bg-blue-50", icon: "text-blue-500" };
   const now = new Date();
   const due = new Date(dueDate);
-  if (status === "SUBMITTED") return { badge: "success", label: "Submitted", border: "border-l-green-400", bg: "bg-green-50", icon: "text-green-500" };
-  if (dueDate && due < now) return { badge: "error", label: "Overdue", border: "border-l-red-400", bg: "bg-red-50", icon: "text-red-500" };
-  return { badge: "info", label: "Assigned", border: "border-l-blue-400", bg: "bg-blue-50", icon: "text-blue-500" };
-}
-
-function isDueSoon(dueDate) {
-  if (!dueDate) return false;
-  const diff = new Date(dueDate) - new Date();
-  return diff > 0 && diff < 3 * 24 * 60 * 60 * 1000;
+  if (due < now) return { badge: "neutral", label: "Closed", border: "border-l-gray-300", bg: "bg-gray-50", icon: "text-gray-400" };
+  if (due - now < 3 * 24 * 60 * 60 * 1000) return { badge: "warning", label: "Due Soon", border: "border-l-amber-400", bg: "bg-amber-50", icon: "text-amber-500" };
+  return { badge: "info", label: "Upcoming", border: "border-l-blue-400", bg: "bg-blue-50", icon: "text-blue-500" };
 }
 
 export default function MobileListing({ homeworkList, listFromPath }) {
@@ -67,8 +62,7 @@ export default function MobileListing({ homeworkList, listFromPath }) {
         const due = dueValue(homework);
         const metaLine = classSectionLine(homework);
         const attachCount = homework.attachmentCount || homework.attachments?.length || 0;
-        const cfg = getStatusConfig(homework.status, due);
-        const dueSoon = isDueSoon(due);
+        const cfg = getStatusConfig(due);
 
         return (
           <div
@@ -114,8 +108,8 @@ export default function MobileListing({ homeworkList, listFromPath }) {
                 <svg xmlns="http://www.w3.org/2000/svg" className={`h-3.5 w-3.5 ${cfg.icon}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span className={`font-medium ${dueSoon ? "text-amber-600" : "text-gray-500"}`}>
-                  Due: {formatDate(due) || "—"}{dueSoon && " · Soon"}
+                <span className={`font-medium ${cfg.icon === "text-gray-400" ? "text-gray-400" : "text-gray-500"}`}>
+                  Due: {formatDate(due) || "—"}
                 </span>
               </div>
               <div className="flex items-center gap-2">

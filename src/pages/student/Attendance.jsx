@@ -10,7 +10,7 @@ import { getFormattedDate, toLocalISOString } from "../../utils/common-functions
 
 export default function StudentAttendance() {
   const [period, setPeriod] = useState("ALL");
-  const [dateRange, setDateRange] = useState("30");
+  const [dateRange, setDateRange] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL"); // ALL, PRESENT, ABSENT
   const [customDateRange, setCustomDateRange] = useState({
     start: null,
@@ -23,19 +23,16 @@ export default function StudentAttendance() {
 
   // Calculate date range
   const { startDate, endDate } = useMemo(() => {
-    const end = new Date();
-    let start = new Date();
-
-    if (dateRange === "custom") {
-      return {
-        startDate: customDateRange.start,
-        endDate: customDateRange.end,
-      };
-    } else {
-      const days = parseInt(dateRange);
-      start.setDate(end.getDate() - days);
-      return { startDate: start, endDate: end };
+    if (dateRange === "ALL") {
+      return { startDate: null, endDate: null };
     }
+    if (dateRange === "custom") {
+      return { startDate: customDateRange.start, endDate: customDateRange.end };
+    }
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - parseInt(dateRange));
+    return { startDate: start, endDate: end };
   }, [dateRange, customDateRange]);
 
   // Generate period options from records
@@ -92,15 +89,14 @@ export default function StudentAttendance() {
         // Fetch all attendance records for the term
         const response = await getStudentAttendance(params);
         
-        if (response.success && response.data) {
+        if (response && response.records) {
           // Transform records to match UI expectations
-          const transformedRecords = response.data.records.map((record) => {
+          const transformedRecords = response.records.map((record) => {
             const teacherName = record.attendanceSession?.teacher
               ? `${record.attendanceSession.teacher.teacher_first_name} ${record.attendanceSession.teacher.teacher_last_name}`
               : "N/A";
-            
-            // Use submittedAt as date or default to current date
-            const date = record.attendanceSession?.submittedAt 
+
+            const date = record.attendanceSession?.submittedAt
               ? new Date(record.attendanceSession.submittedAt).toISOString().split('T')[0]
               : new Date().toISOString().split('T')[0];
 
@@ -113,7 +109,7 @@ export default function StudentAttendance() {
           });
 
           setAttendanceData({
-            summary: response.data.summary,
+            summary: response.summary,
             records: transformedRecords,
           });
         }

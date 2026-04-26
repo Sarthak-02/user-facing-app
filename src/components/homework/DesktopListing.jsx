@@ -23,41 +23,44 @@ function classSectionLine(hw) {
   return null;
 }
 
-function getStatusConfig(status, dueDate) {
+function getStatusConfig(dueDate) {
+  if (!dueDate)
+    return {
+      badge: "info",
+      label: "Upcoming",
+      border: "border-l-blue-400",
+      bg: "bg-blue-50",
+      icon: "text-blue-500",
+      subjectColor: "text-blue-600",
+    };
   const now = new Date();
   const due = new Date(dueDate);
-  if (status === "SUBMITTED")
+  if (due < now)
     return {
-      badge: "success",
-      label: "Submitted",
-      border: "border-l-emerald-400",
-      bg: "bg-emerald-50",
-      icon: "text-emerald-500",
-      subjectColor: "text-emerald-600",
+      badge: "neutral",
+      label: "Closed",
+      border: "border-l-gray-300",
+      bg: "bg-gray-50",
+      icon: "text-gray-400",
+      subjectColor: "text-gray-400",
     };
-  if (dueDate && due < now)
+  if (due - now < 3 * 24 * 60 * 60 * 1000)
     return {
-      badge: "error",
-      label: "Overdue",
-      border: "border-l-red-400",
-      bg: "bg-red-50",
-      icon: "text-red-500",
-      subjectColor: "text-red-500",
+      badge: "warning",
+      label: "Due Soon",
+      border: "border-l-amber-400",
+      bg: "bg-amber-50",
+      icon: "text-amber-500",
+      subjectColor: "text-amber-600",
     };
   return {
     badge: "info",
-    label: "Assigned",
+    label: "Upcoming",
     border: "border-l-blue-400",
     bg: "bg-blue-50",
     icon: "text-blue-500",
     subjectColor: "text-blue-600",
   };
-}
-
-function isDueSoon(dueDate) {
-  if (!dueDate) return false;
-  const diff = new Date(dueDate) - new Date();
-  return diff > 0 && diff < 3 * 24 * 60 * 60 * 1000;
 }
 
 export default function DesktopListing({ homeworkList, listFromPath }) {
@@ -106,8 +109,7 @@ export default function DesktopListing({ homeworkList, listFromPath }) {
           const metaLine = classSectionLine(homework);
           const attachCount =
             homework.attachmentCount || homework.attachments?.length || 0;
-          const cfg = getStatusConfig(homework.status, due);
-          const dueSoon = isDueSoon(due);
+          const cfg = getStatusConfig(due);
 
           return (
             <div
@@ -190,17 +192,8 @@ export default function DesktopListing({ homeworkList, listFromPath }) {
                       d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
-                  <span
-                    className={`text-xs font-semibold ${
-                      dueSoon ? "text-amber-600" : "text-gray-600"
-                    }`}
-                  >
+                  <span className={`text-xs font-semibold ${cfg.icon === "text-gray-400" ? "text-gray-400" : "text-gray-600"}`}>
                     Due: {formatDate(due) || "—"}
-                    {dueSoon && (
-                      <span className="ml-1.5 text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full text-xs font-bold">
-                        Soon
-                      </span>
-                    )}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
