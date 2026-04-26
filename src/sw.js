@@ -18,6 +18,9 @@
 
 import { precacheAndRoute, createHandlerBoundToURL } from "workbox-precaching";
 import { NavigationRoute, registerRoute } from "workbox-routing";
+import { NetworkFirst, StaleWhileRevalidate } from "workbox-strategies";
+import { ExpirationPlugin } from "workbox-expiration";
+import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { initializeApp } from "firebase/app";
 import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 import { firebaseConfig } from "./firebase-config.js";
@@ -28,6 +31,80 @@ import {
 
 // ⚠️ CRITICAL: This placeholder MUST be present for workbox-build to inject the manifest
 precacheAndRoute(self.__WB_MANIFEST);
+
+// Cache GET API responses — tries network first, falls back to cache when offline
+registerRoute(
+  ({ url, request }) =>
+    url.pathname.startsWith("/userfacing") && request.method === "GET",
+  new NetworkFirst({
+    cacheName: "api-cache",
+    networkTimeoutSeconds: 5,
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxEntries: 150,
+        maxAgeSeconds: 24 * 60 * 60, // 24 hours
+      }),
+    ],
+  })
+);
+
+// Cache static assets (fonts, images not in precache) with stale-while-revalidate
+registerRoute(
+  ({ request }) =>
+    request.destination === "font" || request.destination === "image",
+  new StaleWhileRevalidate({
+    cacheName: "static-assets-cache",
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+    ],
+  })
+);
+
+// Cache specific POST endpoints that behave as read operations.
+// The Cache API only supports GET natively, so we build a synthetic cache key
+// from URL + a hash of the request body, giving each unique payload its own entry.
+const CACHED_POST_ROUTES = ["/teacher/summary", "/attendance/student"];
+
+function bodyHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h).toString(36);
+}
+
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  if (
+    event.request.method === "POST" &&
+    CACHED_POST_ROUTES.some((route) => url.pathname.endsWith(route))
+  ) {
+    event.respondWith(handleCachedPost(event.request));
+  }
+});
+
+async function handleCachedPost(request) {
+  const cache = await caches.open("post-api-cache");
+  const bodyText = await request.clone().text();
+  const cacheKey = `${request.url}__${bodyHash(bodyText)}`;
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      await cache.put(cacheKey, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+    return new Response(
+      JSON.stringify({ success: false, message: "You are offline and this data hasn't been cached yet." }),
+      { status: 503, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
 
 // Handle SPA navigation - return index.html for all navigation requests
 // Must use /app/index.html to match the base path configured in vite.config.js

@@ -2,6 +2,7 @@ import "./App.css";
 import { routes } from "./utils/routes/Routes";
 import { useRoutes } from "react-router-dom";
 import NotificationPromptBanner from "./components/NotificationPromptBanner";
+import OfflineBanner from "./components/OfflineBanner";
 import { Toaster } from "sonner";
 import { useLoader } from "./store/loader.store";
 import Loader from "./ui-components/Loader";
@@ -25,6 +26,7 @@ function App() {
         expand={true}
         visibleToasts={5}
       />
+      <OfflineBanner />
       <NotificationPromptBanner />
       {hasSpinnerLoader && <Loader overlay message="" />}
       {element}
