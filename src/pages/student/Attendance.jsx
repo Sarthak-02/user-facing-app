@@ -19,7 +19,7 @@ export default function StudentAttendance() {
 
   // Get auth and attendance store
   const { auth } = useAuth();
-  const { records, loading, error, setAttendanceData, setLoading, setError } = useAttendance();
+  const { records, loading, error, setAttendanceData, setLoading, setError,summary } = useAttendance();
 
   // Calculate date range
   const { startDate, endDate } = useMemo(() => {
@@ -87,11 +87,11 @@ export default function StudentAttendance() {
         };
 
         // Fetch all attendance records for the term
-        const response = await getStudentAttendance(params);
+        let response = await getStudentAttendance(params);
         
-        if (response && response.records) {
+        if (response && response.data) {
           // Transform records to match UI expectations
-          const transformedRecords = response.records.map((record) => {
+          const transformedRecords = response?.data?.records.map((record) => {
             const teacherName = record.attendanceSession?.teacher
               ? `${record.attendanceSession.teacher.teacher_first_name} ${record.attendanceSession.teacher.teacher_last_name}`
               : "N/A";
@@ -107,9 +107,9 @@ export default function StudentAttendance() {
               markedBy: teacherName,
             };
           });
-
+         
           setAttendanceData({
-            summary: response.summary,
+            summary: response?.data?.summary,
             records: transformedRecords,
           });
         }
@@ -123,7 +123,7 @@ export default function StudentAttendance() {
 
     fetchAttendance();
   }, [auth.userId, auth.sections, auth.campus, setAttendanceData, setLoading, setError]);
-
+  
   // Date + period only — summary counts stay stable when toggling present/absent filter
   const recordsForSummary = useMemo(() => {
     let filtered = [...records];
@@ -157,20 +157,7 @@ export default function StudentAttendance() {
     return filtered;
   }, [recordsForSummary, statusFilter]);
 
-  const displaySummary = useMemo(() => {
-    const total = recordsForSummary.length;
-    const present = recordsForSummary.filter((r) => r.status === "PRESENT").length;
-    const absent = recordsForSummary.filter((r) => r.status === "ABSENT").length;
-    const onLeave = recordsForSummary.filter((r) => r.status === "ON_LEAVE" || r.status === "EXCUSED").length;
-
-    return {
-      total,
-      present,
-      absent,
-      onLeave,
-    };
-  }, [recordsForSummary]);
-
+ 
   return (
     <div className="h-screen md:min-h-screen flex flex-col p-4 gap-3 md:gap-4">
       {/* Loading State */}
@@ -226,10 +213,10 @@ export default function StudentAttendance() {
 
           {/* Summary */}
           <AttendanceSummary
-            total={displaySummary.total}
-            present={displaySummary.present}
-            absent={displaySummary.absent}
-            onLeave={displaySummary.onLeave}
+            total={summary.total}
+            present={summary.present}
+            absent={summary.absent}
+            onLeave={summary.onLeave}
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
           />
