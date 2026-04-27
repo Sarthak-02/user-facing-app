@@ -11,6 +11,7 @@ import {
   Calendar,
   ChevronRight,
   FileText,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
@@ -758,6 +759,10 @@ export default function StaffPickup() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState(null);
 
+  // ── Refresh ──────────────────────────────────────────────────────────────────
+  const [refreshing, setRefreshing] = useState(false);
+  const [confirmRefreshKey, setConfirmRefreshKey] = useState(0);
+
   const loadPending = useCallback(async () => {
     if (!campusId) return;
     setPendingLoading(true);
@@ -869,6 +874,17 @@ export default function StaffPickup() {
     );
   }, [allStudents, studentSearch]);
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      if (activeTab === "pending") await loadPending();
+      else if (activeTab === "log") await loadTodayLogs();
+      else if (activeTab === "confirm") setConfirmRefreshKey((k) => k + 1);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   const todayFormatted = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
     day: "2-digit",
@@ -899,6 +915,19 @@ export default function StaffPickup() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Refresh row */}
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} strokeWidth={2} />
+          Refresh
+        </button>
       </div>
 
       {/* Tab container */}
@@ -1002,6 +1031,7 @@ export default function StaffPickup() {
                   </button>
                 </div>
                 <StudentPickupPanel
+                  key={confirmRefreshKey}
                   student={selectedStudent}
                   onConfirm={setConfirmTarget}
                 />

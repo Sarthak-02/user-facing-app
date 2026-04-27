@@ -1,6 +1,7 @@
 import { createElement, useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card } from "../../ui-components";
+import Modal from "../../ui-components/Modal";
 import Loader from "../../ui-components/Loader";
 import { useAuth } from "../../store/auth.store";
 import {
@@ -12,14 +13,15 @@ import {
   BookOpen,
   CalendarDays,
   ChevronRight,
+  ClipboardList,
   Clock,
   Layers,
   Megaphone,
   MessageCircle,
   School,
+  UserCheck,
 } from "lucide-react";
 
-/** JS getDay(): 0 Sun … 6 Sat → API timetable day ids (day-1 = Monday … day-7 = Sunday). */
 const JS_DAY_TO_API_DAY_ID = {
   0: "day-7",
   1: "day-1",
@@ -70,7 +72,6 @@ function formatShortDue(iso) {
   }
 }
 
-/** Homework due still actionable (not past end of due day). */
 function filterActiveHomework(list) {
   const now = new Date();
   return (list || []).filter((h) => {
@@ -84,24 +85,6 @@ function filterActiveHomework(list) {
   });
 }
 
-function homeworkCountFromPayload(payload) {
-  const n =
-    payload?.homework_count ?? payload?.homeworkCount ?? payload?.homework?.count;
-  return typeof n === "number" && Number.isFinite(n) ? n : null;
-}
-
-function announcementsCountFromPayload(payload) {
-  const n =
-    payload?.announcements_count ??
-    payload?.announcementsCount ??
-    payload?.announcements?.count;
-  return typeof n === "number" && Number.isFinite(n) ? n : null;
-}
-
-/**
- * @param {object} payload - Teacher summary API payload
- * @returns {Array<{ id: string, title: string, subject: string, dueDate: string }>}
- */
 function normalizeHomeworkDueList(payload) {
   const raw =
     payload?.homework_due ??
@@ -157,22 +140,6 @@ function announcementsFromPayload(payload) {
   return mapAnnouncementsReceived(raw);
 }
 
-function dateRangeCaption(w) {
-  if (!w || typeof w !== "object") return null;
-  const from = w.from ?? w.start;
-  const to = w.to ?? w.end;
-  if (!from && !to) return null;
-  const a = from ? formatShortDue(from) : "";
-  const b = to ? formatShortDue(to) : "";
-  if (a && b) return `${a} – ${b}`;
-  return a || b;
-}
-
-/**
- * @param {object} timetable - API timetable { days, slots, entries }
- * @param {Date} [now]
- * @param {{ sectionName?: string, sectionId?: string }} [sectionMeta]
- */
 function buildTodaysPeriods(timetable, now = new Date(), sectionMeta = null) {
   if (!timetable?.entries?.length || !timetable?.slots?.length) return [];
 
@@ -215,11 +182,6 @@ function buildTodaysPeriods(timetable, now = new Date(), sectionMeta = null) {
   });
 }
 
-/**
- * Today’s periods from either `timetables_by_section[]` or legacy single `timetable`.
- * @param {object} payload - Summary API payload
- * @param {Date} [now]
- */
 function todaysPeriodsFromSummaryPayload(payload, now = new Date()) {
   const rows = payload?.timetables_by_section;
   if (Array.isArray(rows) && rows.length > 0) {
@@ -260,10 +222,6 @@ function currentPeriodIndexFor(periods) {
   return idx;
 }
 
-/**
- * Unique subjects across the full weekly timetable (from all entries).
- * @param {object} timetable
- */
 function subjectsFromTimetable(timetable) {
   const entries = timetable?.entries;
   if (!Array.isArray(entries) || entries.length === 0) return [];
@@ -325,10 +283,6 @@ function subjectsFromTimetable(timetable) {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/**
- * Subjects across all section timetables; attaches each section’s `section_name` / `section_id`.
- * @param {Array<{ section_id?: string, section_name?: string, timetable?: object }>} timetablesBySection
- */
 function subjectsFromTimetablesBySection(timetablesBySection) {
   if (!Array.isArray(timetablesBySection) || timetablesBySection.length === 0) return [];
 
@@ -402,27 +356,68 @@ function homeworkUrgency(dueDate) {
   return "normal";
 }
 
-function SectionTitle({ icon, title, wrapperClassName = "mb-4 flex items-center gap-3" }) {
-  return (
-    <div className={wrapperClassName}>
-      <span
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-900"
-        aria-hidden
+function daysUntil(iso) {
+  if (!iso) return null;
+  try {
+    const due = new Date(iso);
+    if (isNaN(due.getTime())) return null;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const dueStart = new Date(due);
+    dueStart.setHours(0, 0, 0, 0);
+    return Math.round((dueStart - todayStart) / (1000 * 60 * 60 * 24));
+  } catch {
+    return null;
+  }
+}
+
+function QuickStatContent({ icon, label, value, colorClass, hint }) {
+  return createElement(
+    "span",
+    { className: "contents" },
+    createElement(
+      "span",
+      { className: `flex h-8 w-8 items-center justify-center rounded-full ${colorClass}` },
+      createElement(icon, { size: 16, strokeWidth: 2 })
+    ),
+    createElement("p", { className: "text-xl font-bold tabular-nums text-gray-900" }, value),
+    createElement("p", { className: "text-center text-[10px] font-semibold leading-tight text-gray-500" }, label),
+    hint
+      ? createElement("p", { className: "text-center text-[9px] font-medium text-primary-500 mt-0.5" }, hint)
+      : null
+  );
+}
+
+function QuickStat({ icon, label, value, colorClass, onClick }) {
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-95"
       >
-        {createElement(icon, { size: 18, strokeWidth: 2 })}
-      </span>
-      <h2 className="text-lg font-semibold tracking-tight text-gray-950 dark:text-gray-900">
-        {title}
-      </h2>
+        <QuickStatContent icon={icon} label={label} value={value} colorClass={colorClass} hint="Tap to view →" />
+      </button>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+      <QuickStatContent icon={icon} label={label} value={value} colorClass={colorClass} />
     </div>
   );
 }
 
 export default function StaffHome() {
   const { auth } = useAuth();
+  const navigate = useNavigate();
   const [summaryPayload, setSummaryPayload] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isSubjectsModalOpen, setIsSubjectsModalOpen] = useState(false);
+  const [isHomeworkModalOpen, setIsHomeworkModalOpen] = useState(false);
+  const [isAnnouncementsModalOpen, setIsAnnouncementsModalOpen] = useState(false);
 
   const firstName = useMemo(() => {
     const d = auth?.details || {};
@@ -499,6 +494,19 @@ export default function StaffHome() {
   const messagesUnreadTotal =
     summaryPayload?.messages?.total_unread ?? summaryPayload?.messages?.totalUnread ?? 0;
 
+  const activeClassInfo = useMemo(() => {
+    if (periods.length === 0) return null;
+    const mins = nowMinutes();
+    // Current period
+    if (currentPeriodIndex !== -1) {
+      return { kind: "now", period: periods[currentPeriodIndex] };
+    }
+    // Next upcoming period
+    const next = periods.find((p) => timeToMinutes(p.start) > mins);
+    if (next) return { kind: "next", period: next };
+    return null;
+  }, [periods, currentPeriodIndex]);
+
   const upcomingHomework = useMemo(
     () => upcomingHomeworkFromPayload(summaryPayload),
     [summaryPayload]
@@ -508,19 +516,6 @@ export default function StaffHome() {
     () => announcementsFromPayload(summaryPayload),
     [summaryPayload]
   );
-
-  const homeworkWindowCaption = useMemo(
-    () => dateRangeCaption(summaryPayload?.homework?.window),
-    [summaryPayload]
-  );
-
-  const announcementsWindowCaption = useMemo(
-    () => dateRangeCaption(summaryPayload?.announcements?.window),
-    [summaryPayload]
-  );
-
-  const homeworkCount = homeworkCountFromPayload(summaryPayload);
-  const announcementsCount = announcementsCountFromPayload(summaryPayload);
 
   if (!canFetch) {
     return (
@@ -566,388 +561,393 @@ export default function StaffHome() {
     );
   }
 
-  return (
-    <div className="min-h-full bg-[var(--color-background)] p-4 pb-30 md:p-6">
-      <div className="mx-auto max-w-5xl space-y-5">
-        {loading ? (
-          <div className="flex justify-center py-2">
-            <Loader />
-          </div>
-        ) : null}
+  const currentNowMinutes = nowMinutes();
 
-        <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-5 shadow-lg md:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  return (
+    <>
+      <div className="min-h-full bg-[var(--color-background)] p-4 pb-30 md:p-6">
+        <div className="mx-auto max-w-5xl space-y-4">
+          {loading ? (
+            <div className="flex justify-center py-2">
+              <Loader />
+            </div>
+          ) : null}
+
+          {/* Hero card */}
+          <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-5 shadow-lg">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl font-bold text-white">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-xl font-bold text-white">
                 {summary.firstName.charAt(0).toUpperCase()}
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-indigo-200">{summary.greeting}</p>
-                <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">
-                  {summary.firstName}
-                </h1>
-                <p className="mt-1 flex items-center gap-1.5 text-sm text-indigo-100">
-                  <CalendarDays size={14} className="shrink-0" />
+                <h1 className="text-2xl font-bold tracking-tight text-white">{summary.firstName}</h1>
+                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-indigo-100">
+                  <CalendarDays size={12} className="shrink-0" />
                   {summary.dayLine}
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm sm:self-start">
-              <School size={18} className="shrink-0 text-indigo-100" aria-hidden />
-              <p className="text-sm font-semibold text-white">
-                {teacherSections.length === 1
-                  ? "1 section"
-                  : `${teacherSections.length} sections`}
-              </p>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <div className="flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1.5 backdrop-blur-sm">
+                  <School size={14} className="shrink-0 text-indigo-100" aria-hidden />
+                  <p className="text-xs font-semibold text-white">
+                    {teacherSections.length === 1 ? "1 section" : `${teacherSections.length} sections`}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-800">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
-              <Clock size={18} />
-            </span>
-            <div>
-              <p className="text-xl font-bold text-gray-950">{periods.length}</p>
-              <p className="text-xs font-semibold text-gray-500">Today's classes</p>
-            </div>
+          {/* Current / next class strip */}
+          {activeClassInfo ? (
+            <button
+              type="button"
+              onClick={() => setIsScheduleModalOpen(true)}
+              className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 shadow-sm transition-all hover:shadow-md active:scale-[0.99] ${
+                activeClassInfo.kind === "now"
+                  ? "border-sky-300 bg-sky-50"
+                  : "border-gray-100 bg-white"
+              }`}
+            >
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                activeClassInfo.kind === "now" ? "bg-sky-500 text-white" : "bg-sky-100 text-sky-600"
+              }`}>
+                <Clock size={15} />
+              </span>
+              <div className="min-w-0 flex-1 text-left">
+                <p className={`text-xs font-bold uppercase tracking-wide ${
+                  activeClassInfo.kind === "now" ? "text-sky-600" : "text-gray-500"
+                }`}>
+                  {activeClassInfo.kind === "now" ? "Now" : "Up next"}
+                </p>
+                <p className="truncate font-semibold text-gray-900">
+                  {activeClassInfo.period.subject}
+                  {activeClassInfo.period.sectionName ? (
+                    <span className="ml-1.5 font-normal text-gray-600">· {activeClassInfo.period.sectionName}</span>
+                  ) : null}
+                </p>
+              </div>
+              <p className="shrink-0 font-mono text-xs font-semibold text-gray-900">
+                {activeClassInfo.period.start}–{activeClassInfo.period.end}
+              </p>
+              <ChevronRight size={14} className="shrink-0 text-gray-400" />
+            </button>
+          ) : null}
+
+          {/* Quick stats */}
+          <div className="grid grid-cols-2 gap-3">
+            <QuickStat
+              icon={Clock}
+              label="Today's classes"
+              value={periods.length}
+              colorClass="bg-sky-100 text-sky-600"
+              onClick={() => setIsScheduleModalOpen(true)}
+            />
+            <QuickStat
+              icon={BookOpen}
+              label="Subjects"
+              value={subjects.length}
+              colorClass="bg-emerald-100 text-emerald-600"
+              onClick={() => setIsSubjectsModalOpen(true)}
+            />
+            <QuickStat
+              icon={Bell}
+              label="Homework due"
+              value={upcomingHomework.length}
+              colorClass="bg-amber-100 text-amber-600"
+              onClick={() => setIsHomeworkModalOpen(true)}
+            />
+            <QuickStat
+              icon={Megaphone}
+              label="Announcements"
+              value={announcements.length}
+              colorClass="bg-purple-100 text-purple-600"
+              onClick={() => setIsAnnouncementsModalOpen(true)}
+            />
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-800">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <BookOpen size={18} />
-            </span>
-            <div>
-              <p className="text-xl font-bold text-gray-950">{subjects.length}</p>
-              <p className="text-xs font-semibold text-gray-500">Subjects</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-800">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-              <Bell size={18} />
-            </span>
-            <div>
-              <p className="text-xl font-bold text-gray-950">{upcomingHomework.length}</p>
-              <p className="text-xs font-semibold text-gray-500">Homework due</p>
-            </div>
-          </div>
-          <Link
-            to="/staff/chat"
-            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-all hover:border-primary-400 hover:shadow-md dark:border-gray-800"
+
+          {/* Messages quick link */}
+          <button
+            type="button"
+            onClick={() => navigate("/staff/chat")}
+            className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-[0.99]"
           >
-            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
-              <MessageCircle size={18} />
+            <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600">
+              <MessageCircle size={16} />
               {messagesUnreadTotal > 0 ? (
                 <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[9px] font-bold text-white">
                   {messagesUnreadTotal > 9 ? "9+" : messagesUnreadTotal}
                 </span>
               ) : null}
             </span>
-            <div>
-              <p className="text-xl font-bold text-gray-950">{messagesUnreadTotal}</p>
-              <p className="text-xs font-semibold text-gray-500">Unread msgs</p>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="text-sm font-semibold text-gray-900">Messages</p>
+              <p className="text-xs text-gray-400">
+                {messagesUnreadTotal > 0 ? `${messagesUnreadTotal} unread` : "No new messages"}
+              </p>
             </div>
-          </Link>
-        </div>
+            <ChevronRight size={16} className="shrink-0 text-gray-400" />
+          </button>
 
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Card className="border border-gray-100 bg-white shadow-sm dark:border-gray-800">
-            <SectionTitle icon={Clock} title="Today's schedule" />
-            {periods.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-6 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50">
-                  <Clock size={22} className="text-gray-400" />
-                </span>
-                <p className="text-sm font-semibold text-gray-500">No classes scheduled for today.</p>
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {periods.map((p, i) => {
-                  const isCurrent = i === currentPeriodIndex;
-                  return (
-                    <li
-                      key={`${p.sectionId || ""}-${p.start}-${p.end}-${p.subject}-${i}`}
-                      className={`flex flex-col gap-1 rounded-xl border px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between ${
-                        isCurrent
-                          ? "border-sky-300 bg-sky-50 shadow-sm dark:border-sky-600 dark:bg-sky-950/40"
-                          : "border-gray-100 bg-gray-50/50 dark:border-gray-700"
-                      }`}
-                    >
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <span
-                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                            isCurrent
-                              ? "bg-sky-500 text-white"
-                              : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                          }`}
-                        >
-                          {i + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-gray-950 dark:text-gray-800">
-                            {p.subject}
-                            {isCurrent ? (
-                              <span className="ml-2 inline-flex items-center gap-1 rounded-md bg-sky-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-                                Now
-                              </span>
-                            ) : null}
-                          </p>
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {[p.sectionName && `Section ${p.sectionName}`, p.room !== "—" ? p.room : null]
-                              .filter(Boolean)
-                              .join(" · ") || "—"}
-                          </p>
-                        </div>
-                      </div>
-                      <p className="ml-8 shrink-0 font-mono text-xs font-bold tabular-nums text-gray-600 dark:text-gray-400 sm:ml-0">
-                        {p.start} – {p.end}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Card>
-
-          <Card className="border border-gray-100 bg-white shadow-sm dark:border-gray-800">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <SectionTitle
-                icon={BookOpen}
-                title="Your subjects"
-                wrapperClassName="mb-0 flex min-w-0 items-center gap-3"
-              />
+          {/* Quick nav links */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              { to: "/staff/attendance", icon: UserCheck, label: "Attendance", color: "text-sky-600 bg-sky-50" },
+              { to: "/staff/homework", icon: ClipboardList, label: "Homework", color: "text-amber-600 bg-amber-50" },
+              { to: "/staff/lesson-plans", icon: Layers, label: "Lesson Plans", color: "text-emerald-600 bg-emerald-50" },
+              { to: "/staff/exams", icon: BookOpen, label: "Exams", color: "text-violet-600 bg-violet-50" },
+            ].map(({ to, icon, label, color }) => (
               <Link
-                to="/staff/lesson-plans"
-                className="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+                key={to}
+                to={to}
+                className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-3 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-[0.99]"
               >
-                Lesson plans
-                <ChevronRight size={14} />
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${color}`}>
+                  {createElement(icon, { size: 16 })}
+                </span>
+                <p className="text-sm font-semibold text-gray-800">{label}</p>
+                <ChevronRight size={14} className="ml-auto shrink-0 text-gray-300" />
               </Link>
-            </div>
-            {subjects.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-6 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50">
-                  <BookOpen size={22} className="text-gray-400" />
-                </span>
-                <p className="text-sm font-semibold text-gray-500">
-                  No subjects found. Contact your administrator.
-                </p>
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {subjects.map((s) => {
-                  const lessonPlansHref =
-                    s.subjectId && s.sectionIds.length === 1
-                      ? `/staff/lesson-plans/section/${s.sectionIds[0]}/subject/${s.subjectId}`
-                      : null;
-                  const inner = (
-                    <>
-                      <div className="flex min-w-0 items-start gap-2.5">
-                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                          <Layers size={14} aria-hidden />
-                        </span>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-gray-950 dark:text-gray-800">{s.name}</p>
-                          {s.sectionLabels.length > 0 ? (
-                            <p className="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-                              {s.sectionLabels.join(" · ")}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                      {lessonPlansHref ? (
-                        <ChevronRight className="shrink-0 text-primary-400" size={16} aria-hidden />
-                      ) : null}
-                    </>
-                  );
-
-                  if (lessonPlansHref) {
-                    return (
-                      <li key={`${s.subjectId}-${s.name}`}>
-                        <Link
-                          to={lessonPlansHref}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5 transition-all hover:border-primary-300 hover:bg-primary-50/60 dark:border-gray-700 dark:hover:border-primary-500"
-                        >
-                          {inner}
-                        </Link>
-                      </li>
-                    );
-                  }
-
-                  return (
-                    <li
-                      key={`${s.subjectId || s.name}-${s.sectionIds.join(",")}`}
-                      className="rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5 dark:border-gray-700"
-                    >
-                      <div className="flex items-center justify-between gap-3">{inner}</div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Card>
-        </div>
-
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Card className="border border-gray-100 bg-white shadow-sm dark:border-gray-800">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <SectionTitle
-                icon={BookOpen}
-                title="Homework due"
-                wrapperClassName="mb-0 flex min-w-0 items-center gap-3"
-              />
-              <Link
-                to="/staff/homework"
-                className="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
-              >
-                View all
-                <ChevronRight size={14} />
-              </Link>
-            </div>
-            {homeworkWindowCaption ? (
-              <p className="mb-3 text-xs font-semibold text-gray-800 dark:text-gray-600">
-                Window: {homeworkWindowCaption}
-                {summaryPayload?.homework?.due_next_days != null ? (
-                  <span className="text-gray-600 dark:text-gray-500">
-                    {" "}
-                    · Next {summaryPayload.homework.due_next_days}{" "}
-                    {summaryPayload.homework.due_next_days === 1 ? "day" : "days"}
-                  </span>
-                ) : null}
-              </p>
-            ) : homeworkCount != null && homeworkCount > 0 && upcomingHomework.length === 0 ? (
-              <p className="mb-3 text-xs font-semibold text-gray-800 dark:text-gray-600">
-                {homeworkCount === 1 ? "1 assignment" : `${homeworkCount} assignments`} in summary
-              </p>
-            ) : null}
-            {upcomingHomework.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-6 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50">
-                  <BookOpen size={22} className="text-gray-400" />
-                </span>
-                <p className="text-sm font-semibold text-gray-500">
-                  {homeworkCount != null && homeworkCount > 0
-                    ? "Nothing due right now."
-                    : "No homework due."}
-                </p>
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {upcomingHomework.map((h) => {
-                  const urgency = homeworkUrgency(h.dueDate || h.due_date);
-                  return (
-                    <li key={h.id}>
-                      <Link
-                        to={`/staff/homework/${h.id}`}
-                        className={`block rounded-xl border px-3 py-2.5 transition-all ${
-                          urgency === "urgent"
-                            ? "border-red-200 bg-red-50/60 hover:border-red-300 dark:border-red-800 dark:bg-red-950/30"
-                            : urgency === "soon"
-                              ? "border-amber-200 bg-amber-50/60 hover:border-amber-300 dark:border-amber-800 dark:bg-amber-950/30"
-                              : "border-gray-100 bg-gray-50/50 hover:border-primary-300 hover:bg-primary-50/60 dark:border-gray-700"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p
-                              className={`text-xs font-bold uppercase tracking-wide ${
-                                urgency === "urgent"
-                                  ? "text-red-600"
-                                  : urgency === "soon"
-                                    ? "text-amber-600"
-                                    : "text-primary-600"
-                              }`}
-                            >
-                              {h.subject}
-                            </p>
-                            <p className="mt-0.5 font-semibold text-gray-950 dark:text-gray-800">
-                              {h.title}
-                            </p>
-                          </div>
-                          <span
-                            className={`shrink-0 rounded-lg px-2 py-1 text-xs font-bold ${
-                              urgency === "urgent"
-                                ? "bg-red-100 text-red-700"
-                                : urgency === "soon"
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            Due {formatShortDue(h.dueDate || h.due_date)}
-                          </span>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Card>
-
-          <Card className="border border-gray-100 bg-white shadow-sm dark:border-gray-800">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <SectionTitle
-                icon={Megaphone}
-                title="Announcements"
-                wrapperClassName="mb-0 flex min-w-0 items-center gap-3"
-              />
-            </div>
-            {announcementsWindowCaption ? (
-              <p className="mb-3 text-xs font-semibold text-gray-800 dark:text-gray-600">
-                Window: {announcementsWindowCaption}
-              </p>
-            ) : announcementsCount != null &&
-              announcementsCount > 0 &&
-              announcements.length === 0 ? (
-              <p className="mb-3 text-xs font-semibold text-gray-800 dark:text-gray-600">
-                {announcementsCount === 1
-                  ? "1 announcement"
-                  : `${announcementsCount} announcements`}{" "}
-                in summary
-              </p>
-            ) : null}
-            {announcements.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-6 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50">
-                  <Megaphone size={22} className="text-gray-400" />
-                </span>
-                <p className="text-sm font-semibold text-gray-500">
-                  {announcementsCount != null && announcementsCount > 0
-                    ? "Announcements could not be listed. Try refreshing."
-                    : "No announcements received."}
-                </p>
-              </div>
-            ) : (
-              <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-                {announcements.map((a) => (
-                  <li key={a.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
-                    <span
-                      className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700 dark:bg-primary-950/50"
-                      aria-hidden
-                    >
-                      <Megaphone size={15} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-950 dark:text-gray-100">{a.title}</p>
-                      {a.body ? (
-                        <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                          {a.body}
-                        </p>
-                      ) : null}
-                      {a.date ? (
-                        <p className="mt-1.5 text-xs font-medium text-gray-400">
-                          {formatShortDue(a.date)}
-                        </p>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Schedule modal */}
+      <Modal
+        open={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        className="max-w-sm"
+      >
+        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Today's Schedule</h2>
+        {periods.length === 0 ? (
+          <p className="py-4 text-center text-sm text-gray-500">No classes scheduled for today.</p>
+        ) : (
+          <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
+            {periods.map((p, i) => {
+              const isCurrent = i === currentPeriodIndex;
+              const isPast = !isCurrent && timeToMinutes(p.end) < currentNowMinutes;
+              return (
+                <li
+                  key={`${p.sectionId || ""}-${p.start}-${p.end}-${p.subject}-${i}`}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                    isCurrent
+                      ? "border-l-[3px] border-sky-500 bg-sky-50 pl-[9px]"
+                      : isPast
+                        ? "border border-gray-100 bg-gray-50 opacity-60"
+                        : "border border-gray-100 bg-white"
+                  }`}
+                >
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                      isCurrent
+                        ? "bg-sky-500 text-white"
+                        : isPast
+                          ? "bg-gray-200 text-gray-400"
+                          : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate font-semibold ${isCurrent ? "text-sky-900" : "text-gray-900"}`}>
+                      {p.subject}
+                      {isCurrent ? (
+                        <span className="ml-2 inline-flex items-center gap-1 rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                          Now
+                        </span>
+                      ) : null}
+                    </p>
+                    {p.sectionName ? (
+                      <p className="text-xs text-gray-900">Section {p.sectionName}{p.room !== "—" ? ` · ${p.room}` : ""}</p>
+                    ) : null}
+                  </div>
+                  <p className="shrink-0 font-mono text-xs font-semibold tabular-nums text-gray-900">
+                    {p.start}–{p.end}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Modal>
+
+      {/* Subjects modal */}
+      <Modal
+        open={isSubjectsModalOpen}
+        onClose={() => setIsSubjectsModalOpen(false)}
+        className="max-w-sm"
+      >
+        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Your Subjects</h2>
+        {subjects.length === 0 ? (
+          <p className="py-4 text-center text-sm text-gray-500">No subjects found. Contact your administrator.</p>
+        ) : (
+          <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
+            {subjects.map((s) => {
+              const lessonPlansHref =
+                s.subjectId && s.sectionIds.length === 1
+                  ? `/staff/lesson-plans/section/${s.sectionIds[0]}/subject/${s.subjectId}`
+                  : null;
+              const inner = (
+                <>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                    <Layers size={14} aria-hidden />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-900">{s.name}</p>
+                    {s.sectionLabels.length > 0 ? (
+                      <p className="text-xs text-gray-400">{s.sectionLabels.join(" · ")}</p>
+                    ) : null}
+                  </div>
+                  {lessonPlansHref ? (
+                    <ChevronRight size={14} className="shrink-0 text-gray-300" aria-hidden />
+                  ) : null}
+                </>
+              );
+
+              if (lessonPlansHref) {
+                return (
+                  <li key={`${s.subjectId}-${s.name}`}>
+                    <Link
+                      to={lessonPlansHref}
+                      onClick={() => setIsSubjectsModalOpen(false)}
+                      className="flex items-center gap-3 rounded-lg border border-gray-100 p-3 transition-all hover:border-emerald-300 hover:bg-emerald-50/50"
+                    >
+                      {inner}
+                    </Link>
+                  </li>
+                );
+              }
+              return (
+                <li
+                  key={`${s.subjectId || s.name}-${s.sectionIds.join(",")}`}
+                  className="flex items-center gap-3 rounded-lg border border-gray-100 p-3"
+                >
+                  {inner}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <Link
+          to="/staff/lesson-plans"
+          onClick={() => setIsSubjectsModalOpen(false)}
+          className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
+        >
+          All lesson plans
+          <ChevronRight size={14} />
+        </Link>
+      </Modal>
+
+      {/* Homework modal */}
+      <Modal
+        open={isHomeworkModalOpen}
+        onClose={() => setIsHomeworkModalOpen(false)}
+        className="max-w-sm"
+      >
+        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Homework Due</h2>
+        {upcomingHomework.length === 0 ? (
+          <p className="py-4 text-center text-sm text-gray-500">No upcoming homework due.</p>
+        ) : (
+          <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
+            {upcomingHomework.map((h) => {
+              const urgency = homeworkUrgency(h.dueDate || h.due_date);
+              const days = daysUntil(h.dueDate || h.due_date);
+              return (
+                <li key={h.id}>
+                  <Link
+                    to={`/staff/homework/${h.id}`}
+                    onClick={() => setIsHomeworkModalOpen(false)}
+                    className={`block rounded-lg border p-3 transition-all ${
+                      urgency === "urgent"
+                        ? "border-red-200 bg-red-50/60 hover:border-red-300"
+                        : urgency === "soon"
+                          ? "border-amber-200 bg-amber-50/60 hover:border-amber-300"
+                          : "border-gray-100 hover:border-primary-300 hover:bg-primary-50/50"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                        urgency === "urgent"
+                          ? "bg-red-100 text-red-700"
+                          : urgency === "soon"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-primary-50 text-primary-700"
+                      }`}
+                    >
+                      {h.subject}
+                    </span>
+                    <p className="mt-1.5 font-semibold text-gray-900">{h.title}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      {days !== null ? (
+                        <span
+                          className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                            days === 0
+                              ? "bg-red-100 text-red-700"
+                              : days === 1
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {days === 0 ? "Due today" : days === 1 ? "Tomorrow" : `${days}d left`}
+                        </span>
+                      ) : null}
+                      <p className="text-xs text-gray-400">
+                        {formatShortDue(h.dueDate || h.due_date)}
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <Link
+          to="/staff/homework"
+          onClick={() => setIsHomeworkModalOpen(false)}
+          className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-amber-200 bg-amber-50 py-2 text-sm font-bold text-amber-700 hover:bg-amber-100"
+        >
+          View all homework
+          <ChevronRight size={14} />
+        </Link>
+      </Modal>
+
+      {/* Announcements modal */}
+      <Modal
+        open={isAnnouncementsModalOpen}
+        onClose={() => setIsAnnouncementsModalOpen(false)}
+        className="max-w-sm"
+      >
+        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Announcements</h2>
+        {announcements.length === 0 ? (
+          <p className="py-4 text-center text-sm text-gray-500">No announcements received.</p>
+        ) : (
+          <ul className="max-h-[60vh] divide-y divide-gray-100 overflow-y-auto">
+            {announcements.map((a) => (
+              <li key={a.id} className="py-3 first:pt-0 last:pb-0">
+                <div className="flex gap-3">
+                  <span
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600"
+                    aria-hidden
+                  >
+                    <Megaphone size={15} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-900">{a.title}</p>
+                    {a.body ? (
+                      <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{a.body}</p>
+                    ) : null}
+                    {a.date ? (
+                      <p className="mt-1 text-xs text-gray-400">{formatShortDue(a.date)}</p>
+                    ) : null}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Modal>
+    </>
   );
 }
