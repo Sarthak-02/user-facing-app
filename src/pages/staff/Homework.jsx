@@ -134,6 +134,12 @@ export default function TeacherHomework() {
     [studentsInSection, studentIdKey]
   );
 
+  const sectionTitle = useMemo(() => {
+    if (!section) return "";
+    const cls = (permissions.classes || []).find((c) => c.class_id === section.class_id);
+    return cls ? `${cls.class_name} · ${section.section_name}` : section.section_name;
+  }, [section, permissions.classes]);
+
   const statusOptions = [
     { value: "", label: "All Status" },
     { value: "DRAFT", label: "Draft" },
@@ -150,7 +156,7 @@ export default function TeacherHomework() {
   }, [homeworkList, sectionId, subjectIdKey, section, permissions, subjectMeta]);
 
   const scopedHomework = useMemo(() => {
-    if (!studentIdKey) return [];
+    if (!studentIdKey) return sectionSubjectHomework;
     return sectionSubjectHomework.filter((hw) =>
       homeworkAppliesToStudent(hw, studentIdKey, sectionId, section)
     );
@@ -449,7 +455,11 @@ export default function TeacherHomework() {
   const subjectPathEnc = encodeURIComponent(subjectIdKey);
 
   const goBack = () => {
-    navigate(`/staff/homework/section/${sectionId}/subject/${subjectPathEnc}`);
+    if (studentIdKey) {
+      navigate(`/staff/homework/section/${sectionId}/subject/${subjectPathEnc}`);
+    } else {
+      navigate(`/staff/homework/section/${sectionId}`);
+    }
   };
 
   // Fetch homework list
@@ -509,10 +519,9 @@ export default function TeacherHomework() {
   const routeInvalid =
     !sectionId ||
     !subjectIdKey ||
-    !studentIdKey ||
     !section ||
     (subjectsInSection.length > 0 && !subjectMeta) ||
-    !studentRecord;
+    (!!studentIdKey && !studentRecord);
 
   if (routeInvalid) {
     return (
@@ -526,7 +535,9 @@ export default function TeacherHomework() {
   }
 
   const headerSubtitle = subjectMeta?.subject_name || subjectIdKey || "Subject";
-  const studentLine = studentRecord?.student_name || studentIdKey;
+  const studentLine = studentIdKey
+    ? (studentRecord?.student_name || studentIdKey)
+    : sectionTitle;
 
   return (
     <div className="h-screen md:min-h-screen flex flex-col gap-3 px-4 pb-4 pt-2 md:pt-3">
@@ -611,7 +622,7 @@ export default function TeacherHomework() {
               />
             </div>
 
-            {/* Apply/Clear Filters Buttons */}
+            {/* Apply Filter */}
             <div className="col-span-1 flex gap-2">
               <button
                 onClick={handleApplyFilters}
@@ -620,6 +631,13 @@ export default function TeacherHomework() {
               >
                 Apply
               </button>
+            </div>
+
+            {/* Create Homework Button */}
+            <div className="col-span-1 flex">
+              <Button onClick={handleCreateHomework} className="w-full whitespace-nowrap">
+                + Create
+              </Button>
             </div>
           </div>
 

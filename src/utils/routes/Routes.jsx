@@ -107,7 +107,7 @@ export const routes = [
         path: "staff/homework/section/:sectionId/subject/:subjectId",
         element: (
           <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
-            <StaffHomeworkStudentPick />
+            <TeacherHomework />
           </RoleBasedRoute>
         ),
       },
