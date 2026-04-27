@@ -861,15 +861,13 @@ export default function StaffPickup() {
 
   const filteredStudents = useMemo(() => {
     const q = studentSearch.toLowerCase().trim();
-    if (!q || selectedStudent) return [];
-    return allStudents
-      .filter(
-        (s) =>
-          (s.student_name || "").toLowerCase().includes(q) ||
-          (s.student_roll_no || "").toLowerCase().includes(q)
-      )
-      .slice(0, 8);
-  }, [allStudents, studentSearch, selectedStudent]);
+    if (!q) return allStudents;
+    return allStudents.filter(
+      (s) =>
+        (s.student_name || "").toLowerCase().includes(q) ||
+        (s.student_roll_no || "").toLowerCase().includes(q)
+    );
+  }, [allStudents, studentSearch]);
 
   const todayFormatted = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
@@ -975,75 +973,30 @@ export default function StaffPickup() {
 
         {/* ── Tab: Confirm Pickup ────────────────────────────────────────── */}
         {activeTab === "confirm" && (
-          <div className="p-4">
-            {/* Student search */}
-            <div className="mb-4">
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Search Student
-              </label>
-              <div className="relative">
-                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={studentSearch}
-                  onChange={(e) => {
-                    setStudentSearch(e.target.value);
-                    setSelectedStudent(null);
-                  }}
-                  placeholder="Search by student name or ID…"
-                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-300 focus:border-violet-400 outline-none bg-gray-50"
-                />
-              </div>
-
-              {/* Dropdown results */}
-              {filteredStudents.length > 0 && (
-                <div className="mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 relative max-h-60 overflow-y-auto">
-                  {filteredStudents.map((s) => (
-                    <button
-                      key={s.student_id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedStudent(s);
-                        setStudentSearch(s.student_name || s.student_id);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-                        <User className="h-4 w-4 text-violet-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {s.student_name || s.student_roll_no || s.student_id}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {s.student_roll_no && <span>{s.student_roll_no}</span>}
-                          {s.student_roll_no && s.section_id && <span> · </span>}
-                          {s.section_id && <span>{sectionMap[s.section_id] || s.section_id}</span>}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Selected student panel */}
+          <div className="p-4 pb-16">
             {selectedStudent ? (
-              <div>
+              /* ── Student detail view ── */
+              <>
                 <div className="flex items-center gap-3 bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5 mb-4">
-                  <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-violet-200 flex items-center justify-center flex-shrink-0">
                     <User className="h-4 w-4 text-violet-600" />
                   </div>
-                  <p className="flex-1 text-sm font-semibold text-violet-900">
-                    {selectedStudent.student_name || selectedStudent.student_id}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-violet-900 truncate">
+                      {selectedStudent.student_name || selectedStudent.student_id}
+                    </p>
+                    {(selectedStudent.student_roll_no || selectedStudent.section_id) && (
+                      <p className="text-xs text-violet-400">
+                        {selectedStudent.student_roll_no && <span>{selectedStudent.student_roll_no}</span>}
+                        {selectedStudent.student_roll_no && selectedStudent.section_id && <span> · </span>}
+                        {selectedStudent.section_id && <span>{sectionMap[selectedStudent.section_id] || selectedStudent.section_id}</span>}
+                      </p>
+                    )}
+                  </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedStudent(null);
-                      setStudentSearch("");
-                    }}
-                    className="text-violet-400 hover:text-violet-600"
+                    onClick={() => setSelectedStudent(null)}
+                    className="text-violet-400 hover:text-violet-600 flex-shrink-0"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -1052,17 +1005,75 @@ export default function StaffPickup() {
                   student={selectedStudent}
                   onConfirm={setConfirmTarget}
                 />
-              </div>
+              </>
             ) : (
-              !studentSearch && (
-                <div className="text-center py-10 bg-gray-50 rounded-2xl">
-                  <Search className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-gray-600">Search for a student</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Type a name to see their authorized pickup persons and today's requests.
-                  </p>
+              /* ── Student list view ── */
+              <>
+                {/* Search */}
+                <div className="mb-3">
+                  <div className="relative">
+                    <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                      placeholder="Search by name or roll no…"
+                      className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-300 focus:border-violet-400 outline-none bg-gray-50"
+                    />
+                    {studentSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setStudentSearch("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              )
+
+                {/* Student list */}
+                {filteredStudents.length === 0 ? (
+                  <div className="text-center py-10 bg-gray-50 rounded-2xl">
+                    <User className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                    <p className="text-sm font-semibold text-gray-600">No students found</p>
+                    {studentSearch && (
+                      <p className="text-xs text-gray-400 mt-1">Try a different name or roll number.</p>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-400 px-1 mb-2">
+                      {filteredStudents.length} student{filteredStudents.length !== 1 ? "s" : ""}
+                    </p>
+                    <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-0.5 pb-50">
+                      {filteredStudents.map((s) => (
+                        <button
+                          key={s.student_id}
+                          type="button"
+                          onClick={() => setSelectedStudent(s)}
+                          className="w-full flex items-center gap-3 bg-white border border-gray-100 rounded-2xl px-4 py-3 text-left hover:border-violet-200 hover:shadow-sm transition-all"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                            <User className="h-5 w-5 text-violet-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">
+                              {s.student_name || s.student_roll_no || s.student_id}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {s.student_roll_no && <span>{s.student_roll_no}</span>}
+                              {s.student_roll_no && s.section_id && <span> · </span>}
+                              {s.section_id && <span>{sectionMap[s.section_id] || s.section_id}</span>}
+                            </p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
             )}
           </div>
         )}

@@ -10,6 +10,7 @@ import {
   AlertCircle,
   User,
   ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 import { useAuth } from "../../store/auth.store";
 import { Badge, Loader, Modal } from "../../ui-components";
@@ -329,7 +330,7 @@ function DeleteConfirmModal({ open, onClose, onConfirm, name, deleting }) {
 
 function PersonCard({ person, onEdit, onDelete }) {
   const initials = getInitials(person.name);
-  const isActive = person.is_active !== false;
+  const isActive = person?.isActive ?? false ;
   console.log("person",person)
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3">
@@ -504,6 +505,9 @@ export default function StudentPickup() {
   const [deletingPerson, setDeletingPerson] = useState(null);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
 
+  // Reactivate
+  const [reactivatingId, setReactivatingId] = useState(null);
+
   // Requests
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
@@ -601,6 +605,18 @@ export default function StudentPickup() {
     }
   }
 
+  async function handleReactivatePerson(person) {
+    setReactivatingId(person.id);
+    try {
+      await updateAuthorizedPerson(person.id, { is_active: true });
+      await loadPersons();
+    } catch (err) {
+      console.error("Reactivate failed:", err);
+    } finally {
+      setReactivatingId(null);
+    }
+  }
+
   async function handleSaveRequest(form) {
     setRequestFormError(null);
     setRequestSaving(true);
@@ -624,7 +640,8 @@ export default function StudentPickup() {
     }
   }
 
-  const activePersons = persons.filter((p) => p.is_active !== false);
+  const activePersons = persons.filter((p) => p.isActive !== false);
+  const inactivePersons = persons.filter((p) => p.isActive === false);
   const atCapacity = activePersons.length >= MAX_AUTHORIZED;
 
   const filteredRequests =
@@ -700,7 +717,7 @@ export default function StudentPickup() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm font-semibold text-gray-900">
-                  {persons.length === 0 ? "No persons added yet" : `${persons.length} person${persons.length !== 1 ? "s" : ""} listed`}
+                  {activePersons.length === 0 ? "No active persons" : `${activePersons.length} active person${activePersons.length !== 1 ? "s" : ""}`}
                 </p>
                 {atCapacity && (
                   <p className="text-xs text-red-500 mt-0.5">Maximum of {MAX_AUTHORIZED} reached</p>
@@ -746,19 +763,76 @@ export default function StudentPickup() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3 max-h-96 pr-0.5">
-                {persons.map((person) => (
-                  <PersonCard
-                    key={person.id}
-                    person={person}
-                    onEdit={(p) => {
-                      setEditingPerson(p);
-                      setPersonFormError(null);
-                      setShowPersonModal(true);
-                    }}
-                    onDelete={setDeletingPerson}
-                  />
-                ))}
+              <div className="space-y-4">
+                {/* Active persons */}
+                {activePersons.length > 0 && (
+                  <div className="space-y-3">
+                    {activePersons.map((person) => (
+                      <PersonCard
+                        key={person.id}
+                        person={person}
+                        onEdit={(p) => {
+                          setEditingPerson(p);
+                          setPersonFormError(null);
+                          setShowPersonModal(true);
+                        }}
+                        onDelete={setDeletingPerson}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Inactive persons */}
+                {inactivePersons.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
+                      Inactive
+                    </p>
+                    <div className="space-y-2">
+                      {inactivePersons.map((person) => {
+                        const initials = getInitials(person.name);
+                        const busy = reactivatingId === person.id;
+                        return (
+                          <div
+                            key={person.id}
+                            className="bg-gray-50 rounded-2xl border border-gray-100 p-4 flex items-center gap-3 opacity-60"
+                          >
+                            {person.photo_url ? (
+                              <img
+                                src={person.photo_url}
+                                alt={person.name}
+                                className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-gray-200 grayscale"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <span className="text-sm font-bold text-gray-400">{initials}</span>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-500">{person.name}</p>
+                              <p className="text-xs text-gray-400">{person.relationship}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleReactivatePerson(person)}
+                              disabled={busy || atCapacity}
+                              title={atCapacity ? "Remove an active person first" : "Reactivate"}
+                              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" />
+                              {busy ? "…" : "Reactivate"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {atCapacity && (
+                      <p className="text-xs text-gray-400 mt-2 px-1">
+                        Remove an active person to reactivate someone.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
