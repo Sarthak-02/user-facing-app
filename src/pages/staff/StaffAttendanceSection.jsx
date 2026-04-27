@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { NavLink, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Pencil } from "lucide-react";
 import AttendanceSummary from "../../components/attendance/AttendanceSummary";
 import BulkActionsMenu from "../../components/attendance/BulkActionsMenu";
 import ConfirmationModal from "../../components/attendance/ConfirmationModal";
@@ -9,7 +9,7 @@ import MobileListing from "../../components/attendance/MobileListing";
 import { Button, Shimmer } from "../../ui-components";
 import Loader from "../../ui-components/Loader";
 import { getFormattedDate, isToday, toLocalISOString } from "../../utils/common-functions";
-import { submitAttendance, getAttendanceDetails } from "../../api/attendance.api";
+import { submitAttendance, editAttendance, getAttendanceDetails } from "../../api/attendance.api";
 import { useAuth } from "../../store/auth.store";
 import { useLoader } from "../../store/loader.store";
 import { useTeacherSectionRows } from "../../hooks/useTeacherSectionRows";
@@ -52,6 +52,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [noAttendanceFound, setNoAttendanceFound] = useState(false);
   const [submittedAttendanceData, setSubmittedAttendanceData] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
 
   const sectionTitle = useMemo(() => {
     const row = sectionRows.find((r) => String(r.sectionId) === String(selectedClass));
@@ -84,6 +85,10 @@ export default function StaffAttendanceSection({ readOnly = false }) {
   const todayInputMax = formatDateInputValue(new Date());
 
   const fetchDateKey = useMemo(() => getFormattedDate(selectedDate), [selectedDate]);
+
+  useEffect(() => {
+    setIsEditing(false);
+  }, [selectedClass, fetchDateKey]);
 
   useEffect(() => {
     if (!selectedClass || !fetchDateKey) return;
@@ -158,8 +163,8 @@ export default function StaffAttendanceSection({ readOnly = false }) {
 
   const editMode = useMemo(() => {
     if (readOnly) return false;
-    return isToday(selectedDate) && submittedAttendanceData?.is_attendance_taken === false;
-  }, [readOnly, submittedAttendanceData, selectedDate]);
+    return isToday(selectedDate) && (submittedAttendanceData?.is_attendance_taken === false || isEditing);
+  }, [readOnly, submittedAttendanceData, selectedDate, isEditing]);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
@@ -174,18 +179,24 @@ export default function StaffAttendanceSection({ readOnly = false }) {
 
   async function handleSubmit() {
     try {
-      const payload = {
-        section_id: selectedClass,
-        teacher_id: userId,
-        date: toLocalISOString(selectedDate),
-        period: PERIOD,
-        records: Object.entries(attendance).map(([key, value]) => ({
-          student_id: key,
-          status: value,
-        })),
-      };
+      const records = Object.entries(attendance).map(([key, value]) => ({
+        student_id: key,
+        status: value,
+      }));
 
-      const response = await submitAttendance(payload);
+      const response = isEditing
+        ? await editAttendance({
+            session_id: submittedAttendanceData.attendanceSessionId,
+            teacher_id: userId,
+            records,
+          })
+        : await submitAttendance({
+            section_id: selectedClass,
+            teacher_id: userId,
+            date: toLocalISOString(selectedDate),
+            period: PERIOD,
+            records,
+          });
 
       if (response.success) {
         const params = {
@@ -233,6 +244,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
       }
 
       setShowConfirmation(false);
+      setIsEditing(false);
     } catch (error) {
       console.error("Error in handleSubmit:", error);
       setShowConfirmation(false);
@@ -417,6 +429,18 @@ export default function StaffAttendanceSection({ readOnly = false }) {
           <>
             <div className={editMode ? "hidden" : ""}>
               <AttendanceSummary total={students.length} absent={absentCount} present={presentCount} />
+              {!readOnly && submittedAttendanceData?.is_attendance_taken && isToday(selectedDate) && (
+                <div className="mt-3 flex items-center justify-between rounded-lg border border-success-200 bg-success-50 px-4 py-2.5 dark:border-success-800 dark:bg-success-950">
+                  <div className="flex items-center gap-2 text-sm font-medium text-success-700 dark:text-success-400">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    Attendance submitted
+                  </div>
+                  <Button variant="secondary" className="h-8 gap-1.5 px-3 text-xs" onClick={() => setIsEditing(true)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="hidden min-h-0 flex-1 overflow-hidden md:block">

@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Card, Button, DateRange } from "../../ui-components";
+import { Card, Button } from "../../ui-components";
 import DesktopListing from "../../components/staff-homework/DesktopListing";
 import MobileListing from "../../components/staff-homework/MobileListing";
 import HomeworkFormModal from "../../components/staff-homework/HomeworkFormModal";
-import Dropdown from "../../ui-components/Dropdown";
 import { createHomework, getHomeworkDetail, getTeacherHomeworkAll } from "../../api/homework.api";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
@@ -66,6 +65,12 @@ function homeworkAppliesToStudent(homework, studentId, sectionId, sectionRecord)
   return appliesSectionOrClass;
 }
 
+const STATUS_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "PUBLISHED", label: "Published" },
+];
+
 export default function TeacherHomework() {
   const { auth } = useAuth();
   const { sectionId, subjectId: subjectIdParam, studentId: studentIdParam } = useParams();
@@ -74,7 +79,6 @@ export default function TeacherHomework() {
 
   const subjectIdKey = subjectIdParam || "";
   const studentIdKey = studentIdParam || "";
-  const [statusFilter] = useState("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState(null);
 
@@ -83,19 +87,7 @@ export default function TeacherHomework() {
   const [homeworkToPublish, setHomeworkToPublish] = useState(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  // Mobile filter states
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  // Temporary filter states (for user selection before apply)
-  const [tempStatusFilterDropdown, setTempStatusFilterDropdown] = useState(null);
-  const [tempDateRangeStart, setTempDateRangeStart] = useState("");
-  const [tempDateRangeEnd, setTempDateRangeEnd] = useState("");
-  
-  // Active filter states (actually applied filters)
-  const [statusFilterDropdown, setStatusFilterDropdown] = useState(null);
-  const [dateRangeStart, setDateRangeStart] = useState("");
-  const [dateRangeEnd, setDateRangeEnd] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
 
   // Loading and error states
@@ -140,12 +132,6 @@ export default function TeacherHomework() {
     return cls ? `${cls.class_name} · ${section.section_name}` : section.section_name;
   }, [section, permissions.classes]);
 
-  const statusOptions = [
-    { value: "", label: "All Status" },
-    { value: "DRAFT", label: "Draft" },
-    { value: "PUBLISHED", label: "Published" },
-  ];
-
   const sectionSubjectHomework = useMemo(() => {
     if (!sectionId || !subjectIdKey || !section) return [];
     return homeworkList.filter(
@@ -162,55 +148,17 @@ export default function TeacherHomework() {
     );
   }, [sectionSubjectHomework, studentIdKey, sectionId, section]);
 
-  // Filter homework based on status and mobile filters
   const filteredHomework = useMemo(() => {
     let filtered = [...scopedHomework];
 
-    // Status filter
-    if (statusFilter !== "ALL") {
-      filtered = filtered.filter((hw) => {
-        const now = new Date();
-        const due = new Date(hw.dueDate);
-
-        if (statusFilter === "COMPLETED") {
-          return hw.status === "COMPLETED";
-        } else if (statusFilter === "OVERDUE") {
-          return due < now && hw.status !== "COMPLETED" && hw.status !== "DRAFT";
-        } else if (statusFilter === "ACTIVE") {
-          return (hw.status === "PUBLISHED" || hw.status === "ACTIVE") && due >= now;
-        }
-        return true;
-      });
+    if (statusFilter) {
+      filtered = filtered.filter((hw) => hw.status === statusFilter);
     }
 
-    // Search query filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((hw) =>
-        (hw.title || "").toLowerCase().includes(query) ||
-        (hw.description || "").toLowerCase().includes(query) ||
-        (hw.subject || "").toLowerCase().includes(query)
-      );
-    }
-
-    // Status filter
-    if (statusFilterDropdown?.value) {
-      filtered = filtered.filter((hw) => hw.status === statusFilterDropdown.value);
-    }
-
-    // Date range filter
-    if (dateRangeStart) {
-      filtered = filtered.filter((hw) => new Date(hw.dueDate) >= new Date(dateRangeStart));
-    }
-    if (dateRangeEnd) {
-      filtered = filtered.filter((hw) => new Date(hw.dueDate) <= new Date(dateRangeEnd));
-    }
-
-    // Sort by due date (earliest first)
     filtered.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
     return filtered;
-  }, [scopedHomework, statusFilter, searchQuery, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
+  }, [scopedHomework, statusFilter]);
 
   // Calculate summary statistics
   const _summary = useMemo(() => {
@@ -431,27 +379,6 @@ export default function TeacherHomework() {
     setHomeworkToPublish(null);
   };
 
-  const handleApplyFilters = () => {
-    // Copy temporary filter states to active filter states
-    setStatusFilterDropdown(tempStatusFilterDropdown);
-    setDateRangeStart(tempDateRangeStart);
-    setDateRangeEnd(tempDateRangeEnd);
-    setIsFilterModalOpen(false);
-  };
-
-  const handleClearFilters = () => {
-    // Clear both temporary and active filters
-    setSearchQuery("");
-    setTempStatusFilterDropdown(null);
-    setTempDateRangeStart("");
-    setTempDateRangeEnd("");
-    setStatusFilterDropdown(null);
-    setDateRangeStart("");
-    setDateRangeEnd("");
-  };
-
-  const hasActiveFilters = searchQuery || statusFilterDropdown || dateRangeStart || dateRangeEnd;
-
   const subjectPathEnc = encodeURIComponent(subjectIdKey);
 
   const goBack = () => {
@@ -474,17 +401,6 @@ export default function TeacherHomework() {
         teacher_id: auth.userId,
       };
 
-      // Add optional filters
-      if (statusFilterDropdown?.value) {
-        params.status = statusFilterDropdown.value;
-      }
-      if (dateRangeStart) {
-        params.start_date = dateRangeStart;
-      }
-      if (dateRangeEnd) {
-        params.end_date = dateRangeEnd;
-      }
-
       const data = await getTeacherHomeworkAll(params);
       // Ensure data is an array - API might return { data: [] } or just []
       const homeworkArray = Array.isArray(data) ? data : (data?.data || []);
@@ -499,20 +415,11 @@ export default function TeacherHomework() {
     }
   };
 
-  // Fetch homework on component mount and when filters change
   useEffect(() => {
     fetchHomework();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.userId, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
+  }, [auth.userId]);
 
-  // Sync temporary filters with active filters when modal opens
-  useEffect(() => {
-    if (isFilterModalOpen) {
-      setTempStatusFilterDropdown(statusFilterDropdown);
-      setTempDateRangeStart(dateRangeStart);
-      setTempDateRangeEnd(dateRangeEnd);
-    }
-  }, [isFilterModalOpen, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
 
   const listFromPath = location.pathname;
 
@@ -559,159 +466,54 @@ export default function TeacherHomework() {
       </div>
 
       {/* Desktop Header with Filters */}
-      <Card className="hidden md:block">
-        <div className="space-y-4">
-          {/* Search and Filters Row */}
-          <div className="grid grid-cols-12 gap-4">
-            {/* Search Bar */}
-            <div className="col-span-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search homework..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            {/* Status Filter */}
-            <div className="col-span-2">
-              <Dropdown
-                selected={tempStatusFilterDropdown}
-                onChange={setTempStatusFilterDropdown}
-                options={statusOptions}
-                placeholder="Status"
-              />
-            </div>
-
-            {/* Date Range Start */}
-            <div className="col-span-2">
-              <input
-                type="date"
-                value={tempDateRangeStart}
-                onChange={(e) => setTempDateRangeStart(e.target.value)}
-                placeholder="From Date"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Date Range End */}
-            <div className="col-span-2">
-              <input
-                type="date"
-                value={tempDateRangeEnd}
-                onChange={(e) => setTempDateRangeEnd(e.target.value)}
-                placeholder="To Date"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Apply Filter */}
-            <div className="col-span-1 flex gap-2">
+      <Card className="hidden md:block !py-3 !px-4">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+            {STATUS_OPTIONS.map((opt) => (
               <button
-                onClick={handleApplyFilters}
-                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                title="Apply Filters"
+                key={opt.value}
+                onClick={() => setStatusFilter(opt.value)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                  statusFilter === opt.value
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
               >
-                Apply
+                {opt.label}
               </button>
-            </div>
-
-            {/* Create Homework Button */}
-            <div className="col-span-1 flex">
-              <Button onClick={handleCreateHomework} className="w-full whitespace-nowrap">
-                + Create
-              </Button>
-            </div>
+            ))}
           </div>
-
-          {/* Clear Filters Row */}
-          {hasActiveFilters && (
-            <div className="flex justify-end">
-              <button
-                onClick={handleClearFilters}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-              >
-                Clear All Filters
-              </button>
-            </div>
-          )}
-
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-sm text-gray-400 whitespace-nowrap">
+              {filteredHomework.length} {filteredHomework.length === 1 ? "item" : "items"}
+            </span>
+            <Button onClick={handleCreateHomework}>+ Create</Button>
+          </div>
         </div>
       </Card>
 
       {/* Mobile Header */}
       <div className="md:hidden">
-        <Card className="p-4">
+        <Card className="!p-3">
           <div className="flex items-center gap-2">
-            {/* Search Bar */}
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Search homework..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+            <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg flex-1">
+              {STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setStatusFilter(opt.value)}
+                  className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    statusFilter === opt.value
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
-
-            {/* Filter Button */}
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className={`relative p-2 rounded-lg border transition-colors ${hasActiveFilters
-                ? "bg-blue-500 text-white border-blue-500"
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                }`}
-              aria-label="Open filters"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                />
-              </svg>
-              {hasActiveFilters && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-              )}
-            </button>
+            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+              {filteredHomework.length}
+            </span>
           </div>
         </Card>
       </div>
@@ -819,77 +621,6 @@ export default function TeacherHomework() {
         defaultStudentId={studentIdKey}
       />
 
-      {/* Filter Modal (Mobile Only) */}
-      {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end md:hidden">
-          <div className="bg-white w-full rounded-t-2xl max-h-[90vh] flex flex-col animate-slide-up shadow-2xl">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Filters</h2>
-              <button
-                onClick={() => setIsFilterModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Close filters"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-gray-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* Status Filter */}
-              <div>
-                <Dropdown
-                  label="Status"
-                  selected={tempStatusFilterDropdown}
-                  onChange={setTempStatusFilterDropdown}
-                  options={statusOptions}
-                  placeholder="Select status"
-                 
-                />
-              </div>
-
-              <DateRange
-                label="Due Date Range"
-                startDate={tempDateRangeStart}
-                endDate={tempDateRangeEnd}
-                onStartDateChange={setTempDateRangeStart}
-                onEndDateChange={setTempDateRangeEnd}
-              />
-
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-gray-200 flex gap-2">
-              <button
-                onClick={handleClearFilters}
-                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-              >
-                Clear All
-              </button>
-              <button
-                onClick={handleApplyFilters}
-                className="flex-1 px-4 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Publish Confirmation Modal */}
       {isPublishModalOpen && homeworkToPublish && (

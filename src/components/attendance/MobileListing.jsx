@@ -1,12 +1,8 @@
 import clsx from "clsx";
-import { Avatar, Badge, Card, Button } from "../../ui-components";
+import { UserCheck, UserX } from "lucide-react";
+import { Avatar, Badge, Card } from "../../ui-components";
 
-export default function MobileListing({
-  STUDENTS,
-  attendance,
-  markAttendance,
-  editMode,
-}) {
+export default function MobileListing({ STUDENTS, attendance, markAttendance, editMode }) {
   return (
     <div
       className={clsx(
@@ -22,43 +18,44 @@ export default function MobileListing({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar src={student.photoUrl} name={student.name} />
-
                 <div>
                   <div className="font-medium">{student.name}</div>
-                  <div className="text-sm text-gray-500">
-                    Roll No: {student.roll_number}
-                  </div>
+                  <div className="text-sm text-gray-500">Roll No: {student.roll_number}</div>
                 </div>
               </div>
-
               {status ? (
-                <Badge variant={status === "PRESENT" ? "success" : "error"}>
-                  {status}
-                </Badge>
+                <Badge variant={status === "PRESENT" ? "success" : "error"}>{status}</Badge>
               ) : (
                 <Badge variant="info">Not Marked</Badge>
               )}
             </div>
+
             {editMode && (
-              <div className="mt-3 flex gap-2">
-
-                <Button
-                  variant={status === "ABSENT" ? "danger" : "secondary"}
-                  className="flex-1"
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
                   onClick={() => markAttendance(student.student_id, "ABSENT")}
+                  className={clsx(
+                    "flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-1",
+                    status === "ABSENT"
+                      ? "bg-error-600 text-white focus:ring-error-600"
+                      : "border border-border bg-surface text-gray-700 hover:border-error-300 hover:bg-error-50 hover:text-error-700 focus:ring-error-600"
+                  )}
                 >
-                  {status === "ABSENT" && "✓ "}Absent
-                </Button>
-
-                <Button
-                  variant={status === "PRESENT" ? "success" : "secondary"}
-                  className="flex-1"
+                  <UserX className="h-4 w-4" />
+                  Absent
+                </button>
+                <button
                   onClick={() => markAttendance(student.student_id, "PRESENT")}
+                  className={clsx(
+                    "flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-1",
+                    status === "PRESENT"
+                      ? "bg-success-600 text-white focus:ring-success-600"
+                      : "border border-border bg-surface text-gray-700 hover:border-success-300 hover:bg-success-50 hover:text-success-700 focus:ring-success-600"
+                  )}
                 >
-                  {status === "PRESENT" && "✓ "}Present
-                </Button>
-
-
+                  <UserCheck className="h-4 w-4" />
+                  Present
+                </button>
               </div>
             )}
           </Card>

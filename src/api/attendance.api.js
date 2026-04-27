@@ -30,6 +30,18 @@ export async function getStudentsBySection(section_id){
   }
 }
 
+export async function editAttendance(payload) {
+  try {
+    useLoader.getState().startLoading("submitAttendance", "spinner");
+    const response = await api.patch("attendance/edit", payload);
+    useLoader.getState().stopLoading("submitAttendance");
+    return response.data;
+  } catch (err) {
+    console.error("Error editing attendance:", err.response?.data);
+    throw err.response?.data || err;
+  }
+}
+
 export async function submitAttendance(payload){
   try{
     useLoader.getState().startLoading("submitAttendance", "spinner");
