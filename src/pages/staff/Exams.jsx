@@ -555,6 +555,7 @@ export default function Exams() {
             onEdit={handleEditExam}
             onPublish={handlePublishExam}
             onView={handleViewExam}
+            className="pb-32"
           />
         </div>
       )}

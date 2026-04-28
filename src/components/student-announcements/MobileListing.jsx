@@ -14,7 +14,7 @@ function senderInitial(item) {
   return name.charAt(0).toUpperCase();
 }
 
-export default function MobileListing({ announcements }) {
+export default function MobileListing({ announcements, className }) {
   const navigate = useNavigate();
 
   const handleCardClick = (item) => {
@@ -39,7 +39,7 @@ export default function MobileListing({ announcements }) {
   }
 
   return (
-    <div className="md:hidden h-full overflow-y-auto space-y-3 pb-28">
+    <div className={`md:hidden h-full overflow-y-auto space-y-3${className ? ` ${className}` : ""}`}>
       {announcements.map((item) => {
         const attachCount = attachmentCount(item);
         const dateStr = formatDate(item.submittedAt || item.submitted_at || item.createdAt);

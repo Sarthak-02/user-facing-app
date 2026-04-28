@@ -458,6 +458,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                 attendance={attendance}
                 markAttendance={markAttendance}
                 editMode={editMode}
+                className={editMode ? "pb-[9.5rem]" : "pb-20"}
               />
             </div>
 

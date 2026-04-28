@@ -1,6 +1,6 @@
 import { Card } from "../../ui-components";
 
-export default function MobileListing({ broadcastList, onSelectBroadcast }) {
+export default function MobileListing({ broadcastList, onSelectBroadcast, className }) {
   const getStatusBadge = (status) => {
     const statusConfig = {
       DRAFT: { bg: "bg-gray-100", text: "text-gray-700", label: "Draft" },
@@ -87,7 +87,7 @@ export default function MobileListing({ broadcastList, onSelectBroadcast }) {
   }
 
   return (
-    <div className="space-y-4 pb-30 h-full overflow-y-auto">
+    <div className={`space-y-4 h-full overflow-y-auto${className ? ` ${className}` : ""}`}>
       {broadcastList.map((broadcast) => (
         <div
           key={broadcast.id || broadcast.broadcast_id}

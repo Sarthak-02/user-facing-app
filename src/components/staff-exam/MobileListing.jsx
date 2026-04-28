@@ -1,4 +1,4 @@
-export default function MobileListing({ examList, onEdit, onPublish, onView }) {
+export default function MobileListing({ examList, onEdit, onPublish, onView, className }) {
   const getStatusBadge = (status) => {
     switch (status) {
       case "DRAFT":
@@ -67,7 +67,7 @@ export default function MobileListing({ examList, onEdit, onPublish, onView }) {
   }
 
   return (
-    <div className="space-y-3 pb-32">
+    <div className={`space-y-3${className ? ` ${className}` : ""}`}>
       {examList.map((exam) => (
         <div
           key={exam.id}

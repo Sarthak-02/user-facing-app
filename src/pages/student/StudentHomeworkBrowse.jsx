@@ -204,7 +204,7 @@ export default function StudentHomeworkBrowse() {
       </div>
 
       <div className="md:hidden flex-1 overflow-hidden">
-        <MobileListing homeworkList={filteredHomework} listFromPath={listFromPath} />
+        <MobileListing homeworkList={filteredHomework} listFromPath={listFromPath} className="pb-20" />
       </div>
 
     </div>

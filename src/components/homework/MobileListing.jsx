@@ -32,7 +32,7 @@ function getStatusConfig(dueDate) {
   return { badge: "info", label: "Upcoming", border: "border-l-blue-400", bg: "bg-blue-50", icon: "text-blue-500" };
 }
 
-export default function MobileListing({ homeworkList, listFromPath }) {
+export default function MobileListing({ homeworkList, listFromPath, className }) {
   const navigate = useNavigate();
 
   const handleCardClick = (homeworkId) => {
@@ -57,7 +57,7 @@ export default function MobileListing({ homeworkList, listFromPath }) {
   }
 
   return (
-    <div className="h-full space-y-3 overflow-y-auto pb-20 md:hidden">
+    <div className={`h-full space-y-3 overflow-y-auto md:hidden${className ? ` ${className}` : ""}`}>
       {homeworkList.map((homework) => {
         const due = dueValue(homework);
         const metaLine = classSectionLine(homework);

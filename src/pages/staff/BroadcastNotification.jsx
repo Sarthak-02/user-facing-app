@@ -453,6 +453,7 @@ export default function BroadcastPage() {
           <MobileListing
             broadcastList={filteredBroadcasts}
             onSelectBroadcast={handleSelectBroadcast}
+            className="pb-30"
           />
         </div>
       )}

@@ -2,14 +2,9 @@ import clsx from "clsx";
 import { UserCheck, UserX } from "lucide-react";
 import { Avatar, Badge, Card } from "../../ui-components";
 
-export default function MobileListing({ STUDENTS, attendance, markAttendance, editMode }) {
+export default function MobileListing({ STUDENTS, attendance, markAttendance, editMode, className }) {
   return (
-    <div
-      className={clsx(
-        "h-full space-y-3 overflow-y-auto",
-        editMode ? "pb-[9.5rem]" : "pb-20"
-      )}
-    >
+    <div className={clsx("h-full space-y-3 overflow-y-auto", className)}>
       {STUDENTS.map((student) => {
         const status = attendance[student.student_id];
 

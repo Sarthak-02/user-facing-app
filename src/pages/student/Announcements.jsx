@@ -168,7 +168,7 @@ export default function Announcements() {
       </div>
 
       <div className="md:hidden flex-1 overflow-hidden">
-        <MobileListing announcements={filtered} />
+        <MobileListing announcements={filtered} className="pb-28" />
       </div>
     </div>
   );

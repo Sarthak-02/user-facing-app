@@ -56,7 +56,7 @@ function AttachmentIndicator({ count }) {
   );
 }
 
-export default function MobileListing({ homeworkList, onEdit, onPublish, listFromPath }) {
+export default function MobileListing({ homeworkList, onEdit, onPublish, listFromPath, className }) {
   const navigate = useNavigate();
 
   const handleCardClick = (homeworkId) => {
@@ -76,7 +76,7 @@ export default function MobileListing({ homeworkList, onEdit, onPublish, listFro
   };
 
   return (
-    <div className="md:hidden h-full overflow-y-auto space-y-3 pb-28">
+    <div className={`md:hidden h-full overflow-y-auto space-y-3${className ? ` ${className}` : ""}`}>
       {homeworkList.length === 0 ? (
         <Card>
           <div className="text-center py-8 text-gray-500">

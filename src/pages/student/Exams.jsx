@@ -271,7 +271,7 @@ export default function StudentExams() {
 
       {/* Mobile Listing */}
       <div className="md:hidden flex-1 overflow-hidden">
-        <MobileListing examList={filteredExams} />
+        <MobileListing examList={filteredExams} className="pb-20" />
       </div>
 
       {/* Filter Modal (Mobile, Exam Type only) */}

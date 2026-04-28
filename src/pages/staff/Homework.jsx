@@ -581,6 +581,7 @@ export default function TeacherHomework() {
             onEdit={handleEditHomework}
             onPublish={handlePublishHomework}
             listFromPath={listFromPath}
+            className="pb-28"
           />
         </div>
       )}
