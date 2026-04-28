@@ -1,14 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Button, Dropdown } from "../../ui-components";
-import TargetSelector from "../../components/TargetSelector";
 import { usePermissions } from "../../store/permissions.store";
 import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
 import { generateHomeworkAttachmentSignedUrl } from "../../api/homework.api";
 
 const TARGET_OPTIONS = [
-  { value: "SECTION", label: "Section"},
-  { value: "STUDENT", label: "Student"},
+  { value: "SECTION", label: "Section" },
+  { value: "STUDENT", label: "Student" },
 ];
 
 export default function HomeworkFormModal({
@@ -22,230 +21,167 @@ export default function HomeworkFormModal({
   defaultSubjectKey,
   defaultStudentId,
 }) {
-
-  // Get permissions data from store
-  const {
-    permissions
-  } = usePermissions();
+  const { permissions } = usePermissions();
+  const fileInputRef = useRef(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   const isEditing = !!homework;
-
-  // Track previous homework ID to avoid unnecessary re-initializations
   const prevHomeworkIdRef = useRef(null);
 
-  // Form state
   const [formData, setFormData] = useState({
     title: "",
     subject: "",
     description: "",
     dueDate: "",
-    targetType: { value: "SECTION", label: "Section" }, // SECTION or STUDENT
+    targetType: { value: "SECTION", label: "Section" },
     sectionId: null,
     studentId: [],
     classId: null,
     attachments: [],
-    status: "DRAFT", // DRAFT or PUBLISHED
+    status: "DRAFT",
   });
 
-  console.log("homework", homework);
-  console.log("formData", formData);
-  // Error state for attachments
   const [attachmentError, setAttachmentError] = useState("");
-  
-  // Target selector modal state
-  const [showTargetModal, setShowTargetModal] = useState(false);
 
-  // Get subjects based on selected section from permissions store
   const subjects = useMemo(() => {
     if (!formData.sectionId?.value) return [];
-    return permissions?.teacher_subjects.map(subject => ({
+    return permissions?.teacher_subjects.map((subject) => ({
       label: subject,
-      value: subject
+      value: subject,
     }));
   }, [permissions, formData.sectionId]);
-  // Initialize form when homework changes
 
   const targetSchema = useMemo(() => {
-    let data = {
-      "class": {
+    const data = {
+      class: {
         selected: formData.classId,
         options: permissions.classes.map(({ class_id, class_name }) => ({
           value: class_id,
-          label: class_name
+          label: class_name,
         })),
-        onChange: (option) => {
-          setFormData((prev) => ({
-            ...prev,
-            classId: option,
-            sectionId: null,
-            studentId: [],
-          }));
-        },
+        onChange: (option) =>
+          setFormData((prev) => ({ ...prev, classId: option, sectionId: null, studentId: [] })),
       },
-      "section": {
+      section: {
         selected: formData.sectionId,
         options: (formData.classId?.value
           ? permissions.sections.filter((s) => s.class_id === formData.classId.value)
           : []
-        ).map(({ section_id, section_name }) => ({
-          value: section_id,
-          label: section_name
-        })),
-        onChange: (option) => {
-          setFormData((prev) => ({
-            ...prev,
-            sectionId: option,
-          }));
-        },
-      }
-    }
-    if (formData.targetType?.value === "SECTION") {
-      return updateSchema(SECTION_TARGET_SCHEMA, data);
-    } else if (formData.targetType?.value === "STUDENT") {
-      data['student'] = {
+        ).map(({ section_id, section_name }) => ({ value: section_id, label: section_name })),
+        onChange: (option) =>
+          setFormData((prev) => ({ ...prev, sectionId: option })),
+      },
+    };
+
+    if (formData.targetType?.value === "SECTION") return updateSchema(SECTION_TARGET_SCHEMA, data);
+    if (formData.targetType?.value === "STUDENT") {
+      data.student = {
         selected: formData.studentId,
-        options: permissions.students.map(({ student_id, student_name, section_id }) => (
-          {
+        options: permissions.students
+          .map(({ student_id, student_name, section_id }) => ({
             value: student_id,
             label: student_name,
-            section_id: section_id,
-          })).filter(({ section_id }) => section_id === formData.sectionId?.value),
-        onChange: (options) => {
-          setFormData((prev) => ({
-            ...prev,
-            studentId: options,
-          }));
-        },
-      }
+            section_id,
+          }))
+          .filter(({ section_id }) => section_id === formData.sectionId?.value),
+        onChange: (options) =>
+          setFormData((prev) => ({ ...prev, studentId: options })),
+      };
       return updateSchema(STUDENT_TARGET_SCHEMA, data);
     }
+    return [];
   }, [formData.targetType, formData.sectionId, formData.classId, formData.studentId, permissions.classes, permissions.sections, permissions.students]);
 
-
-  // Initialize form data from homework prop
-  // This effect is intentionally calling setState to sync form with external data (homework prop)
   useEffect(() => {
-    // Only update form data when modal opens or homework changes
     if (!isOpen) return;
 
-    // Check if this is a new homework or if homework ID has changed
     const currentHomeworkId = homework?.id || homework?.homework_id || null;
     const hasHomeworkChanged = prevHomeworkIdRef.current !== currentHomeworkId;
-    
-    if (!hasHomeworkChanged && prevHomeworkIdRef.current !== null) {
-      return; // Skip if homework hasn't changed and we've already initialized
-    }
-
+    if (!hasHomeworkChanged && prevHomeworkIdRef.current !== null) return;
     prevHomeworkIdRef.current = currentHomeworkId;
 
     if (homework) {
-      console.log("Loading homework for editing:", homework);
-      // Parse homework data for editing
       let targetType = { value: "SECTION", label: "Section" };
       let sectionId = null;
       let studentId = [];
       let classId = null;
 
-      // Extract target information from homework.targets array
       if (homework.targets && homework.targets.length > 0) {
         const firstTarget = homework.targets[0];
+        const tt = firstTarget.target_type || firstTarget.targetType;
 
-        if (firstTarget.target_type === "SECTION" || firstTarget.targetType === "SECTION") {
+        if (tt === "SECTION") {
           targetType = { value: "SECTION", label: "Section" };
           const targetId = firstTarget.target_id || firstTarget.targetId || firstTarget.section_id || "";
-          const section = permissions.sections.find(s => s.section_id === targetId);
+          const section = permissions.sections.find((s) => s.section_id === targetId);
           if (section) {
             sectionId = { value: section.section_id, label: section.section_name };
             const classObj = permissions.classes.find((c) => c.class_id === section.class_id);
-            if (classObj) {
-              classId = { value: classObj.class_id, label: classObj.class_name };
-            }
+            if (classObj) classId = { value: classObj.class_id, label: classObj.class_name };
           }
-        } else if (firstTarget.target_type === "STUDENT" || firstTarget.targetType === "STUDENT") {
+        } else if (tt === "STUDENT") {
           targetType = { value: "STUDENT", label: "Student" };
-          // Handle multiple students
-          const studentIds = homework.targets.map(t => t.target_id || t.targetId || t.student_id).filter(Boolean);
-          studentId = studentIds.map(sid => {
-            const student = permissions.students.find(s => s.student_id === sid);
+          const studentIds = homework.targets.map((t) => t.target_id || t.targetId || t.student_id).filter(Boolean);
+          studentId = studentIds.map((sid) => {
+            const student = permissions.students.find((s) => s.student_id === sid);
             return student ? { value: student.student_id, label: student.student_name } : null;
           }).filter(Boolean);
-          // Get section from first student's data if available
           const sectionIdValue = firstTarget.section_id || "";
-          const section = permissions.sections.find(s => s.section_id === sectionIdValue);
+          const section = permissions.sections.find((s) => s.section_id === sectionIdValue);
           if (section) {
             sectionId = { value: section.section_id, label: section.section_name };
             const classObj = permissions.classes.find((c) => c.class_id === section.class_id);
-            if (classObj) {
-              classId = { value: classObj.class_id, label: classObj.class_name };
-            }
+            if (classObj) classId = { value: classObj.class_id, label: classObj.class_name };
           }
-        } else if (firstTarget.target_type === "CLASS" || firstTarget.targetType === "CLASS") {
+        } else if (tt === "CLASS") {
           targetType = { value: "CLASS", label: "Class" };
           const targetId = firstTarget.target_id || firstTarget.targetId || firstTarget.class_id || "";
-          const classObj = permissions.classes.find(c => c.class_id === targetId);
-          if (classObj) {
-            classId = { value: classObj.class_id, label: classObj.class_name };
-          }
+          const classObj = permissions.classes.find((c) => c.class_id === targetId);
+          if (classObj) classId = { value: classObj.class_id, label: classObj.class_name };
         }
       }
 
-      // Format due date for input field (YYYY-MM-DD)
       let formattedDueDate = "";
       if (homework.dueDate || homework.due_date) {
-        const date = new Date(homework.dueDate || homework.due_date);
-        formattedDueDate = date.toISOString().split('T')[0];
+        formattedDueDate = new Date(homework.dueDate || homework.due_date).toISOString().split("T")[0];
       }
 
-      // Convert subject to option object
-      let subjectOption = null;
-      if (homework.subject) {
-        subjectOption = { value: homework.subject, label: homework.subject };
-      }
-      let attachments = [];
-      if(homework?.attachments && homework.attachments.length > 0) {
-        console.log("Raw attachments from API:", homework.attachments);
-        attachments = homework.attachments.map(attachment => ({
-          ...attachment,
-          // Handle multiple possible field names from API
-          name: attachment.name || attachment.fileName || attachment.filename || "Unnamed file",
-          type: attachment.type || attachment.fileType || attachment.mimeType || attachment.mime_type || "",
-          size: attachment.size || attachment.fileSize || attachment.file_size || 0,
-          fileUrl: attachment.fileUrl || attachment.url || attachment.file_url || "",
-        }));
-        console.log("Mapped attachments for form:", attachments);
-      }
+      const subjectOption = homework.subject
+        ? { value: homework.subject, label: homework.subject }
+        : null;
 
-      // Form initialization from external data is valid use case
+      const attachments = homework?.attachments?.length > 0
+        ? homework.attachments.map((a) => ({
+            ...a,
+            name: a.name || a.fileName || a.filename || "Unnamed file",
+            type: a.type || a.fileType || a.mimeType || a.mime_type || "",
+            size: a.size || a.fileSize || a.file_size || 0,
+            fileUrl: a.fileUrl || a.url || a.file_url || "",
+          }))
+        : [];
+
       // eslint-disable-next-line
       setFormData({
         title: homework.title || "",
         subject: subjectOption,
         description: homework.description || "",
         dueDate: formattedDueDate,
-        targetType: targetType,
-        sectionId: sectionId,
-        studentId: studentId,
-        classId: classId,
-        attachments: attachments,
+        targetType,
+        sectionId,
+        studentId,
+        classId,
+        attachments,
         status: homework.status || "DRAFT",
       });
     } else {
-      const sec =
-        defaultSectionId &&
-        (permissions.sections || []).find((s) => s.section_id === defaultSectionId);
-      const cls =
-        sec && (permissions.classes || []).find((c) => c.class_id === sec.class_id);
-      const subjectOption =
-        defaultSubjectKey != null && String(defaultSubjectKey).length > 0
-          ? { value: defaultSubjectKey, label: defaultSubjectKey }
-          : null;
-      const studentRow =
-        defaultStudentId &&
-        (permissions.students || []).find((s) => s.student_id === defaultStudentId);
-      const studentInSection =
-        studentRow &&
-        defaultSectionId &&
-        studentRow.section_id === defaultSectionId;
+      const sec = defaultSectionId && (permissions.sections || []).find((s) => s.section_id === defaultSectionId);
+      const cls = sec && (permissions.classes || []).find((c) => c.class_id === sec.class_id);
+      const subjectOption = defaultSubjectKey != null && String(defaultSubjectKey).length > 0
+        ? { value: defaultSubjectKey, label: defaultSubjectKey }
+        : null;
+      const studentRow = defaultStudentId && (permissions.students || []).find((s) => s.student_id === defaultStudentId);
+      const studentInSection = studentRow && defaultSectionId && studentRow.section_id === defaultSectionId;
 
       if (studentInSection && sec) {
         setFormData({
@@ -255,9 +191,7 @@ export default function HomeworkFormModal({
           dueDate: "",
           targetType: { value: "STUDENT", label: "Student" },
           sectionId: { value: sec.section_id, label: sec.section_name },
-          studentId: [
-            { value: studentRow.student_id, label: studentRow.student_name || studentRow.student_id },
-          ],
+          studentId: [{ value: studentRow.student_id, label: studentRow.student_name || studentRow.student_id }],
           classId: cls ? { value: cls.class_id, label: cls.class_name } : null,
           attachments: [],
           status: "DRAFT",
@@ -284,128 +218,85 @@ export default function HomeworkFormModal({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const setTargetType = (type) => {
-   
+  const setTargetType = (type) =>
     setFormData((prev) => ({
       ...prev,
       targetType: type,
-      sectionId: null, // Reset to null
-      studentId: [], // Array for multiple students
-      classId: null, // Reset to null
-      subject: null, // Reset subject when target type changes
+      sectionId: null,
+      studentId: [],
+      classId: null,
+      subject: null,
     }));
-  };
 
-  
-
-  const handleFileChange = async (e) => {
-    const files = Array.from(e.target.files);
+  const processFiles = async (files) => {
     setAttachmentError("");
-
-    // Validation: Max 3 attachments
     if (formData.attachments.length + files.length > 3) {
       setAttachmentError("Maximum 3 attachments allowed");
       return;
     }
-
-    // Validation: Each file max 10MB
-    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-    const invalidFiles = files.filter((file) => file.size > maxSize);
-
-    if (invalidFiles.length > 0) {
+    const oversized = files.filter((f) => f.size > 10 * 1024 * 1024);
+    if (oversized.length > 0) {
       setAttachmentError("Each file must be less than 10MB");
       return;
     }
- 
-    // Upload each file
-    const uploadedAttachments = [];
+
+    setUploadingFiles(true);
+    const uploaded = [];
     for (const file of files) {
       try {
-        const publicUrl = await generateHomeworkAttachmentSignedUrl({ 
-          file: file,
+        const publicUrl = await generateHomeworkAttachmentSignedUrl({
+          file,
           homework_id: homework?.id || homework?.homework_id,
-          file_name: file.name, 
-          mime_type: file.type 
+          file_name: file.name,
+          mime_type: file.type,
         });
-        
-        if (publicUrl) {
-          uploadedAttachments.push({
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            fileUrl: publicUrl
-          });
-        }
-      } catch (error) {
-        console.error('Error uploading file:', file.name, error);
+        if (publicUrl) uploaded.push({ name: file.name, type: file.type, size: file.size, fileUrl: publicUrl });
+      } catch {
         setAttachmentError(`Failed to upload ${file.name}`);
       }
     }
+    setUploadingFiles(false);
 
-    if (uploadedAttachments.length > 0) {
-      setFormData((prev) => ({
-        ...prev,
-        attachments: [...prev.attachments, ...uploadedAttachments],
-      }));
+    if (uploaded.length > 0) {
+      setFormData((prev) => ({ ...prev, attachments: [...prev.attachments, ...uploaded] }));
     }
-    
-    // Clear the input so the same file can be selected again if needed
-    e.target.value = '';
+  };
+
+  const handleFileChange = async (e) => {
+    await processFiles(Array.from(e.target.files));
+    e.target.value = "";
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (formData.attachments.length >= 3) return;
+    await processFiles(Array.from(e.dataTransfer.files));
   };
 
   const handleRemoveAttachment = (index) => {
     setAttachmentError("");
-    setFormData((prev) => ({
-      ...prev,
-      attachments: prev.attachments.filter((_, i) => i !== index),
-    }));
+    setFormData((prev) => ({ ...prev, attachments: prev.attachments.filter((_, i) => i !== index) }));
   };
 
   const handleDownloadAttachment = (file) => {
-    if (!file.fileUrl) {
-      console.error("No file URL available for download");
-      return;
-    }
-
-    // Create a temporary anchor element to trigger download
-    const link = document.createElement('a');
+    if (!file.fileUrl) return;
+    const link = document.createElement("a");
     link.href = file.fileUrl;
-    link.download = file.name || 'download';
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    
-    // Append to body, click, and remove
+    link.download = file.name || "download";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const formatFileSize = (bytes) => {
-    if (!bytes || bytes === 0) return "0 Bytes";
+    if (!bytes || bytes === 0) return "0 B";
     const k = 1024;
-    const sizes = ["Bytes", "KB", "MB"];
+    const sizes = ["B", "KB", "MB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
-  };
-
-
-  // Format target label for display
-  const formatTargetLabel = () => {
-    const targetTypeLabel = TARGET_OPTIONS.find(opt => opt.value === formData.targetType?.value)?.label || "";
-    const s = formData.sectionId?.label;
-
-    // Handle student selection (can be array for multiple students)
-    let st = "";
-    if (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0) {
-      if (formData.studentId.length === 1) {
-        st = formData.studentId[0].label;
-      } else {
-        st = `${formData.studentId.length} students`;
-      }
-    }
-
-    const parts = [targetTypeLabel, s, st].filter(Boolean);
-    return parts.length > 0 ? parts.join(" • ") : "Select Target";
+    return Math.round(bytes / Math.pow(k, i) * 10) / 10 + " " + sizes[i];
   };
 
   const handleSubmit = (e, status) => {
@@ -418,9 +309,7 @@ export default function HomeworkFormModal({
     formData.subject?.value &&
     formData.description.trim() &&
     formData.dueDate &&
-    ((formData.targetType?.value === "SECTION" &&
-      formData.classId?.value &&
-      formData.sectionId?.value) ||
+    ((formData.targetType?.value === "SECTION" && formData.classId?.value && formData.sectionId?.value) ||
       (formData.targetType?.value === "STUDENT" &&
         formData.classId?.value &&
         formData.sectionId?.value &&
@@ -430,259 +319,213 @@ export default function HomeworkFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-16">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">
-            {isEditing ? "Edit Homework" : "Create New Homework"}
-          </h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {isEditing ? "Edit Homework" : "New Homework"}
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {isEditing ? "Update the homework details below" : "Assign homework to a section or student"}
+            </p>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Target Selection Button - Opens Modal */}
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+          {/* Assign To */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <p className="text-sm font-medium text-gray-700 mb-2">
               Assign To <span className="text-red-500">*</span>
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowTargetModal(true)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors flex justify-between items-center text-left"
-            >
-              <div>
-                <p className="text-xs text-gray-500">Target audience</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {formatTargetLabel()}
-                </p>
+            </p>
+            <div className="space-y-3">
+              {/* Target type pills */}
+              <div className="flex gap-2">
+                {TARGET_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setTargetType(opt)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      formData.targetType?.value === opt.value
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
-              <span className="text-xs px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100">
-                Change
-              </span>
-            </button>
+              {/* Conditional dropdowns */}
+              {targetSchema?.length > 0 && (
+                <div className="space-y-3 pl-1">
+                  {targetSchema.map((item) => (
+                    <Dropdown key={item?.type} {...item} />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Target Selector Modal */}
-          {showTargetModal && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-              <div
-                className="absolute inset-0"
-                onClick={() => setShowTargetModal(false)}
-              />
-
-              <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
-                {/* Modal Header */}
-                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-900">Select Target</h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowTargetModal(false)}
-                    className="text-sm px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Done
-                  </button>
-                </div>
-
-                {/* Modal Content */}
-                <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
-                  <TargetSelector
-                    targetType={formData.targetType}
-                    handleTargetTypeChange={setTargetType}
-                    TARGET_OPTIONS={TARGET_OPTIONS}
-                    schema={targetSchema}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Subject - Now a dropdown based on class/section */}
+          {/* Subject */}
           <div>
-            <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
               Subject <span className="text-red-500">*</span>
             </label>
             <Dropdown
               selected={formData.subject}
               onChange={(option) => setFormData((prev) => ({ ...prev, subject: option }))}
               options={subjects}
-              placeholder="Select subject"
+              placeholder={formData.sectionId ? "Select subject" : "Select a section first"}
             />
           </div>
 
-          {/* Title */}
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-              Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter homework title"
-              required
-            />
+          {/* Title + Due Date side by side on desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="title" className="text-sm font-medium text-gray-700">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <span className="text-xs text-gray-400">{formData.title.length}/100</span>
+              </div>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                maxLength={100}
+                value={formData.title}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="e.g. Chapter 5 exercises"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="dueDate" className="text-sm font-medium text-gray-700 mb-2 block">
+                Due Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                id="dueDate"
+                name="dueDate"
+                value={formData.dueDate}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                required
+              />
+            </div>
           </div>
 
-          {/* Description - Increased size */}
+          {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              Description <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="description" className="text-sm font-medium text-gray-700">
+                Description <span className="text-red-500">*</span>
+              </label>
+              <span className="text-xs text-gray-400">{formData.description.length} chars</span>
+            </div>
             <textarea
               id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
-              rows={8}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
-              placeholder="Enter homework instructions and details"
+              rows={5}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
+              placeholder="Write the homework instructions and details here..."
               required
             />
           </div>
 
-          {/* Due Date */}
+          {/* Attachments */}
           <div>
-            <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-2">
-              Due Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              id="dueDate"
-              name="dueDate"
-              value={formData.dueDate}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-700">Attachments</p>
+              <span className="text-xs text-gray-400">{formData.attachments.length}/3</span>
+            </div>
 
-          {/* File Attachments - With validation */}
-          <div>
-            <label htmlFor="attachments" className="block text-sm font-medium text-gray-700 mb-2">
-              Attachments
-              <span className="text-gray-500 text-xs ml-2">(Max 3 files, 10MB each)</span>
-            </label>
-            <input
-              type="file"
-              id="attachments"
-              multiple
-              onChange={handleFileChange}
-              disabled={formData.attachments.length >= 3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            />
+            {formData.attachments.length < 3 && (
+              <div
+                onClick={() => !uploadingFiles && fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={handleDrop}
+                className={`flex flex-col items-center justify-center gap-2 p-5 border-2 border-dashed rounded-xl transition-colors ${
+                  uploadingFiles
+                    ? "border-blue-300 bg-blue-50 cursor-wait"
+                    : isDragOver
+                    ? "border-blue-400 bg-blue-50 cursor-copy"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100 cursor-pointer"
+                }`}
+              >
+                {uploadingFiles ? (
+                  <>
+                    <div className="w-7 h-7 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm text-blue-500 font-medium">Uploading...</p>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    <p className="text-sm text-gray-500">
+                      <span className="font-medium text-blue-500">Click to upload</span> or drag & drop
+                    </p>
+                    <p className="text-xs text-gray-400">Max 3 files · 10MB each</p>
+                  </>
+                )}
+                <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
+              </div>
+            )}
 
-            {/* Error message */}
             {attachmentError && (
-              <p className="mt-2 text-sm text-red-600">{attachmentError}</p>
+              <p className="mt-2 text-xs text-red-600">{attachmentError}</p>
             )}
 
-            {/* Info text */}
-            {formData.attachments.length >= 3 && (
-              <p className="mt-2 text-sm text-blue-600">
-                Maximum attachment limit reached (3/3)
-              </p>
-            )}
-
-            {/* Attachment list */}
-            {formData.attachments && formData.attachments.length > 0 && (
+            {formData.attachments.length > 0 && (
               <div className="mt-3 space-y-2">
-                <p className="text-xs text-gray-600 mb-2">
-                  {formData.attachments.length} file{formData.attachments.length > 1 ? 's' : ''} attached
-                </p>
                 {formData.attachments.map((file, index) => (
-                  <div
-                    key={file.id || index}
-                    className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
-                  >
+                  <div key={file.id || index} className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
                     <button
                       type="button"
                       onClick={() => handleDownloadAttachment(file)}
                       disabled={!file.fileUrl}
-                      className="flex-1 min-w-0 flex items-center gap-3 text-left disabled:cursor-not-allowed"
+                      className="flex-1 min-w-0 text-left disabled:cursor-default"
                     >
-                      {/* File icon */}
-                      <div className="flex-shrink-0 w-8 h-8 rounded bg-blue-100 flex items-center justify-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 text-blue-600"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                      {/* File info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-700 truncate font-medium">{file.name || "Unnamed file"}</p>
-                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                      </div>
-                      {/* Download icon - only show if file has URL */}
-                      {file.fileUrl && (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 text-gray-400 flex-shrink-0"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                          />
-                        </svg>
-                      )}
+                      <p className="text-sm text-gray-700 truncate font-medium">{file.name || "Unnamed file"}</p>
+                      <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
                     </button>
-                    {/* Remove button */}
+                    {file.fileUrl && (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleRemoveAttachment(index)}
-                      className="ml-3 text-red-500 hover:text-red-700 flex-shrink-0 p-1"
-                      title="Remove attachment"
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
                   </div>
@@ -691,59 +534,38 @@ export default function HomeworkFormModal({
             )}
           </div>
 
-          {/* Error Message */}
+          {/* Submit error */}
           {submitError && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-red-800">Error</h4>
-                  <p className="text-sm text-red-700 mt-1">{submitError}</p>
-                </div>
-              </div>
+            <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {submitError}
             </div>
           )}
+        </div>
 
-          {/* Form Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={!canSubmit || isSubmitting}
-              onClick={(e) => handleSubmit(e, "DRAFT")}
-            >
-              {isSubmitting ? "Saving..." : isEditing ? "Save as Draft" : "Save as Draft"}
-            </Button>
-            <Button
-              type="button"
-              disabled={!canSubmit || isSubmitting}
-              onClick={(e) => handleSubmit(e, "PUBLISHED")}
-            >
-              {isSubmitting ? "Publishing..." : isEditing ? "Publish" : "Publish"}
-            </Button>
-          </div>
-        </form>
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!canSubmit || isSubmitting}
+            onClick={(e) => handleSubmit(e, "DRAFT")}
+          >
+            {isSubmitting ? "Saving..." : "Save as Draft"}
+          </Button>
+          <Button
+            type="button"
+            disabled={!canSubmit || isSubmitting}
+            onClick={(e) => handleSubmit(e, "PUBLISHED")}
+          >
+            {isSubmitting ? "Publishing..." : isEditing ? "Update" : "Publish"}
+          </Button>
+        </div>
       </div>
     </div>
   );

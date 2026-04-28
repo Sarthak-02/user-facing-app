@@ -1,7 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Button } from "../../ui-components";
 import Dropdown from "../../ui-components/Dropdown";
-import TargetSelector from "../../components/TargetSelector";
 import {
   ANNOUNCEMENT_CATEGORY_OPTIONS,
   DEFAULT_ANNOUNCEMENT_CATEGORY,
@@ -50,9 +49,8 @@ function buildFormFromBroadcast(broadcast, permissions) {
   const first = targets[0];
   const tt = first.targetType || first.target_type;
 
-  if (tt === "CAMPUS") {
-    return { ...base, targetType: TARGET_OPTIONS[0] };
-  }
+  if (tt === "CAMPUS") return { ...base, targetType: TARGET_OPTIONS[0] };
+
   if (tt === "CLASS") {
     const firstId = first.targetId || first.target_id;
     const classOption = permissions.classes.find((c) => c.class_id === firstId);
@@ -113,9 +111,19 @@ function buildFormFromBroadcast(broadcast, permissions) {
   return base;
 }
 
+const CATEGORY_ICONS = {
+  general: "📢",
+  sports: "⚽",
+  fun: "🎉",
+  urgent: "🚨",
+  academic: "📚",
+  events: "📅",
+};
+
 export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmitting, submitError, existingBroadcast = null }) {
-  // Get permissions data from store
   const { permissions } = usePermissions();
+  const fileInputRef = useRef(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const [formData, setFormData] = useState(() =>
     existingBroadcast
@@ -124,69 +132,45 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
   );
 
   const isViewingExisting = Boolean(existingBroadcast);
-
-  // Error state for attachments
   const [attachmentError, setAttachmentError] = useState("");
 
-  // Target selector modal state
-  const [showTargetModal, setShowTargetModal] = useState(false);
-
   const targetSchema = useMemo(() => {
-    let data = {
-      "class": {
+    const data = {
+      class: {
         selected: formData.classId,
         options: permissions.classes.map(({ class_id, class_name }) => ({
           value: class_id,
-          label: class_name
+          label: class_name,
         })),
-        onChange: (option) => {
-          setFormData((prev) => ({
-            ...prev,
-            classId: option,
-            sectionId: null,
-            studentId: [],
-          }));
-        },
+        onChange: (option) =>
+          setFormData((prev) => ({ ...prev, classId: option, sectionId: null, studentId: [] })),
       },
-      "section": {
+      section: {
         selected: formData.sectionId,
         options: (formData.classId?.value
           ? permissions.sections.filter((s) => s.class_id === formData.classId.value)
           : []
-        ).map(({ section_id, section_name }) => ({
-          value: section_id,
-          label: section_name
-        })),
-        onChange: (option) => {
-          setFormData((prev) => ({
-            ...prev,
-            sectionId: option,
-            studentId: [],
-          }));
-        },
-      }
+        ).map(({ section_id, section_name }) => ({ value: section_id, label: section_name })),
+        onChange: (option) =>
+          setFormData((prev) => ({ ...prev, sectionId: option, studentId: [] })),
+      },
     };
-    
-    if (formData.targetType?.value === "CAMPUS") {
-      return [];
-    } else if (formData.targetType?.value === "CLASS") {
-      return updateSchema(CLASS_TARGET_SCHEMA, data);
-    } else if (formData.targetType?.value === "SECTION") {
-      return updateSchema(SECTION_TARGET_SCHEMA, data);
-    } else if (formData.targetType?.value === "STUDENT") {
-      data['student'] = {
+
+    if (formData.targetType?.value === "CAMPUS") return [];
+    if (formData.targetType?.value === "CLASS") return updateSchema(CLASS_TARGET_SCHEMA, data);
+    if (formData.targetType?.value === "SECTION") return updateSchema(SECTION_TARGET_SCHEMA, data);
+    if (formData.targetType?.value === "STUDENT") {
+      data.student = {
         selected: formData.studentId,
-        options: permissions.students.map(({ student_id, student_name, section_id }) => ({
-          value: student_id,
-          label: student_name,
-          section_id: section_id,
-        })).filter(({ section_id }) => section_id === formData.sectionId?.value),
-        onChange: (options) => {
-          setFormData((prev) => ({
-            ...prev,
-            studentId: options,
-          }));
-        },
+        options: permissions.students
+          .map(({ student_id, student_name, section_id }) => ({
+            value: student_id,
+            label: student_name,
+            section_id,
+          }))
+          .filter(({ section_id }) => section_id === formData.sectionId?.value),
+        onChange: (options) =>
+          setFormData((prev) => ({ ...prev, studentId: options })),
       };
       return updateSchema(STUDENT_TARGET_SCHEMA, data);
     }
@@ -198,84 +182,48 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const setTargetType = (type) => {
-    setFormData((prev) => ({
-      ...prev,
-      targetType: type,
-      sectionId: null,
-      studentId: [],
-      classId: null,
-    }));
-  };
+  const setTargetType = (type) =>
+    setFormData((prev) => ({ ...prev, targetType: type, sectionId: null, studentId: [], classId: null }));
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
+  const processFiles = (files) => {
     setAttachmentError("");
-
-    // Validation: Max 3 attachments
     if (formData.attachments.length + files.length > 3) {
       setAttachmentError("Maximum 3 attachments allowed");
       return;
     }
-
-    // Validation: Each file max 10MB
-    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-    const invalidFiles = files.filter((file) => file.size > maxSize);
-
-    if (invalidFiles.length > 0) {
+    const oversized = files.filter((f) => f.size > 10 * 1024 * 1024);
+    if (oversized.length > 0) {
       setAttachmentError("Each file must be less than 10MB");
       return;
     }
+    setFormData((prev) => ({ ...prev, attachments: [...prev.attachments, ...files] }));
+  };
 
-    setFormData((prev) => ({
-      ...prev,
-      attachments: [...prev.attachments, ...files],
-    }));
+  const handleFileChange = (e) => processFiles(Array.from(e.target.files));
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (isViewingExisting || formData.attachments.length >= 3) return;
+    processFiles(Array.from(e.dataTransfer.files));
   };
 
   const handleRemoveAttachment = (index) => {
     setAttachmentError("");
-    setFormData((prev) => ({
-      ...prev,
-      attachments: prev.attachments.filter((_, i) => i !== index),
-    }));
+    setFormData((prev) => ({ ...prev, attachments: prev.attachments.filter((_, i) => i !== index) }));
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return "0 Bytes";
+    if (bytes === 0) return "0 B";
     const k = 1024;
-    const sizes = ["Bytes", "KB", "MB"];
+    const sizes = ["B", "KB", "MB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+    return Math.round(bytes / Math.pow(k, i) * 10) / 10 + " " + sizes[i];
   };
 
-  // Format target label for display
-  const formatTargetLabel = () => {
-    if (formData.targetType?.value === "CAMPUS") {
-      return "Entire Campus";
-    }
-
-    const targetTypeLabel = TARGET_OPTIONS.find(opt => opt.value === formData.targetType?.value)?.label || "";
-    const c = formData.classId?.label;
-    const s = formData.sectionId?.label;
-
-    // Handle student selection (can be array for multiple students)
-    let st = "";
-    if (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0) {
-      if (formData.studentId.length === 1) {
-        st = formData.studentId[0].label;
-      } else {
-        st = `${formData.studentId.length} students`;
-      }
-    }
-
-    const parts = [targetTypeLabel, c, s, st].filter(Boolean);
-    return parts.length > 0 ? parts.join(" • ") : "Select Target";
-  };
-
-  const handleSubmit = (e, status) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ ...formData, status });
+    onSubmit({ ...formData, status: "NOTIFYING" });
   };
 
   const canSubmit =
@@ -283,9 +231,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
     formData.message.trim() &&
     (formData.targetType?.value === "CAMPUS" ||
       (formData.targetType?.value === "CLASS" && formData.classId?.value) ||
-      (formData.targetType?.value === "SECTION" &&
-        formData.classId?.value &&
-        formData.sectionId?.value) ||
+      (formData.targetType?.value === "SECTION" && formData.classId?.value && formData.sectionId?.value) ||
       (formData.targetType?.value === "STUDENT" &&
         formData.classId?.value &&
         formData.sectionId?.value &&
@@ -295,273 +241,248 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-16">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">
-            {isViewingExisting ? "Broadcast details" : "Create New Broadcast"}
-          </h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {isViewingExisting ? "Broadcast Details" : "New Broadcast"}
+            </h2>
+            {!isViewingExisting && (
+              <p className="text-xs text-gray-500 mt-0.5">Send an announcement to your audience</p>
+            )}
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Form */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (isViewingExisting) return;
-          }}
-          className="p-6 space-y-6"
-        >
-          {/* Target Selection Button - Opens Modal */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Send To <span className="text-red-500">*</span>
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowTargetModal(true)}
-              disabled={isViewingExisting}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors flex justify-between items-center text-left disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-white"
-            >
-              <div>
-                <p className="text-xs text-gray-500">Target audience</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {formatTargetLabel()}
-                </p>
-              </div>
-              <span className="text-xs px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:pointer-events-none">
-                Change
-              </span>
-            </button>
-          </div>
-
-          {/* Target Selector Modal */}
-          {showTargetModal && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-              <div
-                className="absolute inset-0"
-                onClick={() => setShowTargetModal(false)}
-              />
-
-              <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
-                {/* Modal Header */}
-                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-900">Select Target</h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowTargetModal(false)}
-                    className="text-sm px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Done
-                  </button>
-                </div>
-
-                {/* Modal Content */}
-                <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
-                  <TargetSelector
-                    targetType={formData.targetType}
-                    handleTargetTypeChange={setTargetType}
-                    TARGET_OPTIONS={TARGET_OPTIONS}
-                    schema={targetSchema}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
           {/* Category */}
           <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">Category</p>
             {isViewingExisting ? (
-              <>
-                <span className="block text-sm text-gray-600 mb-1">Category</span>
-                <p className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-900">
-                  {formData.category?.label ?? "—"}
-                </p>
-              </>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
+                {CATEGORY_ICONS[formData.category?.value]} {formData.category?.label ?? "—"}
+              </span>
             ) : (
-              <Dropdown
-                label="Category"
-                options={ANNOUNCEMENT_CATEGORY_OPTIONS}
-                selected={formData.category}
-                onChange={(option) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    category: option || DEFAULT_ANNOUNCEMENT_CATEGORY,
-                  }))
-                }
-                placeholder="Select category"
-              />
+              <div className="flex flex-wrap gap-2">
+                {ANNOUNCEMENT_CATEGORY_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, category: opt }))}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      formData.category?.value === opt.value
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {CATEGORY_ICONS[opt.value]} {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Send To */}
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              Send To <span className="text-red-500">*</span>
+            </p>
+            {isViewingExisting ? (
+              <div className="px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900">
+                {formData.targetType?.label}
+                {formData.classId && ` • ${formData.classId.label}`}
+                {formData.sectionId && ` • ${formData.sectionId.label}`}
+                {Array.isArray(formData.studentId) && formData.studentId.length > 0 &&
+                  ` • ${formData.studentId.length === 1 ? formData.studentId[0].label : `${formData.studentId.length} students`}`}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Target type pills */}
+                <div className="flex flex-wrap gap-2">
+                  {TARGET_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setTargetType(opt)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        formData.targetType?.value === opt.value
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {/* Conditional dropdowns */}
+                {targetSchema.length > 0 && (
+                  <div className="space-y-3 pl-1">
+                    {targetSchema.map((item) => (
+                      <Dropdown key={item?.type} {...item} />
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-              Title <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="title" className="text-sm font-medium text-gray-700">
+                Title <span className="text-red-500">*</span>
+              </label>
+              {!isViewingExisting && (
+                <span className="text-xs text-gray-400">{formData.title.length}/100</span>
+              )}
+            </div>
             <input
               type="text"
               id="title"
               name="title"
+              maxLength={100}
               value={formData.title}
               onChange={handleChange}
               readOnly={isViewingExisting}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 read-only:bg-gray-50 read-only:cursor-default"
-              placeholder="Enter broadcast title"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 read-only:bg-gray-50 read-only:cursor-default transition-colors"
+              placeholder="Give your broadcast a clear title"
               required
             />
           </div>
 
-          {/* Message - Increased size */}
+          {/* Message */}
           <div>
-            <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-              Message <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="message" className="text-sm font-medium text-gray-700">
+                Message <span className="text-red-500">*</span>
+              </label>
+              {!isViewingExisting && (
+                <span className="text-xs text-gray-400">{formData.message.length} chars</span>
+              )}
+            </div>
             <textarea
               id="message"
               name="message"
               value={formData.message}
               onChange={handleChange}
               readOnly={isViewingExisting}
-              rows={8}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y read-only:bg-gray-50 read-only:cursor-default"
-              placeholder="Enter your message"
+              rows={5}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none read-only:bg-gray-50 read-only:cursor-default transition-colors"
+              placeholder="Write your message here..."
               required
             />
           </div>
 
-          {/* File Attachments - With validation */}
-          <div>
-            <label htmlFor="attachments" className="block text-sm font-medium text-gray-700 mb-2">
-              Attachments
-              <span className="text-gray-500 text-xs ml-2">(Max 3 files, 10MB each)</span>
-            </label>
-            <input
-              type="file"
-              id="attachments"
-              multiple
-              onChange={handleFileChange}
-              disabled={isViewingExisting || formData.attachments.length >= 3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            />
-
-            {/* Error message */}
-            {attachmentError && (
-              <p className="mt-2 text-sm text-red-600">{attachmentError}</p>
-            )}
-
-            {/* Info text */}
-            {formData.attachments.length >= 3 && (
-              <p className="mt-2 text-sm text-blue-600">
-                Maximum attachment limit reached (3/3)
-              </p>
-            )}
-
-            {/* Attachment list */}
-            {formData.attachments.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {formData.attachments.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-700 truncate">{file.name}</p>
-                      <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAttachment(index)}
-                      disabled={isViewingExisting}
-                      className="ml-3 text-red-500 hover:text-red-700 flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+          {/* Attachments */}
+          {!isViewingExisting && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-700">Attachments</p>
+                <span className="text-xs text-gray-400">{formData.attachments.length}/3</span>
               </div>
-            )}
-          </div>
 
-          {/* Error Message */}
-          {submitError && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+              {formData.attachments.length < 3 && (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleDrop}
+                  className={`flex flex-col items-center justify-center gap-2 p-5 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                    isDragOver
+                      ? "border-blue-400 bg-blue-50"
+                      : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100"
+                  }`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  <p className="text-sm text-gray-500">
+                    <span className="font-medium text-blue-500">Click to upload</span> or drag & drop
+                  </p>
+                  <p className="text-xs text-gray-400">Max 3 files · 10MB each</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleFileChange}
+                    className="hidden"
                   />
-                </svg>
-                <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-red-800">Error</h4>
-                  <p className="text-sm text-red-700 mt-1">{submitError}</p>
                 </div>
-              </div>
+              )}
+
+              {attachmentError && (
+                <p className="mt-2 text-xs text-red-600">{attachmentError}</p>
+              )}
+
+              {formData.attachments.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {formData.attachments.map((file, index) => (
+                    <div key={index} className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-700 truncate font-medium">{file.name}</p>
+                        <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAttachment(index)}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Form Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          {/* Submit error */}
+          {submitError && (
+            <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {submitError}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
+            {isViewingExisting ? "Close" : "Cancel"}
+          </Button>
+          {!isViewingExisting && (
             <Button
               type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
+              disabled={!canSubmit || isSubmitting}
+              onClick={handleSubmit}
             >
-              {isViewingExisting ? "Close" : "Cancel"}
+              {isSubmitting ? "Sending..." : "Send Broadcast"}
             </Button>
-            {!isViewingExisting && (
-              <Button
-                type="button"
-                disabled={!canSubmit || isSubmitting}
-                onClick={(e) => handleSubmit(e, "NOTIFYING")}
-              >
-                {isSubmitting ? "Sending..." : "Send"}
-              </Button>
-            )}
-          </div>
-        </form>
+          )}
+        </div>
       </div>
     </div>
   );
