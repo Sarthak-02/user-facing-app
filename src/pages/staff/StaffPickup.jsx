@@ -428,6 +428,7 @@ function PersonProfileModal({ person, onClose }) {
 function StudentPickupPanel({ student, onConfirm }) {
   const [authorizedPersons, setAuthorizedPersons] = useState([]);
   const [approvedRequests, setApprovedRequests] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [alreadyPickedUp, setAlreadyPickedUp] = useState(false);
   const [todayPickup, setTodayPickup] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -442,9 +443,10 @@ function StudentPickupPanel({ student, onConfirm }) {
       setLoading(true);
       setError(null);
       try {
-        const [personsResult, requests] = await Promise.all([
+        const [personsResult, approvedReqs, pendingReqs] = await Promise.all([
           listAuthorizedPersons(student.student_id),
           listPickupRequests(student.student_id, todayStr, "APPROVED"),
+          listPickupRequests(student.student_id, todayStr, "PENDING"),
         ]);
         if (!cancelled) {
           const persons = Array.isArray(personsResult)
@@ -452,11 +454,11 @@ function StudentPickupPanel({ student, onConfirm }) {
             : Array.isArray(personsResult?.data)
             ? personsResult.data
             : [];
-          // camelCase from API: isActive; snake_case fallback
           setAuthorizedPersons(persons.filter((p) => (p.isActive ?? p.is_active) !== false));
           setAlreadyPickedUp(personsResult?.already_picked_up ?? false);
           setTodayPickup(personsResult?.today_pickup ?? null);
-          setApprovedRequests(Array.isArray(requests) ? requests : []);
+          setApprovedRequests(Array.isArray(approvedReqs) ? approvedReqs : []);
+          setPendingRequests(Array.isArray(pendingReqs) ? pendingReqs : []);
         }
       } catch (err) {
         if (!cancelled)
@@ -487,7 +489,7 @@ function StudentPickupPanel({ student, onConfirm }) {
     );
   }
 
-  const hasAny = authorizedPersons.length > 0 || approvedRequests.length > 0;
+  const hasAny = authorizedPersons.length > 0 || approvedRequests.length > 0 || pendingRequests.length > 0;
 
   if (!hasAny) {
     return (
@@ -506,7 +508,7 @@ function StudentPickupPanel({ student, onConfirm }) {
     : null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-y-auto max-h-[18rem] pb-20">
       {/* Already picked up banner */}
       {alreadyPickedUp && todayPickup && (
         <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
@@ -539,59 +541,58 @@ function StudentPickupPanel({ student, onConfirm }) {
           <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
             Pre-Authorized Persons
           </p>
-          <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5 pb-16">
+          <div className="space-y-2">
             {authorizedPersons.map((person) => {
-              // API returns camelCase; fall back to snake_case
               const photoUrl = person.photoUrl || person.photo_url;
               return (
-              <div
-                key={person.id}
-                className="bg-white rounded-2xl border border-gray-100 p-3 flex items-center gap-3"
-              >
-                {photoUrl ? (
-                  <img
-                    src={photoUrl}
-                    alt={person.name}
-                    className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-200"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <User className="h-5 w-5 text-green-600" />
+                <div
+                  key={person.id}
+                  className="bg-white rounded-2xl border border-gray-100 p-3 flex items-center gap-3"
+                >
+                  {photoUrl ? (
+                    <img
+                      src={photoUrl}
+                      alt={person.name}
+                      className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                      <User className="h-5 w-5 text-green-600" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">{person.name}</p>
+                    <p className="text-xs text-gray-500">{person.relationship}</p>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{person.name}</p>
-                  <p className="text-xs text-gray-500">{person.relationship}</p>
-                </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setViewPerson({ ...person, photo_url: photoUrl })}
-                    className="px-2.5 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors"
-                  >
-                    View
-                  </button>
-                  {!alreadyPickedUp && (
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       type="button"
-                      onClick={() =>
-                        onConfirm({
-                          type: "AUTHORIZED_PERSON",
-                          person_name: person.name,
-                          person_relationship: person.relationship,
-                          authorized_person_id: person.id,
-                          photo_url: photoUrl,
-                          student_id: student.student_id,
-                          student_name: student.student_name || student.student_id,
-                        })
-                      }
-                      className="px-2.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
+                      onClick={() => setViewPerson({ ...person, photo_url: photoUrl })}
+                      className="px-2.5 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors"
                     >
-                      Confirm
+                      View
                     </button>
-                  )}
+                    {!alreadyPickedUp && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onConfirm({
+                            type: "AUTHORIZED_PERSON",
+                            person_name: person.name,
+                            person_relationship: person.relationship,
+                            authorized_person_id: person.id,
+                            photo_url: photoUrl,
+                            student_id: student.student_id,
+                            student_name: student.student_name || student.student_id,
+                          })
+                        }
+                        className="px-2.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
+                      >
+                        Confirm
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
               );
             })}
           </div>
@@ -599,7 +600,7 @@ function StudentPickupPanel({ student, onConfirm }) {
       )}
 
       {/* Today's approved one-time requests */}
-      {approvedRequests.length > 0 && (
+      {!alreadyPickedUp && approvedRequests.length > 0 && (
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
             Today's Approved Requests
@@ -618,35 +619,65 @@ function StudentPickupPanel({ student, onConfirm }) {
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <User className="h-4.5 w-4.5 text-blue-600" />
+                    <User className="h-5 w-5 text-blue-600" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900">{req.name}</p>
                   <p className="text-xs text-gray-500">{req.relationship}</p>
-                  <Badge variant="info" className="mt-1">
-                    One-time
-                  </Badge>
+                  <Badge variant="info" className="mt-1">One-time</Badge>
                 </div>
-                {!alreadyPickedUp && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onConfirm({
-                        type: "ONE_TIME_REQUEST",
-                        person_name: req.name,
-                        person_relationship: req.relationship,
-                        pickup_request_id: req.id,
-                        photo_url: req.photo_url,
-                        student_id: student.student_id,
-                        student_name: student.student_name || student.student_id,
-                      })
-                    }
-                    className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
-                  >
-                    Confirm
-                  </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onConfirm({
+                      type: "ONE_TIME_REQUEST",
+                      person_name: req.name,
+                      person_relationship: req.relationship,
+                      pickup_request_id: req.id,
+                      photo_url: req.photo_url,
+                      student_id: student.student_id,
+                      student_name: student.student_name || student.student_id,
+                    })
+                  }
+                  className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Confirm
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Today's pending one-time requests */}
+      {pendingRequests.length > 0 && (
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
+            Today's Pending Requests
+          </p>
+          <div className="space-y-2">
+            {pendingRequests.map((req) => (
+              <div
+                key={req.id}
+                className="bg-white rounded-2xl border border-amber-100 p-3 flex items-center gap-3"
+              >
+                {req.photo_url ? (
+                  <img
+                    src={req.photo_url}
+                    alt={req.name}
+                    className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-200"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <User className="h-5 w-5 text-amber-600" />
+                  </div>
                 )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{req.name}</p>
+                  <p className="text-xs text-gray-500">{req.relationship}</p>
+                  <Badge variant="warning" className="mt-1">Pending Approval</Badge>
+                </div>
               </div>
             ))}
           </div>
@@ -898,7 +929,7 @@ export default function StaffPickup() {
   ];
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pb-24 md:pb-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pb-16 md:pb-6">
       {/* Hero */}
       <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl px-5 py-5 shadow-sm">
         <div className="flex items-center gap-3">
@@ -1076,7 +1107,7 @@ export default function StaffPickup() {
                     <p className="text-xs text-gray-400 px-1 mb-2">
                       {filteredStudents.length} student{filteredStudents.length !== 1 ? "s" : ""}
                     </p>
-                    <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-0.5 pb-50">
+                    <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-0.5 pb-[18rem] md:pb-[10rem]">
                       {filteredStudents.map((s) => (
                         <button
                           key={s.student_id}
