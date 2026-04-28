@@ -62,13 +62,8 @@ export default function Exams() {
   const [publishError, setPublishError] = useState(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  // Mobile filter states
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [examTypeFilter, setExamTypeFilter] = useState("");
   const [statusFilterDropdown, setStatusFilterDropdown] = useState("");
-  const [dateRangeStart, setDateRangeStart] = useState("");
-  const [dateRangeEnd, setDateRangeEnd] = useState("");
 
   // Loading and error states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -102,30 +97,17 @@ export default function Exams() {
     { value: "COMPLETED", label: "Completed" },
   ];
 
-  // Filter exams based on filters (frontend-only filters)
   const filteredExams = useMemo(() => {
     let filtered = [...examList];
 
-    // Search query filter (frontend only)
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (exam) =>
-          exam.examType.toLowerCase().includes(query) ||
-          exam.customExamType?.toLowerCase().includes(query) ||
-          exam.class?.toLowerCase().includes(query) ||
-          exam.section?.toLowerCase().includes(query)
-      );
-    }
-
-    // Exam type filter (frontend only)
     if (examTypeFilter) {
       filtered = filtered.filter((exam) => exam.examType === examTypeFilter);
     }
 
-    // Note: Status and date range filters are handled by the API
+    if (statusFilterDropdown) {
+      filtered = filtered.filter((exam) => exam.status === statusFilterDropdown);
+    }
 
-    // Sort by start date (earliest first)
     filtered.sort((a, b) => {
       if (!a.startDate) return 1;
       if (!b.startDate) return -1;
@@ -133,7 +115,10 @@ export default function Exams() {
     });
 
     return filtered;
-  }, [examList, searchQuery, examTypeFilter]);
+  }, [examList, examTypeFilter, statusFilterDropdown]);
+
+  const selectedExamTypeOption = examTypeOptions.find((o) => o.value === examTypeFilter) || null;
+  const selectedStatusOption = statusOptions.find((o) => o.value === statusFilterDropdown) || null;
 
   const handleCreateExam = () => {
     setEditingExam(null);
@@ -260,20 +245,6 @@ export default function Exams() {
     setPublishError(null);
   };
 
-  const handleApplyFilters = () => {
-    setIsFilterModalOpen(false);
-  };
-
-  const handleClearFilters = () => {
-    setSearchQuery("");
-    setExamTypeFilter("");
-    setStatusFilterDropdown("");
-    setDateRangeStart("");
-    setDateRangeEnd("");
-  };
-
-  const hasActiveFilters =
-    searchQuery || examTypeFilter || statusFilterDropdown || dateRangeStart || dateRangeEnd;
 
   // Fetch exams list
   const fetchExams = async () => {
@@ -289,16 +260,7 @@ export default function Exams() {
         offset: 0,  // Start from beginning
       };
 
-      // Add optional filters
-      if (statusFilterDropdown) {
-        params.status = statusFilterDropdown;
-      }
-      if (dateRangeStart) {
-        params.start_date = dateRangeStart;
-      }
-      if (dateRangeEnd) {
-        params.end_date = dateRangeEnd;
-      }
+
 
       const data = await getTeacherExamsAll(params, permissions);
       setExamList(data);
@@ -311,11 +273,10 @@ export default function Exams() {
     }
   };
 
-  // Fetch exams on component mount and when filters change
   useEffect(() => {
     fetchExams();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.userId, statusFilterDropdown, dateRangeStart, dateRangeEnd]);
+  }, [auth.userId]);
 
   return (
     <div className="h-screen flex flex-col p-4 gap-6 overflow-hidden">
@@ -345,88 +306,24 @@ export default function Exams() {
             </Button>
           </div>
 
-          {/* Search and Filters Row */}
-          <div className="grid grid-cols-12 gap-4">
-            {/* Search Bar */}
-            <div className="col-span-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search exams..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            {/* Exam Type Filter */}
-            <div className="col-span-2">
+          {/* Filters Row */}
+          <div className="flex items-center gap-3">
+            <div className="w-48">
               <Dropdown
-                selected={examTypeFilter}
-                onChange={setExamTypeFilter}
+                selected={selectedExamTypeOption}
+                onChange={(opt) => setExamTypeFilter(opt?.value ?? "")}
                 options={examTypeOptions}
                 placeholder="Exam Type"
               />
             </div>
-
-            {/* Status Filter */}
-            <div className="col-span-2">
+            <div className="w-40">
               <Dropdown
-                selected={statusFilterDropdown}
-                onChange={setStatusFilterDropdown}
+                selected={selectedStatusOption}
+                onChange={(opt) => setStatusFilterDropdown(opt?.value ?? "")}
                 options={statusOptions}
                 placeholder="Status"
               />
             </div>
-
-            {/* Date Range Start */}
-            <div className="col-span-2">
-              <input
-                type="date"
-                value={dateRangeStart}
-                onChange={(e) => setDateRangeStart(e.target.value)}
-                placeholder="From Date"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Date Range End */}
-            <div className="col-span-2">
-              <input
-                type="date"
-                value={dateRangeEnd}
-                onChange={(e) => setDateRangeEnd(e.target.value)}
-                placeholder="To Date"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Clear Filters Button */}
-            {hasActiveFilters && (
-              <div className="col-span-12">
-                <button
-                  onClick={handleClearFilters}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </Card>
@@ -434,60 +331,19 @@ export default function Exams() {
       {/* Mobile Header */}
       <div className="md:hidden flex-shrink-0">
         <Card className="p-4">
-          <div className="flex items-center gap-2">
-            {/* Search Bar */}
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Search exams..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-
-            {/* Filter Button */}
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className={`relative p-2 rounded-lg border transition-colors ${
-                hasActiveFilters
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              }`}
-              aria-label="Open filters"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                />
-              </svg>
-              {hasActiveFilters && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-              )}
-            </button>
+          <div className="grid grid-cols-2 gap-2">
+            <Dropdown
+              selected={selectedExamTypeOption}
+              onChange={(opt) => setExamTypeFilter(opt?.value ?? "")}
+              options={examTypeOptions}
+              placeholder="Exam Type"
+            />
+            <Dropdown
+              selected={selectedStatusOption}
+              onChange={(opt) => setStatusFilterDropdown(opt?.value ?? "")}
+              options={statusOptions}
+              placeholder="Status"
+            />
           </div>
         </Card>
       </div>
@@ -591,105 +447,6 @@ export default function Exams() {
         isSubmitting={isSubmitting}
         submitError={submitError}
       />
-
-      {/* Filter Modal (Mobile Only) */}
-      {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end md:hidden bg-black/50">
-          <div className="bg-white w-full rounded-t-2xl max-h-[90vh] flex flex-col animate-slide-up shadow-2xl">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Filters</h2>
-              <button
-                onClick={() => setIsFilterModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Close filters"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-gray-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* Exam Type Filter */}
-              <div>
-                <Dropdown
-                  label="Exam Type"
-                  selected={examTypeFilter}
-                  onChange={setExamTypeFilter}
-                  options={examTypeOptions}
-                  placeholder="Select exam type"
-                />
-              </div>
-
-              {/* Status Filter */}
-              <div>
-                <Dropdown
-                  label="Status"
-                  selected={statusFilterDropdown}
-                  onChange={setStatusFilterDropdown}
-                  options={statusOptions}
-                  placeholder="Select status"
-                />
-              </div>
-
-              {/* Date Range Filters */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Exam Date From
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRangeStart}
-                    onChange={(e) => setDateRangeStart(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Exam Date To
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRangeEnd}
-                    onChange={(e) => setDateRangeEnd(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-gray-200 flex gap-2">
-              <button
-                onClick={handleClearFilters}
-                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-              >
-                Clear All
-              </button>
-              <button
-                onClick={handleApplyFilters}
-                className="flex-1 px-4 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Publish Confirmation Modal */}
       {isPublishModalOpen && examToPublish && (
