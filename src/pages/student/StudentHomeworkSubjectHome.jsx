@@ -21,6 +21,7 @@ import {
   Leaf,
   Microscope,
   BookMarked,
+  ChevronRight,
 } from "lucide-react";
 import Loader from "../../ui-components/Loader";
 
@@ -33,12 +34,12 @@ function normalizeSubjectEntry(s) {
 }
 
 const FALLBACK_CONFIGS = [
-  { Icon: BookMarked, iconBg: "bg-blue-100", iconColor: "text-blue-600", headerBg: "bg-blue-50", border: "border-blue-200" },
-  { Icon: BookMarked, iconBg: "bg-violet-100", iconColor: "text-violet-600", headerBg: "bg-violet-50", border: "border-violet-200" },
-  { Icon: BookMarked, iconBg: "bg-emerald-100", iconColor: "text-emerald-600", headerBg: "bg-emerald-50", border: "border-emerald-200" },
-  { Icon: BookMarked, iconBg: "bg-amber-100", iconColor: "text-amber-600", headerBg: "bg-amber-50", border: "border-amber-200" },
-  { Icon: BookMarked, iconBg: "bg-rose-100", iconColor: "text-rose-600", headerBg: "bg-rose-50", border: "border-rose-200" },
-  { Icon: BookMarked, iconBg: "bg-cyan-100", iconColor: "text-cyan-600", headerBg: "bg-cyan-50", border: "border-cyan-200" },
+  { Icon: BookMarked, iconBg: "bg-blue-100", iconColor: "text-blue-600", border: "border-l-blue-400" },
+  { Icon: BookMarked, iconBg: "bg-violet-100", iconColor: "text-violet-600", border: "border-l-violet-400" },
+  { Icon: BookMarked, iconBg: "bg-emerald-100", iconColor: "text-emerald-600", border: "border-l-emerald-400" },
+  { Icon: BookMarked, iconBg: "bg-amber-100", iconColor: "text-amber-600", border: "border-l-amber-400" },
+  { Icon: BookMarked, iconBg: "bg-rose-100", iconColor: "text-rose-600", border: "border-l-rose-400" },
+  { Icon: BookMarked, iconBg: "bg-cyan-100", iconColor: "text-cyan-600", border: "border-l-cyan-400" },
 ];
 
 function hashStr(str) {
@@ -51,39 +52,39 @@ function getSubjectConfig(name) {
   const n = (name || "").toLowerCase();
 
   if (/math|maths|arithmetic|algebra|geometry|calculus|statistics/.test(n))
-    return { Icon: Calculator, iconBg: "bg-blue-100", iconColor: "text-blue-600", headerBg: "bg-blue-50", border: "border-blue-200" };
+    return { Icon: Calculator, iconBg: "bg-blue-100", iconColor: "text-blue-600", border: "border-l-blue-400" };
   if (/physics/.test(n))
-    return { Icon: Atom, iconBg: "bg-sky-100", iconColor: "text-sky-600", headerBg: "bg-sky-50", border: "border-sky-200" };
+    return { Icon: Atom, iconBg: "bg-sky-100", iconColor: "text-sky-600", border: "border-l-sky-400" };
   if (/chemistry|chemical/.test(n))
-    return { Icon: FlaskConical, iconBg: "bg-purple-100", iconColor: "text-purple-600", headerBg: "bg-purple-50", border: "border-purple-200" };
+    return { Icon: FlaskConical, iconBg: "bg-purple-100", iconColor: "text-purple-600", border: "border-l-purple-400" };
   if (/biology|bio/.test(n))
-    return { Icon: Microscope, iconBg: "bg-emerald-100", iconColor: "text-emerald-600", headerBg: "bg-emerald-50", border: "border-emerald-200" };
+    return { Icon: Microscope, iconBg: "bg-emerald-100", iconColor: "text-emerald-600", border: "border-l-emerald-400" };
   if (/science|evs/.test(n))
-    return { Icon: FlaskConical, iconBg: "bg-teal-100", iconColor: "text-teal-600", headerBg: "bg-teal-50", border: "border-teal-200" };
+    return { Icon: FlaskConical, iconBg: "bg-teal-100", iconColor: "text-teal-600", border: "border-l-teal-400" };
   if (/english|literature|reading|writing/.test(n))
-    return { Icon: BookOpen, iconBg: "bg-violet-100", iconColor: "text-violet-600", headerBg: "bg-violet-50", border: "border-violet-200" };
+    return { Icon: BookOpen, iconBg: "bg-violet-100", iconColor: "text-violet-600", border: "border-l-violet-400" };
   if (/hindi|urdu|tamil|telugu|kannada|malayalam|bengali|marathi|sanskrit|language/.test(n))
-    return { Icon: Languages, iconBg: "bg-orange-100", iconColor: "text-orange-600", headerBg: "bg-orange-50", border: "border-orange-200" };
+    return { Icon: Languages, iconBg: "bg-orange-100", iconColor: "text-orange-600", border: "border-l-orange-400" };
   if (/history|social|civics|political/.test(n))
-    return { Icon: Landmark, iconBg: "bg-amber-100", iconColor: "text-amber-600", headerBg: "bg-amber-50", border: "border-amber-200" };
+    return { Icon: Landmark, iconBg: "bg-amber-100", iconColor: "text-amber-600", border: "border-l-amber-400" };
   if (/geography|geo/.test(n))
-    return { Icon: Globe, iconBg: "bg-cyan-100", iconColor: "text-cyan-600", headerBg: "bg-cyan-50", border: "border-cyan-200" };
+    return { Icon: Globe, iconBg: "bg-cyan-100", iconColor: "text-cyan-600", border: "border-l-cyan-400" };
   if (/computer|ict|coding|programming|technology/.test(n))
-    return { Icon: Code2, iconBg: "bg-indigo-100", iconColor: "text-indigo-600", headerBg: "bg-indigo-50", border: "border-indigo-200" };
+    return { Icon: Code2, iconBg: "bg-indigo-100", iconColor: "text-indigo-600", border: "border-l-indigo-400" };
   if (/art|craft|drawing|paint/.test(n))
-    return { Icon: Palette, iconBg: "bg-rose-100", iconColor: "text-rose-600", headerBg: "bg-rose-50", border: "border-rose-200" };
+    return { Icon: Palette, iconBg: "bg-rose-100", iconColor: "text-rose-600", border: "border-l-rose-400" };
   if (/music|singing/.test(n))
-    return { Icon: Music, iconBg: "bg-pink-100", iconColor: "text-pink-600", headerBg: "bg-pink-50", border: "border-pink-200" };
+    return { Icon: Music, iconBg: "bg-pink-100", iconColor: "text-pink-600", border: "border-l-pink-400" };
   if (/pe |physical education|sport|gym/.test(n))
-    return { Icon: Dumbbell, iconBg: "bg-lime-100", iconColor: "text-lime-600", headerBg: "bg-lime-50", border: "border-lime-200" };
+    return { Icon: Dumbbell, iconBg: "bg-lime-100", iconColor: "text-lime-600", border: "border-l-lime-400" };
   if (/economics|commerce|accounting|finance/.test(n))
-    return { Icon: TrendingUp, iconBg: "bg-green-100", iconColor: "text-green-600", headerBg: "bg-green-50", border: "border-green-200" };
+    return { Icon: TrendingUp, iconBg: "bg-green-100", iconColor: "text-green-600", border: "border-l-green-400" };
   if (/business|management/.test(n))
-    return { Icon: Briefcase, iconBg: "bg-slate-100", iconColor: "text-slate-600", headerBg: "bg-slate-50", border: "border-slate-200" };
+    return { Icon: Briefcase, iconBg: "bg-slate-100", iconColor: "text-slate-600", border: "border-l-slate-400" };
   if (/psychology|psych/.test(n))
-    return { Icon: Brain, iconBg: "bg-fuchsia-100", iconColor: "text-fuchsia-600", headerBg: "bg-fuchsia-50", border: "border-fuchsia-200" };
+    return { Icon: Brain, iconBg: "bg-fuchsia-100", iconColor: "text-fuchsia-600", border: "border-l-fuchsia-400" };
   if (/environment/.test(n))
-    return { Icon: Leaf, iconBg: "bg-green-100", iconColor: "text-green-600", headerBg: "bg-green-50", border: "border-green-200" };
+    return { Icon: Leaf, iconBg: "bg-green-100", iconColor: "text-green-600", border: "border-l-green-400" };
 
   return FALLBACK_CONFIGS[hashStr(name) % FALLBACK_CONFIGS.length];
 }
@@ -198,9 +199,9 @@ export default function StudentHomeworkSubjectHome() {
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
       <h1 className="text-xl font-bold text-gray-900">Homework</h1>
       <p className="mt-1 text-sm text-gray-500">Choose a subject to view your assignments.</p>
-      <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <div className="mt-5 space-y-2">
         {subjects.map((s) => {
-          const { Icon, iconBg, iconColor, headerBg, border } = getSubjectConfig(s.subject_name);
+          const { Icon, iconBg, iconColor, border } = getSubjectConfig(s.subject_name);
           return (
             <button
               key={s.subject_id}
@@ -208,20 +209,13 @@ export default function StudentHomeworkSubjectHome() {
               onClick={() =>
                 navigate(`/student/homework/subject/${encodeURIComponent(s.subject_id)}`)
               }
-              className={`group flex flex-col items-center rounded-2xl border ${border} bg-white overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 active:scale-95 transition-all duration-200`}
+              className={`w-full flex items-center gap-4 bg-white rounded-xl border border-gray-200 border-l-4 ${border} px-4 py-3.5 hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-150`}
             >
-              <div className={`w-full ${headerBg} flex items-center justify-center py-6`}>
-                <div
-                  className={`w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-200`}
-                >
-                  <Icon className={`h-7 w-7 ${iconColor}`} strokeWidth={1.7} />
-                </div>
+              <div className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0`}>
+                <Icon className={`h-5 w-5 ${iconColor}`} strokeWidth={1.8} />
               </div>
-              <div className="px-3 py-3 w-full">
-                <p className="text-sm font-semibold text-gray-800 text-center leading-tight line-clamp-2">
-                  {s.subject_name}
-                </p>
-              </div>
+              <span className="flex-1 font-semibold text-gray-900 text-left">{s.subject_name}</span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />
             </button>
           );
         })}
