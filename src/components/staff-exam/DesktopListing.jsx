@@ -1,5 +1,16 @@
 import { Card, Table } from "../../ui-components";
 
+function getDateBadge(startDate, endDate) {
+  const now = new Date();
+  if (endDate && new Date(endDate) < now) {
+    return <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">Closed</span>;
+  }
+  if (startDate && new Date(startDate) <= now) {
+    return <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>;
+  }
+  return <span className="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">Upcoming</span>;
+}
+
 export default function DesktopListing({ examList, onEdit, onPublish, onView }) {
   const getStatusBadge = (status) => {
     switch (status) {
@@ -145,7 +156,12 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
     {
       key: "status",
       label: "Status",
-      render: (exam) => getStatusBadge(exam.status),
+      render: (exam) => (
+        <div className="flex items-center gap-1.5">
+          {getStatusBadge(exam.status)}
+          {getDateBadge(exam.startDate, exam.endDate)}
+        </div>
+      ),
     },
     {
       key: "actions",

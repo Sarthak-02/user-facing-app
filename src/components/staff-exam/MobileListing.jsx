@@ -1,3 +1,14 @@
+function getDateBadge(startDate, endDate) {
+  const now = new Date();
+  if (endDate && new Date(endDate) < now) {
+    return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">Closed</span>;
+  }
+  if (startDate && new Date(startDate) <= now) {
+    return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>;
+  }
+  return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">Upcoming</span>;
+}
+
 export default function MobileListing({ examList, onEdit, onPublish, onView, className }) {
   const getStatusBadge = (status) => {
     switch (status) {
@@ -83,7 +94,10 @@ export default function MobileListing({ examList, onEdit, onPublish, onView, cla
                 <p className="text-sm text-gray-600">{exam.customExamType}</p>
               )}
             </div>
-            {getStatusBadge(exam.status)}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {getStatusBadge(exam.status)}
+              {getDateBadge(exam.startDate, exam.endDate)}
+            </div>
           </div>
 
           <div className="space-y-2">

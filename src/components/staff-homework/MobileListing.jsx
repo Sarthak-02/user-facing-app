@@ -11,25 +11,22 @@ function formatDate(date) {
   return formattedDate;
 }
 
-function StatusBadge({ status, dueDate }) {
-  // const now = new Date();
-  // const due = new Date(dueDate);
-  
-  if (status === "DRAFT") {
-    return <Badge variant="warning">Draft</Badge>;
-  } else{
-    return <Badge variant="success">Published</Badge>;
-  }
-  
-  
-  // else if (status === "COMPLETED") {
-  //   return <Badge variant="success">Completed</Badge>;
-  // } else if (due < now && status !== "COMPLETED" && status !== "DRAFT") {
-  //   return <Badge variant="error">Overdue</Badge>;
-  // } else if (status === "PUBLISHED" || status === "ACTIVE") {
-  //   return <Badge variant="info">Active</Badge>;
-  // }
-  // return <Badge variant="default">{status}</Badge>;
+function StatusBadges({ status, dueDate }) {
+  const isPast = dueDate && new Date(dueDate) < new Date();
+  const dueBadge = (status === "CLOSED" || isPast)
+    ? <Badge variant="default">Closed</Badge>
+    : <Badge variant="success">Active</Badge>;
+
+  const pubBadge = status === "DRAFT"
+    ? <Badge variant="warning">Draft</Badge>
+    : <Badge variant="info">Published</Badge>;
+
+  return (
+    <div className="flex items-center gap-1.5 flex-shrink-0">
+      {pubBadge}
+      {dueBadge}
+    </div>
+  );
 }
 
 function AttachmentIndicator({ count }) {
@@ -97,7 +94,7 @@ export default function MobileListing({ homeworkList, onEdit, onPublish, listFro
                 </h3>
                 <p className="text-sm text-gray-600">{homework.subject}</p>
               </div>
-              <StatusBadge status={homework.status} dueDate={homework.dueDate} />
+              <StatusBadges status={homework.status} dueDate={homework.dueDate} />
             </div>
 
             <div className="space-y-2">

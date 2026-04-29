@@ -231,7 +231,7 @@ export async function publishHomework(homeworkId, teacherId) {
  */
 export async function deleteHomework(homeworkId) {
   try {
-    const response = await api.delete(`/staff/homework/${homeworkId}`);
+    const response = await api.delete(`/homework/${homeworkId}`);
     return response.data;
   } catch (err) {
     console.error("Error deleting homework:", err.response?.data);

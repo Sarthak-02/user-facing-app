@@ -108,11 +108,7 @@ export default function Exams() {
       filtered = filtered.filter((exam) => exam.status === statusFilterDropdown);
     }
 
-    filtered.sort((a, b) => {
-      if (!a.startDate) return 1;
-      if (!b.startDate) return -1;
-      return new Date(a.startDate) - new Date(b.startDate);
-    });
+    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     return filtered;
   }, [examList, examTypeFilter, statusFilterDropdown]);

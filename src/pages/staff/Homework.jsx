@@ -155,7 +155,7 @@ export default function TeacherHomework() {
       filtered = filtered.filter((hw) => hw.status === statusFilter);
     }
 
-    filtered.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     return filtered;
   }, [scopedHomework, statusFilter]);

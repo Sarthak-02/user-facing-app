@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Card, Badge, Button } from "../../ui-components";
-import { getHomeworkDetail } from "../../api/homework.api";
+import Modal from "../../ui-components/Modal";
+import { getHomeworkDetail, deleteHomework } from "../../api/homework.api";
 import Loader from "../../ui-components/Loader";
 
 function formatDate(date) {
@@ -15,20 +16,22 @@ function formatDate(date) {
 }
 
 
-function StatusBadge({ status, dueDate }) {
-  const now = new Date();
-  const due = new Date(dueDate);
-  
-  if (status === "DRAFT") {
-    return <Badge variant="warning">Draft</Badge>;
-  } else if (status === "CLOSED") {
-    return <Badge variant="default">Closed</Badge>;
-  } else if (due < now && status !== "CLOSED" && status !== "DRAFT") {
-    return <Badge variant="error">Overdue</Badge>;
-  } else if (status === "PUBLISHED" || status === "ACTIVE") {
-    return <Badge variant="info">Active</Badge>;
-  }
-  return <Badge variant="default">{status}</Badge>;
+function StatusBadges({ status, dueDate }) {
+  const isPast = dueDate && new Date(dueDate) < new Date();
+  const dueBadge = (status === "CLOSED" || isPast)
+    ? <Badge variant="default">Closed</Badge>
+    : <Badge variant="success">Active</Badge>;
+
+  const pubBadge = status === "DRAFT"
+    ? <Badge variant="warning">Draft</Badge>
+    : <Badge variant="info">Published</Badge>;
+
+  return (
+    <div className="flex items-center gap-1.5 flex-shrink-0">
+      {pubBadge}
+      {dueBadge}
+    </div>
+  );
 }
 
 export default function HomeworkDetail() {
@@ -39,6 +42,8 @@ export default function HomeworkDetail() {
   const [homework, setHomework] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchHomeworkDetail = async () => {
@@ -65,6 +70,20 @@ export default function HomeworkDetail() {
   const handleGoBack = () => {
     navigate(location.state?.from || "/staff/homework");
   };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteHomework(homeworkId);
+      navigate(location.state?.from || "/staff/homework", { replace: true });
+    } catch (err) {
+      console.error("Error deleting homework:", err);
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const canDelete = homework?.status === "DRAFT";
 
 
 
@@ -148,7 +167,20 @@ export default function HomeworkDetail() {
                 {homework.title}
               </h1>
             </div>
-            <StatusBadge status={homework.status} dueDate={homework.dueDate || homework.due_date} />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <StatusBadges status={homework.status} dueDate={homework.dueDate || homework.due_date} />
+              {canDelete && (
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  title="Delete homework"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Info Grid */}
@@ -292,7 +324,34 @@ export default function HomeworkDetail() {
         </Card>
       )}
 
-      
+      <Modal open={showDeleteModal} onClose={() => !deleting && setShowDeleteModal(false)}>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Delete Homework</h3>
+              <p className="text-sm text-gray-500">This action cannot be undone.</p>
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-700">
+            Are you sure you want to delete <span className="font-medium">{homework?.title}</span>?
+          </p>
+
+          <div className="flex gap-3 justify-end pt-1">
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
