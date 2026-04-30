@@ -57,9 +57,10 @@ export default function BottomNav({ navItems, setActiveNav }) {
       {moreOpen && overflowItems.length > 0 && (
         <div
           className="
-            fixed bottom-14 left-2 right-2 z-[48] max-h-[min(50vh,20rem)] overflow-y-auto
+            fixed left-2 right-2 z-[48] max-h-[min(50vh,20rem)] overflow-y-auto
             rounded-t-xl border border-[var(--color-border)] border-b-0
             bg-[var(--color-surface)] py-2 shadow-lg md:hidden
+            bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))]
           "
           role="menu"
         >
@@ -91,48 +92,50 @@ export default function BottomNav({ navItems, setActiveNav }) {
       <nav
         className="
           fixed bottom-0 left-0 right-0 z-50
-          h-14 bg-[var(--color-surface)]
+          bg-[var(--color-surface)]
           border-t border-[var(--color-border)]
-          flex justify-around items-center
+          pb-[env(safe-area-inset-bottom,0px)]
         "
       >
-        {barItems.map(({ label, icon: IconComponent, path }) => {
-          const Icon = IconComponent;
-          const active = isActive(path);
-          return (
+        <div className="flex h-14 items-center justify-around">
+          {barItems.map(({ label, icon: IconComponent, path }) => {
+            const Icon = IconComponent;
+            const active = isActive(path);
+            return (
+              <button
+                key={label}
+                type="button"
+                className={navButtonClass(active)}
+                onClick={() => handleNavClick(label, path)}
+              >
+                <Icon
+                  size={20}
+                  color={active ? "var(--color-primary-600)" : "black"}
+                />
+                <span className="truncate max-w-full">{label}</span>
+              </button>
+            );
+          })}
+          {overflowItems.length > 0 && (
             <button
-              key={label}
               type="button"
-              className={navButtonClass(active)}
-              onClick={() => handleNavClick(label, path)}
+              className={navButtonClass(overflowHasActive || moreOpen)}
+              onClick={() => setMoreOpen((open) => !open)}
+              aria-expanded={moreOpen}
+              aria-haspopup="menu"
             >
-              <Icon
+              <MoreHorizontal
                 size={20}
-                color={active ? "var(--color-primary-600)" : "black"}
+                color={
+                  overflowHasActive || moreOpen
+                    ? "var(--color-primary-600)"
+                    : "black"
+                }
               />
-              <span className="truncate max-w-full">{label}</span>
+              <span>More</span>
             </button>
-          );
-        })}
-        {overflowItems.length > 0 && (
-          <button
-            type="button"
-            className={navButtonClass(overflowHasActive || moreOpen)}
-            onClick={() => setMoreOpen((open) => !open)}
-            aria-expanded={moreOpen}
-            aria-haspopup="menu"
-          >
-            <MoreHorizontal
-              size={20}
-              color={
-                overflowHasActive || moreOpen
-                  ? "var(--color-primary-600)"
-                  : "black"
-              }
-            />
-            <span>More</span>
-          </button>
-        )}
+          )}
+        </div>
       </nav>
     </>
   );

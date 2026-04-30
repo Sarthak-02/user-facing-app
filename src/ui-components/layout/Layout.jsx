@@ -92,8 +92,8 @@ export default function Layout() {
           <Header />
         </div>
 
-        {/* Page Content — children use flex-1 min-h-0 + overflow-y-auto for page scroll, or internal scroll (e.g. chat) */}
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* Page Content — bottom padding reserves space for fixed BottomNav + safe area (mobile) */}
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
           <Outlet />
         </main>
       </div>
