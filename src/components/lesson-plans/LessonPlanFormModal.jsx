@@ -6,7 +6,6 @@ import {
   uploadLessonPlanFile,
   addLessonPlanAttachments,
   removeLessonPlanAttachment,
-  getLessonPlanById,
 } from "../../api/lessonPlans.api";
 import { Plus, Trash2, Paperclip } from "lucide-react";
 
@@ -109,29 +108,13 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
   const patchActivity = (i, patch) =>
     setActivities((prev) => prev.map((a, j) => (j === i ? { ...a, ...patch } : a)));
 
-  const handleFiles = async (e) => {
+  const handleFiles = (e) => {
     const files = Array.from(e.target.files || []);
     e.target.value = "";
     if (!files.length) return;
     setError("");
-    try {
-      const uploaded = [];
-      for (const file of files) {
-        const item = await uploadLessonPlanFile(file, isEdit ? planId : undefined);
-        uploaded.push(item);
-      }
-      if (isEdit && planId) {
-        await addLessonPlanAttachments(planId, { attachments: uploaded });
-        const fresh = await getLessonPlanById(planId);
-        const att = fresh?.attachments || fresh?.lesson_plan_attachments;
-        setExistingAttachments(Array.isArray(att) ? [...att] : []);
-      } else {
-        setPendingFiles((prev) => [...prev, ...uploaded]);
-      }
-    } catch (err) {
-      console.error(err);
-      setError(err?.message || "Failed to upload file(s)");
-    }
+    const newEntries = files.map((file) => ({ _file: file, name: file.name, type: file.type, size: file.size }));
+    setPendingFiles((prev) => [...prev, ...newEntries]);
   };
 
   const removePending = (i) =>
@@ -187,6 +170,11 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
 
     setSubmitting(true);
     try {
+      // Upload pending files now and collect their metadata
+      const uploadedAttachments = pendingFiles.length
+        ? await Promise.all(pendingFiles.map((f) => uploadLessonPlanFile(f._file)))
+        : [];
+
       if (isEdit && planId) {
         await updateLessonPlan(planId, {
           lesson_date: lessonDate,
@@ -200,6 +188,9 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           class_id: context.classId,
           section_id: context.sectionId || null,
         });
+        if (uploadedAttachments.length) {
+          await addLessonPlanAttachments(planId, { attachments: uploadedAttachments });
+        }
       } else {
         await createLessonPlan({
           lesson_date: lessonDate,
@@ -213,7 +204,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           class_id: context.classId,
           section_id: context.sectionId || undefined,
           teacher_id: context.teacherId,
-          ...(pendingFiles.length ? { attachments: pendingFiles } : {}),
+          ...(uploadedAttachments.length ? { attachments: uploadedAttachments } : {}),
         });
       }
       onSaved();
@@ -370,11 +361,6 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
             <span>Add files</span>
             <input type="file" multiple className="hidden" onChange={handleFiles} />
           </label>
-          {isEdit && (
-            <p className="mt-1 text-xs text-gray-500">
-              New files upload immediately and attach to this plan.
-            </p>
-          )}
           <ul className="mt-2 space-y-1 text-sm">
             {existingAttachments.map((a, i) => {
               const name = a.fileName || a.file_name || "File";
@@ -388,15 +374,14 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
                 </li>
               );
             })}
-            {!isEdit &&
-              pendingFiles.map((a, i) => (
-                <li key={`p-${i}`} className="flex items-center justify-between gap-2">
-                  <span className="truncate text-gray-800">{a.fileName}</span>
-                  <Button type="button" variant="ghost" className="py-0.5 text-xs" onClick={() => removePending(i)}>
-                    Remove
-                  </Button>
-                </li>
-              ))}
+            {pendingFiles.map((a, i) => (
+              <li key={`p-${i}`} className="flex items-center justify-between gap-2">
+                <span className="truncate text-gray-800">{a.name}</span>
+                <Button type="button" variant="ghost" className="py-0.5 text-xs" onClick={() => removePending(i)}>
+                  Remove
+                </Button>
+              </li>
+            ))}
           </ul>
         </div>
 
