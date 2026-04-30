@@ -3,7 +3,6 @@ import { Button, Dropdown } from "../../ui-components";
 import { usePermissions } from "../../store/permissions.store";
 import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
-import { generateHomeworkAttachmentSignedUrl } from "../../api/homework.api";
 
 const TARGET_OPTIONS = [
   { value: "SECTION", label: "Section" },
@@ -24,7 +23,6 @@ export default function HomeworkFormModal({
   const { permissions } = usePermissions();
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   const isEditing = !!homework;
   const prevHomeworkIdRef = useRef(null);
@@ -228,7 +226,7 @@ export default function HomeworkFormModal({
       subject: null,
     }));
 
-  const processFiles = async (files) => {
+  const processFiles = (files) => {
     setAttachmentError("");
     if (formData.attachments.length + files.length > 3) {
       setAttachmentError("Maximum 3 attachments allowed");
@@ -239,39 +237,20 @@ export default function HomeworkFormModal({
       setAttachmentError("Each file must be less than 10MB");
       return;
     }
-
-    setUploadingFiles(true);
-    const uploaded = [];
-    for (const file of files) {
-      try {
-        const publicUrl = await generateHomeworkAttachmentSignedUrl({
-          file,
-          homework_id: homework?.id || homework?.homework_id,
-          file_name: file.name,
-          mime_type: file.type,
-        });
-        if (publicUrl) uploaded.push({ name: file.name, type: file.type, size: file.size, fileUrl: publicUrl });
-      } catch {
-        setAttachmentError(`Failed to upload ${file.name}`);
-      }
-    }
-    setUploadingFiles(false);
-
-    if (uploaded.length > 0) {
-      setFormData((prev) => ({ ...prev, attachments: [...prev.attachments, ...uploaded] }));
-    }
+    const newEntries = files.map((file) => ({ _file: file, name: file.name, type: file.type, size: file.size }));
+    setFormData((prev) => ({ ...prev, attachments: [...prev.attachments, ...newEntries] }));
   };
 
-  const handleFileChange = async (e) => {
-    await processFiles(Array.from(e.target.files));
+  const handleFileChange = (e) => {
+    processFiles(Array.from(e.target.files));
     e.target.value = "";
   };
 
-  const handleDrop = async (e) => {
+  const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
     if (formData.attachments.length >= 3) return;
-    await processFiles(Array.from(e.dataTransfer.files));
+    processFiles(Array.from(e.dataTransfer.files));
   };
 
   const handleRemoveAttachment = (index) => {
@@ -460,34 +439,23 @@ export default function HomeworkFormModal({
 
             {formData.attachments.length < 3 && (
               <div
-                onClick={() => !uploadingFiles && fileInputRef.current?.click()}
+                onClick={() => fileInputRef.current?.click()}
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleDrop}
-                className={`flex flex-col items-center justify-center gap-2 p-5 border-2 border-dashed rounded-xl transition-colors ${
-                  uploadingFiles
-                    ? "border-blue-300 bg-blue-50 cursor-wait"
-                    : isDragOver
-                    ? "border-blue-400 bg-blue-50 cursor-copy"
-                    : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100 cursor-pointer"
+                className={`flex flex-col items-center justify-center gap-2 p-5 border-2 border-dashed rounded-xl transition-colors cursor-pointer ${
+                  isDragOver
+                    ? "border-blue-400 bg-blue-50"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100"
                 }`}
               >
-                {uploadingFiles ? (
-                  <>
-                    <div className="w-7 h-7 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm text-blue-500 font-medium">Uploading...</p>
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                    </svg>
-                    <p className="text-sm text-gray-500">
-                      <span className="font-medium text-blue-500">Click to upload</span> or drag & drop
-                    </p>
-                    <p className="text-xs text-gray-400">Max 3 files · 10MB each</p>
-                  </>
-                )}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                <p className="text-sm text-gray-500">
+                  <span className="font-medium text-blue-500">Click to upload</span> or drag & drop
+                </p>
+                <p className="text-xs text-gray-400">Max 3 files · 10MB each</p>
                 <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
               </div>
             )}

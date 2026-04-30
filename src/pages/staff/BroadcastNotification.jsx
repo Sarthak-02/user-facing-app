@@ -3,7 +3,7 @@ import { Card, Button } from "../../ui-components";
 import DesktopListing from "../../components/staff-broadcast/DesktopListing";
 import MobileListing from "../../components/staff-broadcast/MobileListing";
 import BroadcastFormModal from "../../components/staff-broadcast/BroadcastFormModal";
-import { createBroadcast, getBroadcastList } from "../../api/broadcast.api";
+import { createBroadcast, getBroadcastList, getAttachmentUploadUrl } from "../../api/broadcast.api";
 import { useAuth } from "../../store/auth.store";
 import { ANNOUNCEMENT_CATEGORY_OPTIONS } from "../../constants/announcementCategories";
 
@@ -103,16 +103,31 @@ export default function BroadcastPage() {
         });
       }
 
-      // Transform attachments (File objects to attachment URLs)
-      // TODO: Upload files first and get URLs
-      const attachmentUrls = broadcastData.attachments.length > 0
-        ? broadcastData.attachments.map(file => ({
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-          fileUrl: "" // TODO: Upload file first and get URL
-        }))
-        : undefined;
+      // Upload attachments to GCS via signed URLs, then collect metadata
+      let attachmentUrls;
+      if (broadcastData.attachments.length > 0) {
+        attachmentUrls = await Promise.all(
+          broadcastData.attachments.map(async (file) => {
+            const { uploadUrl, publicUrl } = await getAttachmentUploadUrl({
+              file_name: file.name,
+              mime_type: file.type,
+              campus_id: auth.campus_id,
+            });
+            const uploadRes = await fetch(uploadUrl, {
+              method: "PUT",
+              body: file,
+              headers: { "Content-Type": file.type },
+            });
+            if (!uploadRes.ok) throw new Error(`Failed to upload ${file.name}`);
+            return {
+              fileName: file.name,
+              fileType: file.type,
+              fileSize: file.size,
+              fileUrl: publicUrl,
+            };
+          })
+        );
+      }
 
       // Prepare API payload
       const payload = {

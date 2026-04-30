@@ -110,13 +110,17 @@ export default function AnnouncementDetail() {
     );
   }
 
-  const attachments = Array.isArray(announcement.attachments) ? announcement.attachments : [];
+  const attachments = Array.isArray(announcement.broadcastAttachments)
+    ? announcement.broadcastAttachments
+    : Array.isArray(announcement.attachments)
+    ? announcement.attachments
+    : [];
   const withLinks = attachments.map((att, i) => ({
     att, i,
     href: attachmentHref(att),
     label: attachmentLabel(att, i),
   }));
-  const validAttachments = withLinks.filter((x) => x.href);
+  const validAttachments = withLinks;
   const sender = announcement.senderName || announcement.createdBy || "School";
 
   return (
@@ -184,27 +188,32 @@ export default function AnnouncementDetail() {
                 Attachments ({validAttachments.length})
               </h3>
               <div className="space-y-2">
-                {validAttachments.map(({ att, href, label, i }) => (
-                  <a
-                    key={att.id || i}
-                    href={href}
-                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-violet-50 hover:border-violet-100 transition-colors group"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
+                {validAttachments.map(({ att, href, label, i }) => {
+                  const inner = (
+                    <div className="flex items-center justify-between p-3 rounded-xl border border-gray-100 group-hover:bg-violet-50 group-hover:border-violet-100 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-gray-800 truncate">{label}</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-800 truncate">{label}</span>
+                      {href && (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 group-hover:text-violet-500 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      )}
                     </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 group-hover:text-violet-500 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                  </a>
-                ))}
+                  );
+                  return href ? (
+                    <a key={att.id || i} href={href} className="group block" target="_blank" rel="noopener noreferrer">
+                      {inner}
+                    </a>
+                  ) : (
+                    <div key={att.id || i}>{inner}</div>
+                  );
+                })}
               </div>
             </div>
           )}

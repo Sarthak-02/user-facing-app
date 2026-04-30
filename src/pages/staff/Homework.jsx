@@ -4,7 +4,7 @@ import { Card, Button } from "../../ui-components";
 import DesktopListing from "../../components/staff-homework/DesktopListing";
 import MobileListing from "../../components/staff-homework/MobileListing";
 import HomeworkFormModal from "../../components/staff-homework/HomeworkFormModal";
-import { createHomework, getHomeworkDetail, getTeacherHomeworkAll } from "../../api/homework.api";
+import { createHomework, getHomeworkDetail, getTeacherHomeworkAll, generateHomeworkAttachmentSignedUrl } from "../../api/homework.api";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
 import { ArrowLeft } from "lucide-react";
@@ -244,13 +244,20 @@ export default function TeacherHomework() {
           });
         }
 
-        // Transform attachments (File objects to attachment metadata)
-        const attachments = homeworkData.attachments.map(file => ({
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-          fileUrl: file?.fileUrl ?? ""
-        }));
+        // Upload new files (those with _file), keep already-uploaded ones as-is
+        const attachments = await Promise.all(
+          homeworkData.attachments.map(async (file) => {
+            if (file._file) {
+              const publicUrl = await generateHomeworkAttachmentSignedUrl({
+                file: file._file,
+                file_name: file.name,
+                mime_type: file.type,
+              });
+              return { fileName: file.name, fileType: file.type, fileSize: file.size, fileUrl: publicUrl };
+            }
+            return { fileName: file.name, fileType: file.type, fileSize: file.size, fileUrl: file.fileUrl ?? "" };
+          })
+        );
 
         // Prepare API payload for update
         const payload = {
@@ -298,14 +305,20 @@ export default function TeacherHomework() {
           });
         }
 
-        // Transform attachments (File objects to attachment metadata)
-        // Note: Files should be uploaded first to get URLs
-        const attachments = homeworkData.attachments.map(file => ({
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-          fileUrl: file?.fileUrl 
-        }));
+        // Upload new files (those with _file), keep already-uploaded ones as-is
+        const attachments = await Promise.all(
+          homeworkData.attachments.map(async (file) => {
+            if (file._file) {
+              const publicUrl = await generateHomeworkAttachmentSignedUrl({
+                file: file._file,
+                file_name: file.name,
+                mime_type: file.type,
+              });
+              return { fileName: file.name, fileType: file.type, fileSize: file.size, fileUrl: publicUrl };
+            }
+            return { fileName: file.name, fileType: file.type, fileSize: file.size, fileUrl: file.fileUrl ?? "" };
+          })
+        );
 
         // Prepare API payload
         const payload = {

@@ -54,6 +54,25 @@ export async function getBroadcastDetail(broadcastId) {
 }
 
 /**
+ * Get a signed URL for direct attachment upload to GCS.
+ * Returns { uploadUrl, fileUrl }.
+ */
+export async function getAttachmentUploadUrl({ file_name, mime_type, broadcast_id, campus_id }) {
+  try {
+    const response = await apiClient.post("/broadcast/attachment/upload-url", {
+      file_name,
+      mime_type,
+      ...(broadcast_id && { broadcast_id }),
+      ...(campus_id && { campus_id }),
+    });
+    return response.data?.data ?? response.data;
+  } catch (err) {
+    console.error("Error getting attachment upload URL:", err.response?.data);
+    throw err.response?.data || err;
+  }
+}
+
+/**
  * Create a new broadcast
  * @param {Object} payload - Broadcast data
  * @param {string} payload.title - Broadcast title (required)
