@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../ui-components";
 import AttendanceSummary from "../../components/student-attendance/AttendanceSummary";
 import FiltersModal from "../../components/student-attendance/FiltersModal";
@@ -9,6 +10,7 @@ import { useAuth } from "../../store/auth.store";
 import { getFormattedDate, toLocalISOString } from "../../utils/common-functions";
 
 export default function StudentAttendance() {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState("ALL");
   const [dateRange, setDateRange] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL"); // ALL, PRESENT, ABSENT
@@ -49,14 +51,14 @@ export default function StudentAttendance() {
     const periods = Array.from(uniquePeriods).sort();
 
     // Create options array with "All Periods" first
-    const options = [{ label: "All Periods", value: "ALL" }];
-    
+    const options = [{ label: t("studentAttendance.allPeriods"), value: "ALL" }];
+
     periods.forEach((period) => {
       // Format the label (e.g., "PERIOD_1" -> "Period 1", "OVERALL" -> "Overall")
       let label = period;
       if (period.startsWith("PERIOD_")) {
         const num = period.split("_")[1];
-        label = `Period ${num}`;
+        label = t("studentAttendance.period", { num });
       } else {
         label = period.charAt(0) + period.slice(1).toLowerCase();
       }
@@ -187,7 +189,7 @@ export default function StudentAttendance() {
             <div className="h-10 w-10 rounded-full bg-error-100 flex items-center justify-center mx-auto mb-3">
               <span className="text-error-600 text-lg font-bold">!</span>
             </div>
-            <p className="font-semibold text-error-700 mb-1">Failed to load attendance</p>
+            <p className="font-semibold text-error-700 mb-1">{t("studentAttendance.errorLoading")}</p>
             <p className="text-sm text-gray-500">{error}</p>
           </div>
         </Card>
@@ -232,10 +234,10 @@ export default function StudentAttendance() {
                   <span className="text-2xl">📅</span>
                 </div>
                 <p className="text-base font-semibold text-gray-600 mb-1">
-                  No records found
+                  {t("studentAttendance.noRecordsFound")}
                 </p>
                 <p className="text-sm">
-                  Try adjusting your filters or date range.
+                  {t("studentAttendance.adjustFilters")}
                 </p>
               </div>
             </Card>

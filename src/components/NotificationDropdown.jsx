@@ -5,10 +5,12 @@ import { useAuth } from "../store/auth.store";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { useTranslation } from "react-i18next";
 
 dayjs.extend(relativeTime);
 
 export default function NotificationDropdown() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -209,14 +211,14 @@ export default function NotificationDropdown() {
           {/* Header */}
           <div className="px-4 py-3 border-b border-[var(--color-border)] bg-primary-50">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-base">Notifications</h3>
+              <h3 className="font-semibold text-base">{t("notifications.title")}</h3>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
                   className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
                 >
                   <CheckCheck size={14} />
-                  Mark all read
+                  {t("notifications.markAllRead")}
                 </button>
               )}
             </div>
@@ -231,7 +233,7 @@ export default function NotificationDropdown() {
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
                 <Bell size={40} className="text-gray-300 mb-2" />
-                <p className="text-text-secondary text-sm">No notifications yet</p>
+                <p className="text-text-secondary text-sm">{t("notifications.noNotifications")}</p>
               </div>
             ) : (
               <div className="divide-y divide-[var(--color-border)]">
@@ -264,9 +266,9 @@ export default function NotificationDropdown() {
                         <div className="flex items-center gap-1 mt-1.5 text-xs text-text-secondary">
                           <Clock size={12} />
                           <span>
-                            {notification.sentAt 
+                            {notification.sentAt
                               ? dayjs(notification.sentAt).fromNow()
-                              : "Recently"
+                              : t("notifications.recently")
                             }
                           </span>
                         </div>
@@ -289,7 +291,7 @@ export default function NotificationDropdown() {
                 }}
                 className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium"
               >
-                View all notifications
+                {t("notifications.viewAll")}
               </button>
             </div>
           )}

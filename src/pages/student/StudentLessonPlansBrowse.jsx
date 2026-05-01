@@ -14,6 +14,7 @@ import {
   MinusCircle,
   Zap,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import Loader from "../../ui-components/Loader";
 

@@ -19,6 +19,7 @@ import {
   conversationUpdatedAt,
   relativeTimeLabel,
 } from "./chatUtils";
+import { useTranslation } from "react-i18next";
 
 function getInitials(name) {
   return (
@@ -44,6 +45,7 @@ function Avatar({ name }) {
  * @param {{ mode: 'student' | 'staff', threadBase: string, activeId?: string }} props
  */
 export default function ChatInbox({ mode, threadBase, activeId = "" }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { auth } = useAuth();
   const currentUserId = String(auth?.userId ?? "").trim();
@@ -168,7 +170,7 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
       {/* Header */}
       <div className="shrink-0 border-b border-[var(--color-border)] px-4 pb-3 pt-4">
         <div className="flex items-center justify-between gap-2">
-          <h1 className="text-base font-semibold text-gray-800">Messages</h1>
+          <h1 className="text-base font-semibold text-gray-800">{t("chat.messages")}</h1>
           <Button
             type="button"
             variant="secondary"
@@ -176,7 +178,7 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
             onClick={() => setNewOpen((v) => !v)}
           >
             <MessageCirclePlus size={15} />
-            New
+            {t("chat.new")}
           </Button>
         </div>
 
@@ -189,7 +191,7 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search…"
+            placeholder={t("chat.search")}
             className="w-full rounded-lg bg-gray-100 py-1.5 pl-8 pr-7 text-sm text-gray-700 outline-none placeholder:text-gray-400 focus:bg-white focus:ring-1 focus:ring-[var(--color-border)]"
           />
           {search ? (
@@ -215,7 +217,7 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
       {newOpen ? (
         <div className="shrink-0 border-b border-[var(--color-border)] bg-gray-50 px-4 py-3">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-            Start a conversation
+            {t("chat.startConversation")}
           </p>
           {mode === "student" && contactsLoading ? (
             <div className="flex justify-center py-3">
@@ -244,15 +246,15 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
           ) : (
             <p className="mb-3 text-xs text-gray-400">
               {mode === "student"
-                ? "No teachers found yet. Paste a user ID below."
-                : "No students in your permissions yet. Paste a user ID below."}
+                ? t("chat.noTeachersFound")
+                : t("chat.noStudentsFound")}
             </p>
           )}
           <div className="flex gap-2">
             <input
               value={manualId}
               onChange={(e) => setManualId(e.target.value)}
-              placeholder="Paste user ID"
+              placeholder={t("chat.pasteUserId")}
               className="min-h-9 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm text-gray-700 outline-none focus:ring-1 focus:ring-primary-500"
             />
             <Button
@@ -260,7 +262,7 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
               disabled={!manualId.trim() || !!creatingId}
               onClick={() => startWith(manualId)}
             >
-              Go
+              {t("chat.go")}
             </Button>
           </div>
         </div>
@@ -275,8 +277,8 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
         ) : filteredConversations.length === 0 ? (
           <p className="p-6 text-center text-sm text-gray-400">
             {search
-              ? "No conversations match your search."
-              : "No conversations yet. Start one with New."}
+              ? t("chat.noConversationsSearch")
+              : t("chat.noConversations")}
           </p>
         ) : (
           <ul>

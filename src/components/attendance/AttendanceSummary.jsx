@@ -1,4 +1,5 @@
 import { Card } from "../../ui-components";
+import { useTranslation } from "react-i18next";
 
 
 export default function AttendanceSummary({
@@ -6,11 +7,12 @@ export default function AttendanceSummary({
   present,
   absent,
 }) {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-3 gap-3">
       <Card>
         <div className="text-xs text-gray-500">
-          Total
+          {t("attendance.summary.total")}
         </div>
         <div className="text-xl font-semibold">
           {total}
@@ -19,7 +21,7 @@ export default function AttendanceSummary({
 
       <Card>
         <div className="text-xs text-gray-500">
-          Present
+          {t("attendance.summary.present")}
         </div>
         <div className="text-xl font-semibold text-success-600">
           {present}
@@ -28,7 +30,7 @@ export default function AttendanceSummary({
 
       <Card>
         <div className="text-xs text-gray-500">
-          Absent
+          {t("attendance.summary.absent")}
         </div>
         <div className="text-xl font-semibold text-error-600">
           {absent}

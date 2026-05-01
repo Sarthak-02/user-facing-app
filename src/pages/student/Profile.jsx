@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../ui-components";
 import { useAuth } from "../../store/auth.store";
 import {
@@ -9,6 +10,7 @@ import {
 import ChangePasswordModal from "../../components/ChangePasswordModal";
 
 export default function StudentProfile() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -60,14 +62,14 @@ export default function StudentProfile() {
   }, [auth]);
 
   const formatDate = (dateString) => {
-    if (!dateString) return "Not provided";
+    if (!dateString) return t("common.notProvided");
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric", month: "long", day: "numeric",
     });
   };
 
   const formatBloodGroup = (bloodGroup) => {
-    if (!bloodGroup) return "Not provided";
+    if (!bloodGroup) return t("common.notProvided");
     const map = {
       a_plus: "A+", a_minus: "A-", b_plus: "B+", b_minus: "B-",
       o_plus: "O+", o_minus: "O-", ab_plus: "AB+", ab_minus: "AB-",
@@ -104,7 +106,7 @@ export default function StudentProfile() {
                 {studentData?.photo_url && !imgError ? (
                   <img
                     src={studentData.photo_url}
-                    alt="Profile"
+                    alt={t("profile.studentName")}
                     onError={() => setImgError(true)}
                     className="h-24 w-24 md:h-28 md:w-28 rounded-2xl object-cover border-4 border-white shadow-lg"
                   />
@@ -119,7 +121,7 @@ export default function StudentProfile() {
               <div className="flex-1 text-center sm:text-left min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-wrap justify-center sm:justify-start">
                   <h1 className="text-2xl md:text-3xl font-bold text-gray-900 truncate">
-                    {studentData?.full_name || "Student Name"}
+                    {studentData?.full_name || t("profile.studentName")}
                   </h1>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
@@ -130,13 +132,13 @@ export default function StudentProfile() {
                   {studentData?.admission_no && (
                     <span className="flex items-center gap-1.5">
                       <BadgeCheck size={14} className="text-primary-500" />
-                      Adm #{studentData.admission_no}
+                      {t("profile.admissionHash", { number: studentData.admission_no })}
                     </span>
                   )}
                   {studentData?.roll_no && (
                     <span className="flex items-center gap-1.5">
                       <Award size={14} className="text-primary-500" />
-                      Roll #{studentData.roll_no}
+                      {t("profile.rollHash", { number: studentData.roll_no })}
                     </span>
                   )}
                   {studentData?.section && (
@@ -155,7 +157,7 @@ export default function StudentProfile() {
                   className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:opacity-90 active:scale-95 transition-all text-sm font-medium shadow-sm"
                 >
                   <Key size={16} />
-                  Change Password
+                  {t("profile.changePassword")}
                 </button>
               </div>
             </div>
@@ -169,21 +171,21 @@ export default function StudentProfile() {
           <div className="space-y-6">
 
             {/* Quick contact */}
-            <SectionCard icon={<Mail size={18} />} title="Contact">
-              <ContactRow icon={<Mail size={15} />} value={studentData?.email} placeholder="No email" />
-              <ContactRow icon={<Phone size={15} />} value={studentData?.phone} placeholder="No phone" />
+            <SectionCard icon={<Mail size={18} />} title={t("profile.contact")}>
+              <ContactRow icon={<Mail size={15} />} value={studentData?.email} placeholder={t("profile.noEmail")} />
+              <ContactRow icon={<Phone size={15} />} value={studentData?.phone} placeholder={t("profile.noPhone")} />
             </SectionCard>
 
             {/* Academic snapshot */}
-            <SectionCard icon={<BookOpen size={18} />} title="Academic">
-              <InfoRow label="Class / Section" value={studentData?.section} icon={<GraduationCap size={14} />} />
-              <InfoRow label="Admission No" value={studentData?.admission_no} icon={<BadgeCheck size={14} />} />
-              <InfoRow label="Roll No" value={studentData?.roll_no} icon={<Award size={14} />} />
-              <InfoRow label="Admission Date" value={formatDate(studentData?.admission_date)} icon={<Calendar size={14} />} />
+            <SectionCard icon={<BookOpen size={18} />} title={t("profile.academic")}>
+              <InfoRow label={t("profile.fields.classSection")} value={studentData?.section} icon={<GraduationCap size={14} />} />
+              <InfoRow label={t("profile.fields.admissionNo")} value={studentData?.admission_no} icon={<BadgeCheck size={14} />} />
+              <InfoRow label={t("profile.fields.rollNo")} value={studentData?.roll_no} icon={<Award size={14} />} />
+              <InfoRow label={t("profile.fields.admissionDate")} value={formatDate(studentData?.admission_date)} icon={<Calendar size={14} />} />
               <div className="py-3 border-b border-gray-100 last:border-b-0">
                 <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
                   <span className="text-gray-300"><User size={14} /></span>
-                  Status
+                  {t("profile.fields.status")}
                 </p>
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
@@ -193,15 +195,15 @@ export default function StudentProfile() {
             </SectionCard>
 
             {/* Emergency */}
-            <SectionCard icon={<AlertCircle size={18} />} title="Emergency Contact">
-              <InfoRow label="Name" value={studentData?.emergency_contact_name} />
-              <InfoRow label="Phone" value={studentData?.emergency_contact_phone} />
+            <SectionCard icon={<AlertCircle size={18} />} title={t("profile.emergency")}>
+              <InfoRow label={t("profile.fields.name")} value={studentData?.emergency_contact_name} />
+              <InfoRow label={t("profile.fields.phone")} value={studentData?.emergency_contact_phone} />
             </SectionCard>
 
             {/* Medical */}
-            <SectionCard icon={<Heart size={18} />} title="Medical">
-              <InfoRow label="Blood Group" value={formatBloodGroup(studentData?.blood_group)} />
-              <InfoRow label="Conditions" value={studentData?.medical_conditions || "None"} />
+            <SectionCard icon={<Heart size={18} />} title={t("profile.medical")}>
+              <InfoRow label={t("profile.fields.bloodGroup")} value={formatBloodGroup(studentData?.blood_group)} />
+              <InfoRow label={t("profile.fields.conditions")} value={studentData?.medical_conditions || t("common.none")} />
             </SectionCard>
           </div>
 
@@ -209,48 +211,48 @@ export default function StudentProfile() {
           <div className="lg:col-span-2 space-y-6">
 
             {/* Personal Information */}
-            <SectionCard icon={<User size={18} />} title="Personal Information">
+            <SectionCard icon={<User size={18} />} title={t("profile.personalInfo")}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
-                <InfoRow label="First Name" value={studentData?.first_name} icon={<User size={14} />} />
-                <InfoRow label="Middle Name" value={studentData?.middle_name} icon={<User size={14} />} />
-                <InfoRow label="Last Name" value={studentData?.last_name} icon={<User size={14} />} />
-                <InfoRow label="Gender" value={studentData?.gender} icon={<User size={14} />} />
-                <InfoRow label="Date of Birth" value={formatDate(studentData?.dob)} icon={<Calendar size={14} />} />
-                <InfoRow label="Blood Group" value={formatBloodGroup(studentData?.blood_group)} icon={<Droplet size={14} />} />
-                <InfoRow label="Category" value={studentData?.category?.toUpperCase()} icon={<User size={14} />} />
+                <InfoRow label={t("profile.fields.firstName")} value={studentData?.first_name} icon={<User size={14} />} />
+                <InfoRow label={t("profile.fields.middleName")} value={studentData?.middle_name} icon={<User size={14} />} />
+                <InfoRow label={t("profile.fields.lastName")} value={studentData?.last_name} icon={<User size={14} />} />
+                <InfoRow label={t("profile.fields.gender")} value={studentData?.gender} icon={<User size={14} />} />
+                <InfoRow label={t("profile.fields.dateOfBirth")} value={formatDate(studentData?.dob)} icon={<Calendar size={14} />} />
+                <InfoRow label={t("profile.fields.bloodGroup")} value={formatBloodGroup(studentData?.blood_group)} icon={<Droplet size={14} />} />
+                <InfoRow label={t("profile.fields.category")} value={studentData?.category?.toUpperCase()} icon={<User size={14} />} />
               </div>
             </SectionCard>
 
             {/* Academic Information */}
-            <SectionCard icon={<BookOpen size={18} />} title="Academic Information">
+            <SectionCard icon={<BookOpen size={18} />} title={t("profile.academicInfo")}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
-                <InfoRow label="Student ID" value={studentData?.student_id} icon={<Award size={14} />} />
-                <InfoRow label="Admission Number" value={studentData?.admission_no} icon={<BadgeCheck size={14} />} />
-                <InfoRow label="Roll Number" value={studentData?.roll_no} icon={<Award size={14} />} />
-                <InfoRow label="Class / Section" value={studentData?.section} icon={<GraduationCap size={14} />} />
-                <InfoRow label="Admission Date" value={formatDate(studentData?.admission_date)} icon={<Calendar size={14} />} />
+                <InfoRow label={t("profile.fields.studentId")} value={studentData?.student_id} icon={<Award size={14} />} />
+                <InfoRow label={t("profile.fields.admissionNumber")} value={studentData?.admission_no} icon={<BadgeCheck size={14} />} />
+                <InfoRow label={t("profile.fields.rollNumber")} value={studentData?.roll_no} icon={<Award size={14} />} />
+                <InfoRow label={t("profile.fields.classSection")} value={studentData?.section} icon={<GraduationCap size={14} />} />
+                <InfoRow label={t("profile.fields.admissionDate")} value={formatDate(studentData?.admission_date)} icon={<Calendar size={14} />} />
               </div>
             </SectionCard>
 
             {/* Parent / Guardian Information */}
-            <SectionCard icon={<Users size={18} />} title="Parent / Guardian Information">
+            <SectionCard icon={<Users size={18} />} title={t("profile.parentGuardianInfo")}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
-                <InfoRow label="Father's Name" value={studentData?.father_name} icon={<User size={14} />} />
-                <InfoRow label="Mother's Name" value={studentData?.mother_name} icon={<User size={14} />} />
-                <InfoRow label="Guardian Name" value={studentData?.guardian_name} icon={<User size={14} />} />
-                <InfoRow label="Relationship" value={studentData?.guardian_relation} icon={<User size={14} />} />
-                <InfoRow label="Primary Contact" value={studentData?.primary_contact?.toUpperCase()} icon={<User size={14} />} />
-                <InfoRow label="Guardian Phone" value={studentData?.guardian_phone} icon={<Phone size={14} />} />
-                <InfoRow label="Guardian Email" value={studentData?.guardian_email} icon={<Mail size={14} />} />
+                <InfoRow label={t("profile.fields.fathersName")} value={studentData?.father_name} icon={<User size={14} />} />
+                <InfoRow label={t("profile.fields.mothersName")} value={studentData?.mother_name} icon={<User size={14} />} />
+                <InfoRow label={t("profile.fields.guardianName")} value={studentData?.guardian_name} icon={<User size={14} />} />
+                <InfoRow label={t("profile.fields.relationship")} value={studentData?.guardian_relation} icon={<User size={14} />} />
+                <InfoRow label={t("profile.fields.primaryContact")} value={studentData?.primary_contact?.toUpperCase()} icon={<User size={14} />} />
+                <InfoRow label={t("profile.fields.guardianPhone")} value={studentData?.guardian_phone} icon={<Phone size={14} />} />
+                <InfoRow label={t("profile.fields.guardianEmail")} value={studentData?.guardian_email} icon={<Mail size={14} />} />
               </div>
               <div className="mt-2 pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-3">Guardian Address</p>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-3">{t("profile.guardianAddress")}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
-                  <InfoRow label="Street" value={studentData?.guardian_address} icon={<MapPin size={14} />} />
-                  <InfoRow label="City" value={studentData?.guardian_city} icon={<MapPin size={14} />} />
-                  <InfoRow label="State" value={studentData?.guardian_state} icon={<MapPin size={14} />} />
-                  <InfoRow label="Country" value={studentData?.guardian_country} icon={<MapPin size={14} />} />
-                  <InfoRow label="Pincode" value={studentData?.guardian_pincode} icon={<MapPin size={14} />} />
+                  <InfoRow label={t("profile.fields.street")} value={studentData?.guardian_address} icon={<MapPin size={14} />} />
+                  <InfoRow label={t("profile.fields.city")} value={studentData?.guardian_city} icon={<MapPin size={14} />} />
+                  <InfoRow label={t("profile.fields.state")} value={studentData?.guardian_state} icon={<MapPin size={14} />} />
+                  <InfoRow label={t("profile.fields.country")} value={studentData?.guardian_country} icon={<MapPin size={14} />} />
+                  <InfoRow label={t("profile.fields.pincode")} value={studentData?.guardian_pincode} icon={<MapPin size={14} />} />
                 </div>
               </div>
             </SectionCard>
@@ -279,7 +281,8 @@ function SectionCard({ icon, title, children }) {
 }
 
 function InfoRow({ label, value, icon }) {
-  const display = value || "Not provided";
+  const { t } = useTranslation();
+  const display = value || t("common.notProvided");
   const isEmpty = !value;
   return (
     <div className="py-3 border-b border-gray-100 last:border-b-0">

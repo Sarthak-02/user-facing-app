@@ -1,35 +1,38 @@
 import { Card, Table } from "../../ui-components";
-
-function getDateBadge(startDate, endDate) {
-  const now = new Date();
-  if (endDate && new Date(endDate) < now) {
-    return <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">Closed</span>;
-  }
-  if (startDate && new Date(startDate) <= now) {
-    return <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>;
-  }
-  return <span className="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">Upcoming</span>;
-}
+import { useTranslation } from "react-i18next";
 
 export default function DesktopListing({ examList, onEdit, onPublish, onView }) {
+  const { t } = useTranslation();
+
+  const getDateBadge = (startDate, endDate) => {
+    const now = new Date();
+    if (endDate && new Date(endDate) < now) {
+      return <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">{t("exams.dateBadge.closed")}</span>;
+    }
+    if (startDate && new Date(startDate) <= now) {
+      return <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">{t("exams.dateBadge.active")}</span>;
+    }
+    return <span className="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">{t("exams.dateBadge.upcoming")}</span>;
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "DRAFT":
         return (
           <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-            Draft
+            {t("exams.status.draft")}
           </span>
         );
       case "PUBLISHED":
         return (
           <span className="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
-            Published
+            {t("exams.status.published")}
           </span>
         );
       case "COMPLETED":
         return (
           <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
-            Completed
+            {t("exams.status.completed")}
           </span>
         );
       default:
@@ -43,13 +46,13 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
 
   const getExamTypeLabel = (type) => {
     const labels = {
-      UNIT_TEST: "Unit Test",
-      MID_TERM: "Mid Term",
-      FINAL: "Final Exam",
-      QUARTERLY: "Quarterly",
-      HALF_YEARLY: "Half Yearly",
-      ANNUAL: "Annual",
-      OTHER: "Other",
+      UNIT_TEST: t("exams.types.unitTest"),
+      MID_TERM: t("exams.types.midTerm"),
+      FINAL: t("exams.types.final"),
+      QUARTERLY: t("exams.types.quarterly"),
+      HALF_YEARLY: t("exams.types.halfYearly"),
+      ANNUAL: t("exams.types.annual"),
+      OTHER: t("exams.types.other"),
     };
     return labels[type] || type;
   };
@@ -71,9 +74,9 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Exams Found</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("exams.noExams")}</h3>
         <p className="text-gray-600 text-center max-w-md">
-          You haven't created any exams yet. Click the "Create Exam" button to get started.
+          {t("exams.noExamsDesc")}
         </p>
       </Card>
     );
@@ -82,7 +85,7 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
   const columns = [
     {
       key: "examDetails",
-      label: "Exam Details",
+      label: t("exams.columns.examDetails"),
       render: (exam) => (
         <div>
           <p className="text-sm font-semibold text-gray-900">
@@ -92,14 +95,14 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
             <p className="text-xs text-gray-500">{exam.customExamType}</p>
           )}
           <p className="text-xs text-gray-500 mt-1">
-            {exam.subjects?.length || 0} subject(s)
+            {t("exams.subjectsCount", { count: exam.subjects?.length || 0 })}
           </p>
         </div>
       ),
     },
     {
       key: "target",
-      label: "Target",
+      label: t("exams.columns.target"),
       render: (exam) => (
         <div className="text-sm">
           <p className="font-medium text-gray-900">{exam.class}</p>
@@ -109,7 +112,7 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
     },
     {
       key: "subjects",
-      label: "Subjects",
+      label: t("exams.columns.subjects"),
       render: (exam) => (
         <div className="text-sm text-gray-700">
           {exam.subjects?.slice(0, 2).map((sub, idx) => (
@@ -119,7 +122,7 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
           ))}
           {exam.subjects?.length > 2 && (
             <span className="text-xs text-gray-500">
-              +{exam.subjects.length - 2} more
+              +{exam.subjects.length - 2} {t("exams.more")}
             </span>
           )}
         </div>
@@ -127,7 +130,7 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
     },
     {
       key: "dateRange",
-      label: "Date Range",
+      label: t("exams.columns.dateRange"),
       render: (exam) => (
         <div className="text-sm text-gray-700">
           {exam.startDate && exam.endDate ? (
@@ -148,14 +151,14 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
               </p>
             </>
           ) : (
-            <p className="text-xs text-gray-500">Not scheduled</p>
+            <p className="text-xs text-gray-500">{t("exams.notScheduled")}</p>
           )}
         </div>
       ),
     },
     {
       key: "status",
-      label: "Status",
+      label: t("exams.columns.status"),
       render: (exam) => (
         <div className="flex items-center gap-1.5">
           {getStatusBadge(exam.status)}
@@ -165,14 +168,14 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
     },
     {
       key: "actions",
-      label: "Actions",
+      label: t("exams.columns.actions"),
       render: (exam) => (
         <div className="flex items-center justify-end gap-2">
           <button
             onClick={() => onView(exam)}
             className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
           >
-            View
+            {t("exams.actions.view")}
           </button>
           {exam.status === "DRAFT" && (
             <>
@@ -180,13 +183,13 @@ export default function DesktopListing({ examList, onEdit, onPublish, onView }) 
                 onClick={() => onEdit(exam)}
                 className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
               >
-                Edit
+                {t("exams.actions.edit")}
               </button>
               <button
                 onClick={() => onPublish(exam)}
                 className="px-3 py-1.5 text-xs font-medium rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
               >
-                Publish
+                {t("exams.actions.publish")}
               </button>
             </>
           )}

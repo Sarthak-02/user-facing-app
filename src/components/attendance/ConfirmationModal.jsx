@@ -1,5 +1,6 @@
 import { Button, Card, Modal } from "../../ui-components";
 import AttendanceSummary from "./AttendanceSummary";
+import { useTranslation } from "react-i18next";
 
 export default function ConfirmationModal({
   showConfirmation,
@@ -9,32 +10,28 @@ export default function ConfirmationModal({
   absentCount = 0,
   totalCount = 0,
 }) {
+  const { t } = useTranslation();
   return (
     <Modal open={showConfirmation} >
       <div className="space-y-4">
-        {/* Title */}
-        <h2 className="text-lg font-semibold">Confirm Attendance</h2>
+        <h2 className="text-lg font-semibold">{t("attendance.confirm.title")}</h2>
 
-        {/* Summary */}
         <AttendanceSummary total={totalCount} present={presentCount} absent={absentCount}/>
 
-        {/* Info text */}
         <p className="text-sm text-gray-500">
-          Please review the attendance before submitting. Once submitted, attendance
-          cannot be edited.
+          {t("attendance.confirm.message")}
         </p>
 
-        {/* Actions */}
         <div className="flex gap-3 justify-end pt-2">
           <Button
             variant="secondary"
             onClick={() => setShowConfirmation(false)}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <Button variant="primary" onClick={handleSubmit}>
-            Submit Attendance
+            {t("attendance.confirm.submit")}
           </Button>
         </div>
       </div>

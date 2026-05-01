@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../../ui-components";
 import { getReceivedBroadcasts } from "../../api/broadcast.api";
@@ -20,8 +21,8 @@ function attachmentHref(att) {
   return att?.fileUrl || att?.url || att?.href || att?.link;
 }
 
-function attachmentLabel(att, index) {
-  return att?.fileName || att?.name || att?.title || `Attachment ${index + 1}`;
+function attachmentLabel(att) {
+  return att?.fileName || att?.name || att?.title || null;
 }
 
 function senderInitial(name) {
@@ -30,6 +31,7 @@ function senderInitial(name) {
 }
 
 export default function AnnouncementDetail() {
+  const { t } = useTranslation();
   const { announcementId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -93,7 +95,7 @@ export default function AnnouncementDetail() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-base font-bold text-gray-900">Announcement</h1>
+          <h1 className="text-base font-bold text-gray-900">{t("studentAnnouncements.announcement")}</h1>
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
@@ -102,8 +104,8 @@ export default function AnnouncementDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-sm text-gray-500 mb-4">{error || "Announcement not found"}</p>
-            <Button onClick={handleGoBack}>Back to announcements</Button>
+            <p className="text-sm text-gray-500 mb-4">{error || t("studentAnnouncements.notFound")}</p>
+            <Button onClick={handleGoBack}>{t("studentAnnouncements.backToAnnouncements")}</Button>
           </div>
         </div>
       </div>
@@ -118,7 +120,7 @@ export default function AnnouncementDetail() {
   const withLinks = attachments.map((att, i) => ({
     att, i,
     href: attachmentHref(att),
-    label: attachmentLabel(att, i),
+    label: attachmentLabel(att) || t("studentAnnouncements.attachmentIndex", { index: i + 1 }),
   }));
   const validAttachments = withLinks;
   const sender = announcement.senderName || announcement.createdBy || "School";
@@ -134,7 +136,7 @@ export default function AnnouncementDetail() {
         </button>
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-bold text-gray-900 truncate">{announcement.title}</h1>
-          <p className="text-xs text-gray-500">Announcement</p>
+          <p className="text-xs text-gray-500">{t("studentAnnouncements.announcement")}</p>
         </div>
       </div>
 
@@ -149,7 +151,7 @@ export default function AnnouncementDetail() {
                 <span className="text-xl font-black text-white">{senderInitial(sender)}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-widest opacity-80 mb-1">From {sender}</p>
+                <p className="text-xs font-semibold uppercase tracking-widest opacity-80 mb-1">{t("studentAnnouncements.from", { sender })}</p>
                 <h2 className="text-xl font-bold leading-tight">{announcement.title}</h2>
                 <p className="text-xs opacity-75 mt-2">
                   {formatDateTime(announcement.submittedAt || announcement.submitted_at || announcement.createdAt)}
@@ -169,7 +171,7 @@ export default function AnnouncementDetail() {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                   </svg>
-                  {validAttachments.length} {validAttachments.length === 1 ? "attachment" : "attachments"}
+                  {t("studentAnnouncements.attachmentCount", { count: validAttachments.length })}
                 </span>
               )}
             </div>
@@ -177,7 +179,7 @@ export default function AnnouncementDetail() {
 
           {/* Message */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Message</h3>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t("studentAnnouncements.message")}</h3>
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm">{announcement.message}</p>
           </div>
 

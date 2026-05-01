@@ -1,12 +1,14 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const MAX_BOTTOM_ICONS = 5;
 /** When overflowing, show this many primary tabs plus "More" (total = MAX_BOTTOM_ICONS). */
 const PRIMARY_COUNT_BEFORE_MORE = MAX_BOTTOM_ICONS - 1;
 
 export default function BottomNav({ navItems, setActiveNav }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -132,7 +134,7 @@ export default function BottomNav({ navItems, setActiveNav }) {
                     : "black"
                 }
               />
-              <span>More</span>
+              <span>{t("sidebar.more")}</span>
             </button>
           )}
         </div>

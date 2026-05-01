@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../ui-components";
 import DesktopListing from "../../components/student-exam/DesktopListing";
 import MobileListing from "../../components/student-exam/MobileListing";
@@ -9,12 +10,13 @@ import { useAuth } from "../../store/auth.store";
 import Loader from "../../ui-components/Loader";
 
 const STATUS_OPTIONS = [
-  { value: "PUBLISHED", label: "Upcoming" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "", label: "All" },
+  { value: "PUBLISHED", labelKey: "studentExams.upcoming" },
+  { value: "COMPLETED", labelKey: "studentExams.completed" },
+  { value: "", labelKey: "studentExams.all" },
 ];
 
 export default function StudentExams() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
 
   const [examData, setExamData] = useState([]);
@@ -27,7 +29,7 @@ export default function StudentExams() {
   const [statusFilter, setStatusFilter] = useState("PUBLISHED");
 
   const examTypeOptions = useMemo(() => {
-    const options = [{ value: "", label: "All Types" }];
+    const options = [{ value: "", label: t("studentExams.allTypes") }];
     if (auth?.campus?.campus_exam_types && Array.isArray(auth.campus.campus_exam_types)) {
       auth.campus.campus_exam_types.forEach((examType) => {
         options.push({ value: examType, label: examType });
@@ -114,13 +116,13 @@ export default function StudentExams() {
           <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
             <span className="text-red-600 text-lg font-bold">!</span>
           </div>
-          <p className="font-semibold text-gray-800 mb-1">Failed to load exams</p>
+          <p className="font-semibold text-gray-800 mb-1">{t("studentExams.errorLoading")}</p>
           <p className="text-sm text-gray-500 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm font-medium"
           >
-            Retry
+            {t("common.tryAgain")}
           </button>
         </Card>
       </div>
@@ -143,7 +145,7 @@ export default function StudentExams() {
             </svg>
             <input
               type="text"
-              placeholder="Search exams..."
+              placeholder={t("studentExams.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
@@ -157,7 +159,7 @@ export default function StudentExams() {
                 selected={examTypeFilter}
                 onChange={setExamTypeFilter}
                 options={examTypeOptions}
-                placeholder="Exam Type"
+                placeholder={t("studentExams.examType")}
               />
             </div>
           )}
@@ -174,7 +176,7 @@ export default function StudentExams() {
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {opt.label}
+                {t(opt.labelKey)}
               </button>
             ))}
           </div>
@@ -182,7 +184,7 @@ export default function StudentExams() {
           {/* Count + Clear */}
           <div className="flex items-center gap-3 ml-auto">
             <span className="text-sm text-gray-400 whitespace-nowrap">
-              {filteredExams.length} {filteredExams.length === 1 ? "exam" : "exams"}
+              {t("studentExams.examCount", { count: filteredExams.length })}
             </span>
             {hasActiveFilters && (
               <button
@@ -192,7 +194,7 @@ export default function StudentExams() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                Clear
+                {t("studentExams.clear")}
               </button>
             )}
           </div>
@@ -215,7 +217,7 @@ export default function StudentExams() {
                       : "text-gray-500"
                   }`}
                 >
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </button>
               ))}
             </div>
@@ -235,7 +237,7 @@ export default function StudentExams() {
               </svg>
               <input
                 type="text"
-                placeholder="Search exams..."
+                placeholder={t("studentExams.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
@@ -279,7 +281,7 @@ export default function StudentExams() {
         <div className="fixed inset-0 z-50 flex items-end md:hidden pointer-events-none">
           <div className="bg-white w-full rounded-t-2xl shadow-2xl border-t border-gray-200 flex flex-col animate-slide-up pointer-events-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h2 className="text-base font-semibold text-gray-900">Filter by Type</h2>
+              <h2 className="text-base font-semibold text-gray-900">{t("studentExams.filterByType")}</h2>
               <button
                 onClick={() => setIsFilterModalOpen(false)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
@@ -318,7 +320,7 @@ export default function StudentExams() {
                   }}
                   className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
-                  Clear Filter
+                  {t("studentExams.clearFilter")}
                 </button>
               </div>
             )}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../ui-components";
 import DesktopListing from "../../components/student-announcements/DesktopListing";
 import MobileListing from "../../components/student-announcements/MobileListing";
@@ -8,6 +9,7 @@ import Loader from "../../ui-components/Loader";
 import { ANNOUNCEMENT_CATEGORY_OPTIONS } from "../../constants/announcementCategories";
 
 export default function Announcements() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
 
   const [items, setItems] = useState([]);
@@ -17,7 +19,7 @@ export default function Announcements() {
   const [categoryFilter, setCategoryFilter] = useState("");
 
   const categoryTabs = [
-    { value: "", label: "All" },
+    { value: "", label: t("studentAnnouncements.categoryAll") },
     ...ANNOUNCEMENT_CATEGORY_OPTIONS,
   ];
 
@@ -87,7 +89,7 @@ export default function Announcements() {
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <h2 className="text-xl font-semibold">Error loading announcements</h2>
+            <h2 className="text-xl font-semibold">{t("studentAnnouncements.errorLoading")}</h2>
           </div>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
@@ -95,7 +97,7 @@ export default function Announcements() {
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
-            Retry
+            {t("common.tryAgain")}
           </button>
         </Card>
       </div>
@@ -108,9 +110,9 @@ export default function Announcements() {
       <div className="hidden md:block bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Announcements</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("nav.announcements")}</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {filtered.length} {filtered.length === 1 ? "announcement" : "announcements"}
+              {t("studentAnnouncements.count", { count: filtered.length })}
             </p>
           </div>
         </div>
@@ -136,7 +138,7 @@ export default function Announcements() {
       <div className="md:hidden">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-lg font-bold text-gray-900">Announcements</h1>
+            <h1 className="text-lg font-bold text-gray-900">{t("nav.announcements")}</h1>
             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full font-medium">
               {filtered.length}
             </span>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Shield,
   Users,
@@ -59,6 +60,7 @@ function requestStatusVariant(status) {
 // ─── Person Form Modal ────────────────────────────────────────────────────────
 
 function PersonFormModal({ open, onClose, onSave, initial, saving, error }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     name: initial?.name || "",
     relationship: initial?.relationship || "",
@@ -75,7 +77,7 @@ function PersonFormModal({ open, onClose, onSave, initial, saving, error }) {
   return (
     <Modal open={open} onClose={saving ? undefined : onClose} className="max-w-md">
       <h2 className="text-base font-bold text-gray-900 mb-4 pr-8">
-        {initial?.id ? "Edit Authorized Person" : "Add Authorized Person"}
+        {initial?.id ? t("pickup.personForm.editTitle") : t("pickup.personForm.addTitle")}
       </h2>
       <form
         onSubmit={(e) => {
@@ -86,34 +88,34 @@ function PersonFormModal({ open, onClose, onSave, initial, saving, error }) {
       >
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
-            Full Name <span className="text-red-500">*</span>
+            {t("pickup.personForm.fullName")} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             value={form.name}
             onChange={set("name")}
-            placeholder="e.g. John Smith"
+            placeholder={t("pickup.personForm.fullNamePlaceholder")}
             required
             className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none bg-gray-50"
           />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
-            Relationship <span className="text-red-500">*</span>
+            {t("pickup.personForm.relationship")} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             value={form.relationship}
             onChange={set("relationship")}
-            placeholder="e.g. Father, Aunt, Guardian"
+            placeholder={t("pickup.personForm.relationshipPlaceholder")}
             required
             className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none bg-gray-50"
           />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
-            Photo{" "}
-            <span className="text-gray-400 font-normal">(optional)</span>
+            {t("pickup.personForm.photo")}{" "}
+            <span className="text-gray-400 font-normal">({t("pickup.optional")})</span>
           </label>
           <PhotoPicker
             entity="authorized_person"
@@ -129,14 +131,14 @@ function PersonFormModal({ open, onClose, onSave, initial, saving, error }) {
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
-            Remarks{" "}
-            <span className="text-gray-400 font-normal">(optional)</span>
+            {t("pickup.personForm.remarks")}{" "}
+            <span className="text-gray-400 font-normal">({t("pickup.optional")})</span>
           </label>
           <input
             type="text"
             value={form.remarks}
             onChange={set("remarks")}
-            placeholder="Additional notes…"
+            placeholder={t("pickup.personForm.remarksPlaceholder")}
             className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none bg-gray-50"
           />
         </div>
@@ -154,10 +156,10 @@ function PersonFormModal({ open, onClose, onSave, initial, saving, error }) {
             onClick={onClose}
             disabled={saving}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button type="submit" variant="primary" className="flex-1" disabled={saving}>
-            {saving ? "Saving…" : initial?.id ? "Save Changes" : "Add Person"}
+            {saving ? t("pickup.personForm.saving") : initial?.id ? t("pickup.personForm.saveChanges") : t("pickup.personForm.addPerson")}
           </Button>
         </div>
       </form>
@@ -168,6 +170,7 @@ function PersonFormModal({ open, onClose, onSave, initial, saving, error }) {
 // ─── Request Form Modal ───────────────────────────────────────────────────────
 
 function RequestFormModal({ open, onClose, onSave, saving, error }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     name: "",
     relationship: "",
@@ -184,10 +187,10 @@ function RequestFormModal({ open, onClose, onSave, saving, error }) {
   return (
     <Modal open={open} onClose={saving ? undefined : onClose} className="max-w-md">
       <h2 className="text-base font-bold text-gray-900 mb-1 pr-8">
-        One-Time Pickup Request
+        {t("pickup.requestForm.title")}
       </h2>
       <p className="text-xs text-gray-500 mb-4">
-        Authorize someone to pick up your child on a specific date.
+        {t("pickup.requestForm.subtitle")}
       </p>
       <form
         onSubmit={(e) => {
@@ -198,33 +201,33 @@ function RequestFormModal({ open, onClose, onSave, saving, error }) {
       >
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
-            Person's Full Name <span className="text-red-500">*</span>
+            {t("pickup.requestForm.personFullName")} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             value={form.name}
             onChange={set("name")}
-            placeholder="e.g. Jane Doe"
+            placeholder={t("pickup.requestForm.personFullNamePlaceholder")}
             required
             className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none bg-gray-50"
           />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
-            Relationship <span className="text-red-500">*</span>
+            {t("pickup.personForm.relationship")} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             value={form.relationship}
             onChange={set("relationship")}
-            placeholder="e.g. Family Friend, Driver"
+            placeholder={t("pickup.requestForm.relationshipPlaceholder")}
             required
             className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none bg-gray-50"
           />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
-            Valid Date <span className="text-red-500">*</span>
+            {t("pickup.requestForm.validDate")} <span className="text-red-500">*</span>
           </label>
           <input
             type="date"
@@ -237,8 +240,8 @@ function RequestFormModal({ open, onClose, onSave, saving, error }) {
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
-            Photo{" "}
-            <span className="text-gray-400 font-normal">(optional — for identity check)</span>
+            {t("pickup.personForm.photo")}{" "}
+            <span className="text-gray-400 font-normal">({t("pickup.requestForm.photoOptional")})</span>
           </label>
           <PhotoPicker
             entity="authorized_person"
@@ -254,13 +257,13 @@ function RequestFormModal({ open, onClose, onSave, saving, error }) {
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
-            Remarks{" "}
-            <span className="text-gray-400 font-normal">(optional)</span>
+            {t("pickup.personForm.remarks")}{" "}
+            <span className="text-gray-400 font-normal">({t("pickup.optional")})</span>
           </label>
           <textarea
             value={form.remarks}
             onChange={set("remarks")}
-            placeholder="Any additional information for the teacher…"
+            placeholder={t("pickup.requestForm.remarksPlaceholder")}
             rows={2}
             className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none bg-gray-50 resize-none"
           />
@@ -279,10 +282,10 @@ function RequestFormModal({ open, onClose, onSave, saving, error }) {
             onClick={onClose}
             disabled={saving}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button type="submit" variant="primary" className="flex-1" disabled={saving}>
-            {saving ? "Submitting…" : "Submit Request"}
+            {saving ? t("pickup.requestForm.submitting") : t("pickup.requestForm.submitRequest")}
           </Button>
         </div>
       </form>
@@ -293,15 +296,16 @@ function RequestFormModal({ open, onClose, onSave, saving, error }) {
 // ─── Delete Confirm Modal ─────────────────────────────────────────────────────
 
 function DeleteConfirmModal({ open, onClose, onConfirm, name, deleting }) {
+  const { t } = useTranslation();
   return (
     <Modal open={open} onClose={deleting ? undefined : onClose} className="max-w-sm">
       <div className="text-center">
         <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
           <Trash2 className="h-5 w-5 text-red-500" />
         </div>
-        <h2 className="text-base font-bold text-gray-900 mb-1">Remove {name}?</h2>
+        <h2 className="text-base font-bold text-gray-900 mb-1">{t("pickup.deleteConfirm.title", { name })}</h2>
         <p className="text-sm text-gray-500 mb-5">
-          This person will no longer be authorized to pick up the student.
+          {t("pickup.deleteConfirm.message")}
         </p>
         <div className="flex gap-2">
           <Button
@@ -310,7 +314,7 @@ function DeleteConfirmModal({ open, onClose, onConfirm, name, deleting }) {
             onClick={onClose}
             disabled={deleting}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <button
             type="button"
@@ -318,7 +322,7 @@ function DeleteConfirmModal({ open, onClose, onConfirm, name, deleting }) {
             disabled={deleting}
             className="flex-1 py-2.5 px-4 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
           >
-            {deleting ? "Removing…" : "Remove"}
+            {deleting ? t("pickup.deleteConfirm.removing") : t("pickup.deleteConfirm.remove")}
           </button>
         </div>
       </div>
@@ -329,6 +333,7 @@ function DeleteConfirmModal({ open, onClose, onConfirm, name, deleting }) {
 // ─── Person Card ──────────────────────────────────────────────────────────────
 
 function PersonCard({ person, onEdit, onDelete }) {
+  const { t } = useTranslation();
   const initials = getInitials(person.name);
   const isActive = person?.isActive ?? false ;
   console.log("person",person)
@@ -349,7 +354,7 @@ function PersonCard({ person, onEdit, onDelete }) {
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-semibold text-gray-900">{person.name}</p>
           <Badge variant={isActive ? "success" : "error"}>
-            {isActive ? "Active" : "Inactive"}
+            {isActive ? t("pickup.personCard.active") : t("pickup.personCard.inactive")}
           </Badge>
         </div>
         <p className="text-xs text-gray-500 mt-0.5">{person.relationship}</p>
@@ -362,7 +367,7 @@ function PersonCard({ person, onEdit, onDelete }) {
           type="button"
           onClick={() => onEdit(person)}
           className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-          aria-label={`Edit ${person.name}`}
+          aria-label={t("pickup.personCard.editAriaLabel", { name: person.name })}
         >
           <Edit2 className="h-4 w-4" />
         </button>
@@ -370,7 +375,7 @@ function PersonCard({ person, onEdit, onDelete }) {
           type="button"
           onClick={() => onDelete(person)}
           className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-          aria-label={`Remove ${person.name}`}
+          aria-label={t("pickup.personCard.removeAriaLabel", { name: person.name })}
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -391,6 +396,7 @@ function DetailRow({ label, value }) {
 }
 
 function RequestDetailModal({ request, onClose }) {
+  const { t } = useTranslation();
   if (!request) return null;
   const status = (request.status || "PENDING").toUpperCase();
   const photoUrl = request.photoUrl || request.photo_url;
@@ -419,17 +425,17 @@ function RequestDetailModal({ request, onClose }) {
       </div>
 
       <div className="space-y-2.5 bg-gray-50 rounded-xl px-4 py-3 mb-4">
-        <DetailRow label="Relationship" value={request.relationship} />
-        <DetailRow label="Valid Date" value={formatDate(validDate)} />
-        {request.remarks && <DetailRow label="Remarks" value={request.remarks} />}
-        {createdAt && <DetailRow label="Submitted" value={formatDate(createdAt)} />}
+        <DetailRow label={t("pickup.requestDetail.relationship")} value={request.relationship} />
+        <DetailRow label={t("pickup.requestDetail.validDate")} value={formatDate(validDate)} />
+        {request.remarks && <DetailRow label={t("pickup.requestDetail.remarks")} value={request.remarks} />}
+        {createdAt && <DetailRow label={t("pickup.requestDetail.submitted")} value={formatDate(createdAt)} />}
         {(request.rejectionNote || request.rejection_note) && (
-          <DetailRow label="Rejection Note" value={request.rejectionNote || request.rejection_note} />
+          <DetailRow label={t("pickup.requestDetail.rejectionNote")} value={request.rejectionNote || request.rejection_note} />
         )}
       </div>
 
       <Button variant="secondary" className="w-full" onClick={onClose}>
-        Close
+        {t("common.close")}
       </Button>
     </Modal>
   );
@@ -438,6 +444,7 @@ function RequestDetailModal({ request, onClose }) {
 // ─── Request Card ─────────────────────────────────────────────────────────────
 
 function RequestCard({ request, onView }) {
+  const { t } = useTranslation();
   const initials = getInitials(request.name);
   const status = (request.status || "PENDING").toUpperCase();
   const photoUrl = request.photoUrl || request.photo_url;
@@ -471,7 +478,7 @@ function RequestCard({ request, onView }) {
         <p className="text-xs text-gray-500 mt-0.5">{request.relationship}</p>
         <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-400">
           <Calendar className="h-3.5 w-3.5" />
-          <span>Valid: {formatDate(validDate)}</span>
+          <span>{t("pickup.requestCard.valid", { date: formatDate(validDate) })}</span>
         </div>
         {request.remarks && (
           <p className="text-xs text-gray-400 mt-1 italic">"{request.remarks}"</p>

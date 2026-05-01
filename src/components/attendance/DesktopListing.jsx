@@ -1,20 +1,23 @@
 import clsx from "clsx";
 import { UserCheck, UserX } from "lucide-react";
 import { Avatar, Badge, Table } from "../../ui-components";
+import { useTranslation } from "react-i18next";
 
 function StudentCell({ student }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-3">
       <Avatar src={student.photoUrl} name={student.name} size={32} />
       <div className="leading-tight">
         <div className="font-medium">{student.name}</div>
-        <div className="text-xs text-gray-500">Roll No: {student.roll_number}</div>
+        <div className="text-xs text-gray-500">{t("attendance.rollNo", { rollNo: student.roll_number })}</div>
       </div>
     </div>
   );
 }
 
 function AttendanceButtons({ status, onPresent, onAbsent }) {
+  const { t } = useTranslation();
   return (
     <div className="flex gap-2">
       <button
@@ -27,7 +30,7 @@ function AttendanceButtons({ status, onPresent, onAbsent }) {
         )}
       >
         <UserCheck className="h-3.5 w-3.5" />
-        Present
+        {t("attendance.present")}
       </button>
       <button
         onClick={onAbsent}
@@ -39,28 +42,29 @@ function AttendanceButtons({ status, onPresent, onAbsent }) {
         )}
       >
         <UserX className="h-3.5 w-3.5" />
-        Absent
+        {t("attendance.absent")}
       </button>
     </div>
   );
 }
 
 export default function DesktopListing({ attendance, markAttendance, STUDENTS, editMode }) {
+  const { t } = useTranslation();
   const columns = [
     {
       key: "student",
-      label: "Student",
+      label: t("attendance.columns.student"),
       render: (row) => <StudentCell student={row} />,
     },
     {
       key: "status",
-      label: "Status",
+      label: t("attendance.columns.status"),
       render: (row) => {
         const status = attendance[row.student_id];
         return status ? (
           <Badge variant={status === "PRESENT" ? "success" : "error"}>{status}</Badge>
         ) : (
-          <Badge variant="info">Not Marked</Badge>
+          <Badge variant="info">{t("attendance.notMarked")}</Badge>
         );
       },
     },
@@ -68,7 +72,7 @@ export default function DesktopListing({ attendance, markAttendance, STUDENTS, e
       ? [
           {
             key: "action",
-            label: "Action",
+            label: t("attendance.columns.action"),
             render: (row) => (
               <AttendanceButtons
                 status={attendance[row.student_id]}

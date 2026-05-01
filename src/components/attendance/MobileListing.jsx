@@ -1,8 +1,10 @@
 import clsx from "clsx";
 import { UserCheck, UserX } from "lucide-react";
 import { Avatar, Badge, Card } from "../../ui-components";
+import { useTranslation } from "react-i18next";
 
 export default function MobileListing({ STUDENTS, attendance, markAttendance, editMode, className }) {
+  const { t } = useTranslation();
   return (
     <div className={clsx("h-full space-y-3 overflow-y-auto", className)}>
       {STUDENTS.map((student) => {
@@ -15,13 +17,13 @@ export default function MobileListing({ STUDENTS, attendance, markAttendance, ed
                 <Avatar src={student.photoUrl} name={student.name} />
                 <div>
                   <div className="font-medium">{student.name}</div>
-                  <div className="text-sm text-gray-500">Roll No: {student.roll_number}</div>
+                  <div className="text-sm text-gray-500">{t("attendance.rollNo", { rollNo: student.roll_number })}</div>
                 </div>
               </div>
               {status ? (
                 <Badge variant={status === "PRESENT" ? "success" : "error"}>{status}</Badge>
               ) : (
-                <Badge variant="info">Not Marked</Badge>
+                <Badge variant="info">{t("attendance.notMarked")}</Badge>
               )}
             </div>
 
@@ -37,7 +39,7 @@ export default function MobileListing({ STUDENTS, attendance, markAttendance, ed
                   )}
                 >
                   <UserX className="h-4 w-4" />
-                  Absent
+                  {t("attendance.absent")}
                 </button>
                 <button
                   onClick={() => markAttendance(student.student_id, "PRESENT")}
@@ -49,7 +51,7 @@ export default function MobileListing({ STUDENTS, attendance, markAttendance, ed
                   )}
                 >
                   <UserCheck className="h-4 w-4" />
-                  Present
+                  {t("attendance.present")}
                 </button>
               </div>
             )}

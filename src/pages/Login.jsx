@@ -7,10 +7,12 @@ import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 // import logo_upscaled from "../assets/logo_upscaled.png";
 import logo_vectorized from "../assets/logo_vectorized.svg";
+import { useTranslation } from "react-i18next";
 
 const APP_NAME = "Digi School";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [userid, setUserid] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,7 +25,7 @@ export default function LoginPage() {
 
   async function handleLogin() {
     if (!userid || !password) {
-      setError("User ID and password are required.");
+      setError(t("login.errorRequired"));
       return;
     }
 
@@ -72,7 +74,7 @@ export default function LoginPage() {
       const message =
         err?.message ||
         err?.error ||
-        "Login failed. Please check your credentials.";
+        t("login.errorFailed");
       setError(message);
     } finally {
       setIsSubmitting(false);
@@ -110,7 +112,7 @@ export default function LoginPage() {
               />
             </div>
             <p className="mt-1.5 text-sm text-gray-800 ">
-              Sign in with your school account
+              {t("login.subtitle")}
             </p>
           </div>
 
@@ -122,8 +124,8 @@ export default function LoginPage() {
             }}
           >
             <TextField
-              placeholder="Enter your user ID"
-              label="User ID"
+              placeholder={t("login.userIdPlaceholder")}
+              label={t("login.userId")}
               value={userid}
               icon={<User className="h-5 w-5" aria-hidden />}
               autoComplete="username"
@@ -131,8 +133,8 @@ export default function LoginPage() {
             />
 
             <TextField
-              placeholder="Enter your password"
-              label="Password"
+              placeholder={t("login.passwordPlaceholder")}
+              label={t("login.password")}
               type={showPassword ? "text" : "password"}
               value={password}
               icon={<Lock className="h-5 w-5" aria-hidden />}
@@ -144,7 +146,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword((prev) => !prev)}
                   className="rounded-md p-1 text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-gray-200"
                   tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("login.hidePassword") : t("login.showPassword")}
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -169,7 +171,7 @@ export default function LoginPage() {
               className="w-full py-3 text-base font-semibold"
               disabled={!(userid && password) || isSubmitting}
             >
-              {isSubmitting ? "Signing in…" : "Sign in"}
+              {isSubmitting ? t("login.signingIn") : t("login.signIn")}
             </Button>
           </form>
 

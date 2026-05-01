@@ -1,5 +1,6 @@
 import { createElement, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../ui-components";
 import Modal from "../../ui-components/Modal";
 import Loader from "../../ui-components/Loader";
@@ -55,12 +56,12 @@ function buildDayTabs(timetable) {
 }
 
 const EVENT_TYPE_STYLE = {
-  exam:     { label: "Exam",     className: "bg-red-100 text-red-700"        },
-  holiday:  { label: "Holiday",  className: "bg-green-100 text-green-700"    },
-  sports:   { label: "Sports",   className: "bg-orange-100 text-orange-700"  },
-  cultural: { label: "Cultural", className: "bg-purple-100 text-purple-700"  },
-  meeting:  { label: "Meeting",  className: "bg-blue-100 text-blue-700"      },
-  other:    { label: "Other",    className: "bg-gray-100 text-gray-600"      },
+  exam:     { labelKey: "home.eventTypes.exam",     className: "bg-red-100 text-red-700"        },
+  holiday:  { labelKey: "home.eventTypes.holiday",  className: "bg-green-100 text-green-700"    },
+  sports:   { labelKey: "home.eventTypes.sports",   className: "bg-orange-100 text-orange-700"  },
+  cultural: { labelKey: "home.eventTypes.cultural", className: "bg-purple-100 text-purple-700"  },
+  meeting:  { labelKey: "home.eventTypes.meeting",  className: "bg-blue-100 text-blue-700"      },
+  other:    { labelKey: "home.eventTypes.other",    className: "bg-gray-100 text-gray-600"      },
 };
 
 function getTodayDayId() {
@@ -80,9 +81,9 @@ function nowMinutes() {
 }
 
 function greetingForHour(hour) {
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return "home.greeting.morning";
+  if (hour < 17) return "home.greeting.afternoon";
+  return "home.greeting.evening";
 }
 
 function formatDisplayDate(d) {
@@ -121,29 +122,21 @@ function formatEventDate(iso) {
 
 const NON_CLASS_SLOT_TYPES = new Set(["assembly", "lunch", "break"]);
 
-const NON_CLASS_SLOT_LABEL = {
-  assembly: "Assembly",
-  lunch: "Lunch",
-  break: "Break",
-};
-
 const NON_CLASS_SLOT_STYLE = {
   assembly: "bg-purple-50 border-purple-100 text-purple-800",
   lunch:    "bg-green-50 border-green-100 text-green-800",
   break:    "bg-amber-50 border-amber-100 text-amber-800",
 };
 
-function buildPeriodsForDay(timetable, dayId) {
+function buildPeriodsForDay(timetable, dayId, t = (k) => k) {
   if (!timetable?.slots?.length) return [];
 
-  // Map entries for this day by slotId
   const entryBySlot = new Map(
     (timetable.entries || [])
       .filter((e) => e.dayId === dayId)
       .map((e) => [e.slotId, e])
   );
 
-  // Include class slots that have an entry + all non-class slots (assembly/lunch/break)
   const visibleSlots = timetable.slots.filter(
     (slot) => entryBySlot.has(slot.id) || NON_CLASS_SLOT_TYPES.has(slot.type)
   );
@@ -153,7 +146,7 @@ function buildPeriodsForDay(timetable, dayId) {
   return visibleSlots.map((slot) => {
     const entry = entryBySlot.get(slot.id);
     const subject =
-      NON_CLASS_SLOT_LABEL[slot.type] ??
+      (NON_CLASS_SLOT_TYPES.has(slot.type) ? t(`home.slots.${slot.type}`) : null) ??
       entry?.subject?.trim() ??
       slot?.label?.split(" - ")[0] ??
       "—";
@@ -196,11 +189,11 @@ function filterActiveHomework(list) {
   });
 }
 
-function mapBroadcastsToAnnouncements(list) {
+function mapBroadcastsToAnnouncements(list, t = (k) => k) {
   if (!Array.isArray(list)) return [];
   return list.map((b, i) => ({
     id: b.id ?? b.broadcastId ?? `b-${i}`,
-    title: b.title?.trim() || "Announcement",
+    title: b.title?.trim() || t("home.student.announcementFallback"),
     body: (b.message || b.body || b.description || "").trim(),
     date: b.submittedAt || b.submitted_at || b.createdAt || b.created_at || "",
   }));
@@ -275,6 +268,7 @@ function QuickStat({ icon, label, value, colorClass, onClick, hint }) {
 }
 
 export default function StudentHome() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const navigate = useNavigate();
   const [summaryPayload, setSummaryPayload] = useState(null);
@@ -291,8 +285,8 @@ export default function StudentHome() {
   const firstName = useMemo(() => {
     const fromAuth = auth?.details?.student_first_name?.trim();
     if (fromAuth) return fromAuth;
-    return "Student";
-  }, [auth?.details?.student_first_name]);
+    return t("home.student.defaultName");
+  }, [auth?.details?.student_first_name, t]);
 
   const receiverId = auth.userId;
   const sectionId = auth.sections?.[0]?.value;
@@ -342,14 +336,14 @@ export default function StudentHome() {
   // Periods for the selected day tab
   const periods = useMemo(() => {
     const tt = summaryPayload?.timetable;
-    return tt ? buildPeriodsForDay(tt, selectedDayId) : [];
-  }, [summaryPayload, selectedDayId]);
+    return tt ? buildPeriodsForDay(tt, selectedDayId, t) : [];
+  }, [summaryPayload, selectedDayId, t]);
 
   // Today's period count for the quick stat (independent of selected tab)
   const todayPeriods = useMemo(() => {
     const tt = summaryPayload?.timetable;
-    return tt ? buildPeriodsForDay(tt, todayDayId) : [];
-  }, [summaryPayload, todayDayId]);
+    return tt ? buildPeriodsForDay(tt, todayDayId, t) : [];
+  }, [summaryPayload, todayDayId, t]);
 
   const dayTabs = useMemo(
     () => buildDayTabs(summaryPayload?.timetable),
@@ -373,7 +367,7 @@ export default function StudentHome() {
       const weekday = now.getDay();
       const isWeekend = weekday === 0 || weekday === 6;
 
-      const greeting = `${greetingForHour(now.getHours())},`;
+      const greeting = `${t(greetingForHour(now.getHours()))},`;
       const dayLine = formatDisplayDate(now);
 
       let attendanceLine;
@@ -381,20 +375,20 @@ export default function StudentHome() {
       if (isWeekend) {
         attendanceLine =
           weekday === 0
-            ? "No school today — Sunday is a weekly off."
-            : "No school today — Saturday is a weekly off.";
+            ? t("home.student.attendance.sundayOff")
+            : t("home.student.attendance.saturdayOff");
         attendanceVariant = "weekend";
       } else {
         const at = summaryPayload?.attendanceToday;
         const status = at?.status?.toUpperCase?.();
         if (status === "PRESENT" || at?.marked === true) {
-          attendanceLine = "You are marked present today.";
+          attendanceLine = t("home.student.attendance.presentToday");
           attendanceVariant = "present";
         } else if (status === "ABSENT") {
-          attendanceLine = "You are marked absent today.";
+          attendanceLine = t("home.student.attendance.absentToday");
           attendanceVariant = "absent";
         } else {
-          attendanceLine = "Attendance not recorded yet.";
+          attendanceLine = t("home.student.attendance.notRecorded");
           attendanceVariant = "pending";
         }
       }
@@ -413,7 +407,7 @@ export default function StudentHome() {
       const announcementSource = Array.isArray(broadcastList)
         ? broadcastList
         : summaryPayload?.announcements?.recent;
-      const announcements = mapBroadcastsToAnnouncements(announcementSource);
+      const announcements = mapBroadcastsToAnnouncements(announcementSource, t);
 
       return {
         summary: { greeting, firstName, dayLine, attendanceLine, attendanceVariant },
@@ -441,8 +435,7 @@ export default function StudentHome() {
         <div className="mx-auto max-w-5xl">
           <Card className="border border-gray-100 shadow-sm">
             <p className="text-center font-semibold text-gray-900">
-              Your dashboard needs a section and campus on your profile to load. If this
-              persists, contact your school administrator.
+              {t("home.student.needsSetup")}
             </p>
           </Card>
         </div>
@@ -470,7 +463,7 @@ export default function StudentHome() {
                 onClick={() => loadSummary()}
                 className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
               >
-                Try again
+                {t("common.tryAgain")}
               </button>
             </div>
           </Card>
@@ -541,7 +534,7 @@ export default function StudentHome() {
             >
               <CalendarDays size={15} className="shrink-0 text-gray-400" aria-hidden />
               <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${style.className}`}>
-                {style.label}
+                {t(style.labelKey)}
               </span>
               <p className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-gray-900">{ev.title}</p>
               <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
@@ -551,7 +544,7 @@ export default function StudentHome() {
                     ? "bg-amber-100 text-amber-700"
                     : "bg-gray-100 text-gray-500"
               }`}>
-                {days === 0 ? "Today" : days === 1 ? "Tomorrow" : dateLabel}
+                {days === 0 ? t("common.today") : days === 1 ? t("common.tomorrow") : dateLabel}
               </span>
               <ChevronRight size={14} className="shrink-0 text-gray-400" aria-hidden />
             </button>
@@ -562,35 +555,35 @@ export default function StudentHome() {
         <div className="grid grid-cols-2 gap-3">
           <QuickStat
             icon={Clock}
-            label="Classes today"
+            label={t("home.student.stats.classesToday")}
             value={todayPeriods.filter((p) => !NON_CLASS_SLOT_TYPES.has(p.slotType)).length}
             colorClass="bg-indigo-100 text-indigo-600"
             onClick={() => setIsScheduleModalOpen(true)}
-            hint="View schedule →"
+            hint={t("home.student.viewSchedule")}
           />
           <QuickStat
             icon={BookOpen}
-            label="Due soon"
+            label={t("home.student.stats.dueSoon")}
             value={upcomingHomework.length}
             colorClass="bg-amber-100 text-amber-600"
             onClick={() => setIsHomeworkModalOpen(true)}
-            hint="View homework →"
+            hint={t("home.student.viewHomework")}
           />
           <QuickStat
             icon={Megaphone}
-            label="Announcements"
+            label={t("home.student.stats.announcements")}
             value={announcements.length}
             colorClass="bg-purple-100 text-purple-600"
             onClick={() => setIsAnnouncementsModalOpen(true)}
-            hint="View announcements →"
+            hint={t("home.student.viewAnnouncements")}
           />
           <QuickStat
             icon={MessageCircle}
-            label="Unread"
+            label={t("home.student.stats.unread")}
             value={messagesUnreadTotal}
             colorClass="bg-emerald-100 text-emerald-600"
             onClick={() => navigate("/student/chat")}
-            hint="View messages →"
+            hint={t("home.student.viewMessages")}
           />
         </div>
 
@@ -603,9 +596,9 @@ export default function StudentHome() {
       onClose={() => setIsHomeworkModalOpen(false)}
       className="max-w-sm"
     >
-      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Homework due</h2>
+      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.student.homeworkDue")}</h2>
       {upcomingHomework.length === 0 ? (
-        <p className="py-4 text-center text-sm text-gray-500">No upcoming homework due.</p>
+        <p className="py-4 text-center text-sm text-gray-500">{t("home.student.noHomeworkDue")}</p>
       ) : (
         <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
           {upcomingHomework.map((h) => {
@@ -634,7 +627,7 @@ export default function StudentHome() {
                               : "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {days === 0 ? "Due today" : days === 1 ? "Tomorrow" : `${days}d left`}
+                        {days === 0 ? t("home.period.dueToday") : days === 1 ? t("home.period.tomorrow") : t("home.period.daysLeft", { days })}
                       </span>
                     ) : null}
                     <p className="text-xs text-gray-500">
@@ -652,7 +645,7 @@ export default function StudentHome() {
         onClick={() => setIsHomeworkModalOpen(false)}
         className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-primary-200 bg-primary-50 py-2 text-sm font-bold text-primary-700 hover:bg-primary-100"
       >
-        View all homework
+        {t("home.student.viewAllHomework")}
         <ChevronRight size={14} />
       </Link>
     </Modal>
@@ -663,7 +656,7 @@ export default function StudentHome() {
       onClose={() => setIsScheduleModalOpen(false)}
       className="max-w-sm"
     >
-      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Schedule</h2>
+      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.student.schedule")}</h2>
 
       {/* Day tabs */}
       <div className="mb-3 flex gap-1 rounded-lg bg-gray-100 p-1">
@@ -695,7 +688,7 @@ export default function StudentHome() {
       </div>
 
       {periods.length === 0 ? (
-        <p className="py-4 text-center text-sm text-gray-500">No classes scheduled for this day.</p>
+        <p className="py-4 text-center text-sm text-gray-500">{t("home.student.noClassesScheduled")}</p>
       ) : (
         <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
           {periods.map((p, i) => {
@@ -733,7 +726,7 @@ export default function StudentHome() {
                     {p.subject}
                     {isCurrent ? (
                       <span className="ml-2 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                        Now
+                        {t("home.period.now")}
                       </span>
                     ) : null}
                   </p>
@@ -755,9 +748,9 @@ export default function StudentHome() {
       onClose={() => setIsAnnouncementsModalOpen(false)}
       className="max-w-sm"
     >
-      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Announcements</h2>
+      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.student.announcements")}</h2>
       {announcements.length === 0 ? (
-        <p className="py-4 text-center text-sm text-gray-500">No announcements from the last two days.</p>
+        <p className="py-4 text-center text-sm text-gray-500">{t("home.student.noAnnouncements")}</p>
       ) : (
         <ul className="max-h-[60vh] divide-y divide-gray-100 overflow-y-auto">
           {announcements.map((a) => (
@@ -793,7 +786,7 @@ export default function StudentHome() {
         onClick={() => setIsAnnouncementsModalOpen(false)}
         className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-primary-200 bg-primary-50 py-2 text-sm font-bold text-primary-700 hover:bg-primary-100"
       >
-        View all announcements
+        {t("home.student.viewAllAnnouncements")}
         <ChevronRight size={14} />
       </Link>
     </Modal>
@@ -804,13 +797,13 @@ export default function StudentHome() {
       onClose={() => setIsCalendarModalOpen(false)}
       className="max-w-sm"
     >
-      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Academic Calendar</h2>
+      <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.student.academicCalendar")}</h2>
       {(() => {
         const allEvents = (auth.campus?.academic_calendar?.events || [])
           .filter((ev) => ev.start_date)
           .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
         if (allEvents.length === 0) {
-          return <p className="py-4 text-center text-sm text-gray-500">No events in the calendar.</p>;
+          return <p className="py-4 text-center text-sm text-gray-500">{t("home.student.noEventsInCalendar")}</p>;
         }
         return (
           <ul className="max-h-[65vh] space-y-2 overflow-y-auto">
@@ -829,7 +822,7 @@ export default function StudentHome() {
                 >
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${style.className}`}>
-                      {style.label}
+                      {t(style.labelKey)}
                     </span>
                     {days !== null && !isPast && (
                       <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
@@ -839,7 +832,7 @@ export default function StudentHome() {
                             ? "bg-amber-100 text-amber-700"
                             : "bg-gray-100 text-gray-500"
                       }`}>
-                        {days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`}
+                        {days === 0 ? t("common.today") : days === 1 ? t("common.tomorrow") : t("common.inDays", { days })}
                       </span>
                     )}
                     <span className="ml-auto text-xs font-medium text-gray-400">{dateLabel}</span>

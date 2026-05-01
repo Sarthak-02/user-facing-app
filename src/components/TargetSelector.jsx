@@ -1,4 +1,5 @@
 import Dropdown from "../ui-components/Dropdown";
+import { useTranslation } from "react-i18next";
 
 const DEFAULT_TARGET_OPTIONS = [
   { value: "SCHOOL", label: "Entire School" },
@@ -16,15 +17,16 @@ export default function TargetSelector({
   schema = [],
 }) {
 
+  const { t } = useTranslation();
   console.log("schema", schema);
   return (
     <div className="space-y-4">
       <Dropdown
-        label="Target type"
+        label={t("targetSelector.label")}
         selected={targetType}
         onChange={handleTargetTypeChange}
         options={TARGET_OPTIONS}
-        placeholder="Select target type"
+        placeholder={t("targetSelector.placeholder")}
         
       />
       <div className="space-y-4 h-[20rem]">

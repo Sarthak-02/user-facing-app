@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, Button } from "../../ui-components";
 import Shimmer from "../../ui-components/Shimmer";
 import DesktopListing from "../../components/staff-exam/DesktopListing";

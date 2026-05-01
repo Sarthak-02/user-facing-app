@@ -1,5 +1,6 @@
 import { createElement, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../ui-components";
 import Modal from "../../ui-components/Modal";
 import Loader from "../../ui-components/Loader";
@@ -44,10 +45,10 @@ function nowMinutes() {
   return d.getHours() * 60 + d.getMinutes();
 }
 
-function greetingForHour(hour) {
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
+function greetingKeyForHour(hour) {
+  if (hour < 12) return "home.greeting.morning";
+  if (hour < 17) return "home.greeting.afternoon";
+  return "home.greeting.evening";
 }
 
 function formatDisplayDate(d) {
@@ -410,6 +411,7 @@ function QuickStat({ icon, label, value, colorClass, onClick }) {
 export default function StaffHome() {
   const { auth } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [summaryPayload, setSummaryPayload] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -476,7 +478,7 @@ export default function StaffHome() {
 
   const { summary, periods, currentPeriodIndex, subjects } = useMemo(() => {
     const now = new Date();
-    const greeting = `${greetingForHour(now.getHours())},`;
+    const greeting = `${t(greetingKeyForHour(now.getHours()))},`;
     const dayLine = formatDisplayDate(now);
 
     const periodsToday = todaysPeriodsFromSummaryPayload(summaryPayload, now);
@@ -523,8 +525,7 @@ export default function StaffHome() {
         <div className="mx-auto max-w-5xl">
           <Card className="border border-gray-100 shadow-sm">
             <p className="text-center font-semibold text-gray-900">
-              Your dashboard needs a campus and at least one assigned section to load. If this
-              persists, contact your school administrator.
+              {t("home.staff.needsSetup")}
             </p>
           </Card>
         </div>
@@ -552,7 +553,7 @@ export default function StaffHome() {
                 onClick={() => loadSummary()}
                 className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
               >
-                Try again
+                {t("common.tryAgain")}
               </button>
             </div>
           </Card>
@@ -618,7 +619,7 @@ export default function StaffHome() {
                 <p className={`text-xs font-bold uppercase tracking-wide ${
                   activeClassInfo.kind === "now" ? "text-sky-600" : "text-gray-500"
                 }`}>
-                  {activeClassInfo.kind === "now" ? "Now" : "Up next"}
+                  {activeClassInfo.kind === "now" ? t("home.staff.period.now") : t("home.staff.period.upNext")}
                 </p>
                 <p className="truncate font-semibold text-gray-900">
                   {activeClassInfo.period.subject}
@@ -638,28 +639,28 @@ export default function StaffHome() {
           <div className="grid grid-cols-2 gap-3">
             <QuickStat
               icon={Clock}
-              label="Today's classes"
+              label={t("home.staff.stats.todaysClasses")}
               value={periods.length}
               colorClass="bg-sky-100 text-sky-600"
               onClick={() => setIsScheduleModalOpen(true)}
             />
             <QuickStat
               icon={BookOpen}
-              label="Subjects"
+              label={t("home.staff.stats.subjects")}
               value={subjects.length}
               colorClass="bg-emerald-100 text-emerald-600"
               onClick={() => setIsSubjectsModalOpen(true)}
             />
             <QuickStat
               icon={Bell}
-              label="Homework due"
+              label={t("home.staff.stats.homeworkDue")}
               value={upcomingHomework.length}
               colorClass="bg-amber-100 text-amber-600"
               onClick={() => setIsHomeworkModalOpen(true)}
             />
             <QuickStat
               icon={Megaphone}
-              label="Announcements"
+              label={t("home.staff.stats.announcements")}
               value={announcements.length}
               colorClass="bg-purple-100 text-purple-600"
               onClick={() => setIsAnnouncementsModalOpen(true)}
@@ -681,9 +682,9 @@ export default function StaffHome() {
               ) : null}
             </span>
             <div className="min-w-0 flex-1 text-left">
-              <p className="text-sm font-semibold text-gray-900">Messages</p>
+              <p className="text-sm font-semibold text-gray-900">{t("home.staff.messages.title")}</p>
               <p className="text-xs text-gray-400">
-                {messagesUnreadTotal > 0 ? `${messagesUnreadTotal} unread` : "No new messages"}
+                {messagesUnreadTotal > 0 ? t("home.staff.messages.unread", { count: messagesUnreadTotal }) : t("home.staff.messages.noNew")}
               </p>
             </div>
             <ChevronRight size={16} className="shrink-0 text-gray-400" />
@@ -692,11 +693,11 @@ export default function StaffHome() {
           {/* Quick nav links */}
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { to: "/staff/attendance", icon: UserCheck, label: "Attendance", color: "text-sky-600 bg-sky-50" },
-              { to: "/staff/homework", icon: ClipboardList, label: "Homework", color: "text-amber-600 bg-amber-50" },
-              { to: "/staff/lesson-plans", icon: Layers, label: "Lesson Plans", color: "text-emerald-600 bg-emerald-50" },
-              { to: "/staff/exams", icon: BookOpen, label: "Exams", color: "text-violet-600 bg-violet-50" },
-            ].map(({ to, icon, label, color }) => (
+              { to: "/staff/attendance", icon: UserCheck, labelKey: "home.staff.quickNav.attendance", color: "text-sky-600 bg-sky-50" },
+              { to: "/staff/homework", icon: ClipboardList, labelKey: "home.staff.quickNav.homework", color: "text-amber-600 bg-amber-50" },
+              { to: "/staff/lesson-plans", icon: Layers, labelKey: "home.staff.quickNav.lessonPlans", color: "text-emerald-600 bg-emerald-50" },
+              { to: "/staff/exams", icon: BookOpen, labelKey: "home.staff.quickNav.exams", color: "text-violet-600 bg-violet-50" },
+            ].map(({ to, icon, labelKey, color }) => (
               <Link
                 key={to}
                 to={to}
@@ -705,7 +706,7 @@ export default function StaffHome() {
                 <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${color}`}>
                   {createElement(icon, { size: 16 })}
                 </span>
-                <p className="text-sm font-semibold text-gray-800">{label}</p>
+                <p className="text-sm font-semibold text-gray-800">{t(labelKey)}</p>
                 <ChevronRight size={14} className="ml-auto shrink-0 text-gray-300" />
               </Link>
             ))}
@@ -719,9 +720,9 @@ export default function StaffHome() {
         onClose={() => setIsScheduleModalOpen(false)}
         className="max-w-sm"
       >
-        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Today's Schedule</h2>
+        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.staff.todaysSchedule")}</h2>
         {periods.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-500">No classes scheduled for today.</p>
+          <p className="py-4 text-center text-sm text-gray-500">{t("home.staff.noClassesScheduled")}</p>
         ) : (
           <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
             {periods.map((p, i) => {
@@ -755,12 +756,12 @@ export default function StaffHome() {
                       {isCurrent ? (
                         <span className="ml-2 inline-flex items-center gap-1 rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-                          Now
+                          {t("home.staff.period.now")}
                         </span>
                       ) : null}
                     </p>
                     {p.sectionName ? (
-                      <p className="text-xs text-gray-900">Section {p.sectionName}{p.room !== "—" ? ` · ${p.room}` : ""}</p>
+                      <p className="text-xs text-gray-900">{t("home.staff.period.section", { name: p.sectionName })}{p.room !== "—" ? ` · ${p.room}` : ""}</p>
                     ) : null}
                   </div>
                   <p className="shrink-0 font-mono text-xs font-semibold tabular-nums text-gray-900">

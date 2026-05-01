@@ -1,9 +1,7 @@
-/**
- * Custom notification component for Sonner toasts
- * Displays rich notifications with icons, styling, and actions
- */
+import { useTranslation } from "react-i18next";
 
 export function NotificationContent({ title, body, type, url }) {
+  const { t } = useTranslation();
   // Get icon and color based on notification type
   const getTypeStyles = (notifType) => {
     switch (notifType) {
@@ -116,7 +114,7 @@ export function NotificationContent({ title, body, type, url }) {
             onClick={() => (window.location.href = url)}
             className="text-xs font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
           >
-            View Details
+            {t("notificationToast.viewDetails")}
             <svg
               className="w-3 h-3"
               fill="none"
@@ -139,7 +137,7 @@ export function NotificationContent({ title, body, type, url }) {
 
 // Export helper to show custom notification
 export function showCustomNotification(toast, payload) {
-  const title = payload.notification?.title || "New Notification";
+  const title = payload.notification?.title || payload.notification?.defaultTitle || "New Notification";
   const body = payload.notification?.body || "";
   const type = payload.data?.type;
   const url = payload.data?.url;

@@ -1,5 +1,6 @@
 import { Badge } from "../../ui-components";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 function formatDate(date) {
   if (!date) return "";
@@ -27,7 +28,7 @@ function getStatusConfig(dueDate) {
   if (!dueDate)
     return {
       badge: "info",
-      label: "Upcoming",
+      labelKey: "upcoming",
       border: "border-l-blue-400",
       bg: "bg-blue-50",
       icon: "text-blue-500",
@@ -38,7 +39,7 @@ function getStatusConfig(dueDate) {
   if (due < now)
     return {
       badge: "neutral",
-      label: "Closed",
+      labelKey: "closed",
       border: "border-l-gray-300",
       bg: "bg-gray-50",
       icon: "text-gray-400",
@@ -47,7 +48,7 @@ function getStatusConfig(dueDate) {
   if (due - now < 3 * 24 * 60 * 60 * 1000)
     return {
       badge: "warning",
-      label: "Due Soon",
+      labelKey: "dueSoon",
       border: "border-l-amber-400",
       bg: "bg-amber-50",
       icon: "text-amber-500",
@@ -55,7 +56,7 @@ function getStatusConfig(dueDate) {
     };
   return {
     badge: "info",
-    label: "Upcoming",
+    labelKey: "upcoming",
     border: "border-l-blue-400",
     bg: "bg-blue-50",
     icon: "text-blue-500",
@@ -64,6 +65,7 @@ function getStatusConfig(dueDate) {
 }
 
 export default function DesktopListing({ homeworkList, listFromPath }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (homeworkId) => {
@@ -92,9 +94,9 @@ export default function DesktopListing({ homeworkList, listFromPath }) {
               />
             </svg>
           </div>
-          <p className="text-base font-semibold text-gray-700 mb-1">No homework found</p>
+          <p className="text-base font-semibold text-gray-700 mb-1">{t("homework.noHomework")}</p>
           <p className="text-sm text-gray-400">
-            There are no assignments for this subject right now.
+            {t("homework.noAssignments")}
           </p>
         </div>
       </div>
@@ -128,7 +130,7 @@ export default function DesktopListing({ homeworkList, listFromPath }) {
                       {homework.title}
                     </h3>
                   </div>
-                  <Badge variant={cfg.badge}>{cfg.label}</Badge>
+                  <Badge variant={cfg.badge}>{t(`homework.status.${cfg.labelKey}`)}</Badge>
                 </div>
 
                 <div className="space-y-2 mt-3">
@@ -193,7 +195,7 @@ export default function DesktopListing({ homeworkList, listFromPath }) {
                     />
                   </svg>
                   <span className={`text-xs font-semibold ${cfg.icon === "text-gray-400" ? "text-gray-400" : "text-gray-600"}`}>
-                    Due: {formatDate(due) || "—"}
+                    {t("homework.due")}: {formatDate(due) || "—"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

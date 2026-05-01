@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Input, Modal } from "../../ui-components";
 import { createClassPlan } from "../../api/lessonPlans.api";
+import { useTranslation } from "react-i18next";
 
 /**
  * @param {{
@@ -11,6 +12,7 @@ import { createClassPlan } from "../../api/lessonPlans.api";
  * }} props
  */
 export default function CreateClassPlanModal({ open, onClose, onCreated, context }) {
+  const { t } = useTranslation();
   const [subject, setSubject] = useState("");
   const [className, setClassName] = useState("");
   const [academicYear, setAcademicYear] = useState("");
@@ -27,9 +29,9 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
 
   const handleSave = async (isPublished) => {
     setError("");
-    if (!subject.trim()) { setError("Subject is required."); return; }
-    if (!className.trim()) { setError("Class name is required."); return; }
-    if (!academicYear.trim()) { setError("Academic year is required."); return; }
+    if (!subject.trim()) { setError(t("lessonPlans.createModal.errorSubjectRequired")); return; }
+    if (!className.trim()) { setError(t("lessonPlans.createModal.errorClassRequired")); return; }
+    if (!academicYear.trim()) { setError(t("lessonPlans.createModal.errorAcademicYearRequired")); return; }
     setSubmitting(true);
     try {
       const plan = await createClassPlan({
@@ -43,7 +45,7 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
       onCreated(plan);
     } catch (err) {
       console.error(err);
-      setError(err?.message || "Failed to create class plan");
+      setError(err?.message || t("lessonPlans.createModal.errorFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -51,36 +53,36 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
 
   return (
     <Modal open={open} onClose={onClose} className="w-full max-w-md">
-      <h2 className="pr-10 text-lg font-semibold text-gray-900">Create class plan</h2>
+      <h2 className="pr-10 text-lg font-semibold text-gray-900">{t("lessonPlans.createModal.title")}</h2>
       <p className="mt-1 text-sm text-gray-500">
-        Review the details below, then save as a draft or publish immediately.
+        {t("lessonPlans.createModal.subtitle")}
       </p>
 
       <div className="mt-5 space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-900">Subject</label>
+          <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.createModal.subject")}</label>
           <Input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder="e.g. Mathematics"
+            placeholder={t("lessonPlans.createModal.subjectPlaceholder")}
             required
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-900">Class</label>
+          <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.createModal.class")}</label>
           <Input
             value={className}
             onChange={(e) => setClassName(e.target.value)}
-            placeholder="e.g. Class 10"
+            placeholder={t("lessonPlans.createModal.classPlaceholder")}
             required
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-900">Academic year</label>
+          <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.createModal.academicYear")}</label>
           <Input
             value={academicYear}
             onChange={(e) => setAcademicYear(e.target.value)}
-            placeholder="e.g. 2025-26"
+            placeholder={t("lessonPlans.createModal.academicYearPlaceholder")}
             required
           />
         </div>
@@ -89,7 +91,7 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
 
         <div className="flex flex-wrap justify-end gap-2 pt-1">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="button"
@@ -97,14 +99,14 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
             loading={submitting}
             onClick={() => handleSave(false)}
           >
-            Save as draft
+            {t("lessonPlans.createModal.saveAsDraft")}
           </Button>
           <Button
             type="button"
             loading={submitting}
             onClick={() => handleSave(true)}
           >
-            Publish
+            {t("lessonPlans.createModal.publish")}
           </Button>
         </div>
       </div>

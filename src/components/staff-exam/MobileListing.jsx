@@ -1,33 +1,37 @@
-function getDateBadge(startDate, endDate) {
-  const now = new Date();
-  if (endDate && new Date(endDate) < now) {
-    return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">Closed</span>;
-  }
-  if (startDate && new Date(startDate) <= now) {
-    return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>;
-  }
-  return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">Upcoming</span>;
-}
+import { useTranslation } from "react-i18next";
 
 export default function MobileListing({ examList, onEdit, onPublish, onView, className }) {
+  const { t } = useTranslation();
+
+  const getDateBadge = (startDate, endDate) => {
+    const now = new Date();
+    if (endDate && new Date(endDate) < now) {
+      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">{t("exams.dateBadge.closed")}</span>;
+    }
+    if (startDate && new Date(startDate) <= now) {
+      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">{t("exams.dateBadge.active")}</span>;
+    }
+    return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">{t("exams.dateBadge.upcoming")}</span>;
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "DRAFT":
         return (
           <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-            Draft
+            {t("exams.status.draft")}
           </span>
         );
       case "PUBLISHED":
         return (
           <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
-            Published
+            {t("exams.status.published")}
           </span>
         );
       case "COMPLETED":
         return (
           <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
-            Completed
+            {t("exams.status.completed")}
           </span>
         );
       default:
@@ -41,13 +45,13 @@ export default function MobileListing({ examList, onEdit, onPublish, onView, cla
 
   const getExamTypeLabel = (type) => {
     const labels = {
-      UNIT_TEST: "Unit Test",
-      MID_TERM: "Mid Term",
-      FINAL: "Final Exam",
-      QUARTERLY: "Quarterly",
-      HALF_YEARLY: "Half Yearly",
-      ANNUAL: "Annual",
-      OTHER: "Other",
+      UNIT_TEST: t("exams.types.unitTest"),
+      MID_TERM: t("exams.types.midTerm"),
+      FINAL: t("exams.types.final"),
+      QUARTERLY: t("exams.types.quarterly"),
+      HALF_YEARLY: t("exams.types.halfYearly"),
+      ANNUAL: t("exams.types.annual"),
+      OTHER: t("exams.types.other"),
     };
     return labels[type] || type;
   };
@@ -69,9 +73,9 @@ export default function MobileListing({ examList, onEdit, onPublish, onView, cla
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Exams Found</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("exams.noExams")}</h3>
         <p className="text-gray-600 text-center">
-          You haven't created any exams yet. Tap the + button to create one.
+          {t("exams.noExamsMobileDesc")}
         </p>
       </div>
     );
@@ -137,7 +141,7 @@ export default function MobileListing({ examList, onEdit, onPublish, onView, cla
                   d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                 />
               </svg>
-              <span>{exam.subjects?.length || 0} subject(s)</span>
+              <span>{t("exams.subjectsCount", { count: exam.subjects?.length || 0 })}</span>
             </div>
 
             {exam.startDate && exam.endDate && (
@@ -181,7 +185,7 @@ export default function MobileListing({ examList, onEdit, onPublish, onView, cla
                 }}
                 className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
-                Edit
+                {t("exams.actions.edit")}
               </button>
               <button
                 onClick={(e) => {
@@ -190,7 +194,7 @@ export default function MobileListing({ examList, onEdit, onPublish, onView, cla
                 }}
                 className="flex-1 px-3 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
               >
-                Publish
+                {t("exams.actions.publish")}
               </button>
             </div>
           )}

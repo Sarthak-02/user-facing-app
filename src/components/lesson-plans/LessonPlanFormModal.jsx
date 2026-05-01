@@ -8,13 +8,7 @@ import {
   removeLessonPlanAttachment,
 } from "../../api/lessonPlans.api";
 import { Plus, Trash2, Paperclip } from "lucide-react";
-
-const STATUS_OPTIONS = [
-  { value: "PLANNED", label: "Planned" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "SKIPPED", label: "Skipped" },
-  { value: "PARTIALLY_COMPLETED", label: "Partially completed" },
-];
+import { useTranslation } from "react-i18next";
 
 function toDateInputValue(iso) {
   if (!iso) return "";
@@ -33,6 +27,7 @@ function toDateInputValue(iso) {
  * }} props
  */
 export default function LessonPlanFormModal({ open, onClose, onSaved, plan, context }) {
+  const { t } = useTranslation();
   const isEdit = !!plan;
   const planId = plan?.lesson_plan_id || plan?.id;
 
@@ -131,7 +126,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
       setExistingAttachments((prev) => prev.filter((x) => (x.attachment_id || x.id) !== aid));
     } catch (err) {
       console.error(err);
-      setError(err?.message || "Failed to remove attachment");
+      setError(err?.message || t("lessonPlans.lessonPlanForm.errorRemoveAttachment"));
     }
   };
 
@@ -141,15 +136,15 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
 
     const learning_objectives = objectives.map((s) => s.trim()).filter(Boolean);
     if (!learning_objectives.length) {
-      setError("Add at least one learning objective.");
+      setError(t("lessonPlans.lessonPlanForm.errorObjectiveRequired"));
       return;
     }
     if (!chapterTopic.trim()) {
-      setError("Chapter / topic is required.");
+      setError(t("lessonPlans.lessonPlanForm.errorChapterRequired"));
       return;
     }
     if (!lessonDate) {
-      setError("Lesson date is required.");
+      setError(t("lessonPlans.lessonPlanForm.errorDateRequired"));
       return;
     }
 
@@ -164,7 +159,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
       }));
 
     if (!activitiesPayload.length) {
-      setError("Add at least one activity with a type.");
+      setError(t("lessonPlans.lessonPlanForm.errorActivityRequired"));
       return;
     }
 
@@ -211,7 +206,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
       onClose();
     } catch (err) {
       console.error(err);
-      setError(err?.message || err?.error || "Failed to save lesson plan");
+      setError(err?.message || err?.error || t("lessonPlans.lessonPlanForm.errorFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -224,11 +219,11 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
       className="max-h-[90vh] w-full max-w-[min(42rem,calc(100vw-1.5rem))] overflow-y-auto sm:max-w-2xl"
     >
       <h2 className="pr-11 text-lg font-semibold leading-snug text-gray-900">
-        {isEdit ? "Edit lesson plan" : "New lesson plan"}
+        {isEdit ? t("lessonPlans.lessonPlanForm.editTitle") : t("lessonPlans.lessonPlanForm.newTitle")}
       </h2>
       <form onSubmit={handleSubmit} className="mt-4 w-full min-w-0 space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Lesson date</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.lessonDate")}</label>
           <Input
             type="date"
             value={lessonDate}
@@ -237,25 +232,25 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Chapter / topic</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.chapterTopic")}</label>
           <Input
             value={chapterTopic}
             onChange={(e) => setChapterTopic(e.target.value)}
-            placeholder="e.g. Quadratic equations"
+            placeholder={t("lessonPlans.lessonPlanForm.chapterTopicPlaceholder")}
             required
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Description (optional)</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.description")}</label>
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            placeholder="Overview, focus areas, or notes for this lesson"
+            placeholder={t("lessonPlans.lessonPlanForm.descriptionPlaceholder")}
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.status")}</label>
           <Dropdown
             options={STATUS_OPTIONS}
             selected={status}
@@ -266,7 +261,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
 
         <div className="w-full min-w-0">
           <div className="mb-2 flex w-full items-center justify-between gap-2">
-            <span className="text-sm font-medium text-gray-700">Learning objectives</span>
+            <span className="text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.learningObjectives")}</span>
             <Button type="button" variant="ghost" className="py-1 text-sm" onClick={addObjective}>
               <Plus className="h-4 w-4" /> Add
             </Button>
@@ -278,7 +273,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
                   <Input
                     value={obj}
                     onChange={(e) => setObjective(i, e.target.value)}
-                    placeholder={`Objective ${i + 1}`}
+                    placeholder={t("lessonPlans.lessonPlanForm.objectivePlaceholder", { index: i + 1 })}
                   />
                 </div>
                 <Button
@@ -297,7 +292,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
 
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">Activities</span>
+            <span className="text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.activities")}</span>
             <Button type="button" variant="ghost" className="py-1 text-sm" onClick={addActivity}>
               <Plus className="h-4 w-4" /> Add
             </Button>
@@ -312,7 +307,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
                   <Input
                     value={act.type}
                     onChange={(e) => patchActivity(i, { type: e.target.value })}
-                    placeholder="Type (e.g. lecture, group_work)"
+                    placeholder={t("lessonPlans.lessonPlanForm.activityTypePlaceholder")}
                     className="flex-1"
                   />
                   <Input
@@ -320,7 +315,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
                     min={0}
                     value={act.duration_minutes}
                     onChange={(e) => patchActivity(i, { duration_minutes: e.target.value })}
-                    placeholder="Minutes"
+                    placeholder={t("lessonPlans.lessonPlanForm.activityMinutesPlaceholder")}
                     className="w-28"
                   />
                   <Button
@@ -336,7 +331,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
                 <Textarea
                   value={act.description}
                   onChange={(e) => patchActivity(i, { description: e.target.value })}
-                  placeholder="Description (optional)"
+                  placeholder={t("lessonPlans.lessonPlanForm.activityDescriptionPlaceholder")}
                   rows={2}
                 />
               </div>
@@ -355,10 +350,10 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
         </div> */}
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Attachments</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.attachments")}</label>
           <label className="mt-1 flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-gray-600 hover:bg-black/5">
             <Paperclip className="h-4 w-4" />
-            <span>Add files</span>
+            <span>{t("lessonPlans.lessonPlanForm.addFiles")}</span>
             <input type="file" multiple className="hidden" onChange={handleFiles} />
           </label>
           <ul className="mt-2 space-y-1 text-sm">
@@ -369,7 +364,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
                 <li key={key} className="flex items-center justify-between gap-2">
                   <span className="truncate text-gray-800">{name}</span>
                   <Button type="button" variant="ghost" className="py-0.5 text-xs" onClick={() => removeExisting(a)}>
-                    Remove
+                    {t("common.remove")}
                   </Button>
                 </li>
               );
@@ -378,7 +373,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
               <li key={`p-${i}`} className="flex items-center justify-between gap-2">
                 <span className="truncate text-gray-800">{a.name}</span>
                 <Button type="button" variant="ghost" className="py-0.5 text-xs" onClick={() => removePending(i)}>
-                  Remove
+                  {t("common.remove")}
                 </Button>
               </li>
             ))}
@@ -389,10 +384,10 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
 
         <div className="flex flex-wrap justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button type="submit" loading={submitting}>
-            {isEdit ? "Save changes" : "Create"}
+            {isEdit ? t("common.saveChanges") : t("lessonPlans.lessonPlanForm.create")}
           </Button>
         </div>
       </form>

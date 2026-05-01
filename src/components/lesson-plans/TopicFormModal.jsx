@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button, Input, Modal, Dropdown } from "../../ui-components";
 import Textarea from "../../ui-components/TextArea";
 import { addClassPlanTopics, updateClassPlanTopic } from "../../api/lessonPlans.api";
+import { useTranslation } from "react-i18next";
 
 const STATUS_OPTIONS = [
   { value: "PENDING", label: "Pending" },
@@ -28,6 +29,7 @@ export default function TopicFormModal({
   lockChapter = false,
   existingTopicsCount = 0,
 }) {
+  const { t } = useTranslation();
   const isEdit = !!topic;
 
   const [chapterTitle, setChapterTitle] = useState("");
@@ -64,11 +66,11 @@ export default function TopicFormModal({
     e.preventDefault();
     setError("");
     if (!chapterTitle.trim()) {
-      setError("Chapter title is required.");
+      setError(t("lessonPlans.topicForm.errorChapterRequired"));
       return;
     }
     if (!title.trim()) {
-      setError("Topic title is required.");
+      setError(t("lessonPlans.topicForm.errorTopicRequired"));
       return;
     }
     setSubmitting(true);
@@ -104,7 +106,7 @@ export default function TopicFormModal({
       onSaved();
     } catch (err) {
       console.error(err);
-      setError(err?.message || err?.error || "Failed to save topic");
+      setError(err?.message || err?.error || t("lessonPlans.topicForm.errorFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -113,7 +115,7 @@ export default function TopicFormModal({
   return (
     <Modal open={open} onClose={onClose} className="w-full max-w-lg">
       <h2 className="pr-10 text-lg font-semibold text-gray-900">
-        {isEdit ? "Edit topic" : lockChapter ? "Add topic" : "New chapter"}
+        {isEdit ? t("lessonPlans.topicForm.editTopic") : lockChapter ? t("lessonPlans.topicForm.addTopic") : t("lessonPlans.topicForm.newChapter")}
       </h2>
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         {/* Chapter info */}
@@ -129,23 +131,23 @@ export default function TopicFormModal({
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="mb-1 block text-sm font-medium text-gray-900">
-                Chapter title <span className="text-error-500">*</span>
+                {t("lessonPlans.topicForm.chapterTitle")} <span className="text-error-500">*</span>
               </label>
               <Input
                 value={chapterTitle}
                 onChange={(e) => setChapterTitle(e.target.value)}
-                placeholder="e.g. Number Systems"
+                placeholder={t("lessonPlans.topicForm.chapterTitlePlaceholder")}
                 required
               />
             </div>
             <div className="w-24">
-              <label className="mb-1 block text-sm font-medium text-gray-900">Chapter #</label>
+              <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.topicForm.chapterNumber")}</label>
               <Input
                 type="number"
                 min={1}
                 value={chapterNumber}
                 onChange={(e) => setChapterNumber(e.target.value)}
-                placeholder="e.g. 1"
+                placeholder={t("lessonPlans.topicForm.chapterNumberPlaceholder")}
               />
             </div>
           </div>
@@ -154,12 +156,12 @@ export default function TopicFormModal({
         {/* Topic title */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-900">
-            Topic title <span className="text-error-500">*</span>
+            {t("lessonPlans.topicForm.topicTitle")} <span className="text-error-500">*</span>
           </label>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Integers and their properties"
+            placeholder={t("lessonPlans.topicForm.topicTitlePlaceholder")}
             required
           />
         </div>
@@ -167,11 +169,11 @@ export default function TopicFormModal({
         {/* Status + scheduled date row */}
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-gray-900">Status</label>
-            <Dropdown options={STATUS_OPTIONS} selected={status} onChange={setStatus} placeholder="Status" />
+            <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.topicForm.status")}</label>
+            <Dropdown options={STATUS_OPTIONS} selected={status} onChange={setStatus} placeholder={t("lessonPlans.topicForm.status")} />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-gray-900">Scheduled date</label>
+            <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.topicForm.scheduledDate")}</label>
             <Input
               type="date"
               value={scheduledDate}
@@ -182,19 +184,19 @@ export default function TopicFormModal({
 
         {/* Teacher notes */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-900">Teacher notes (optional)</label>
+          <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.topicForm.teacherNotes")}</label>
           <Textarea
             value={teacherNotes}
             onChange={(e) => setTeacherNotes(e.target.value)}
             rows={2}
-            placeholder="Any notes or reminders for this topic"
+            placeholder={t("lessonPlans.topicForm.teacherNotesPlaceholder")}
           />
         </div>
 
         {error && <p className="text-sm text-error-600">{error}</p>}
         <div className="flex justify-end gap-2 pt-1">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" loading={submitting}>{isEdit ? "Save changes" : "Add topic"}</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button type="submit" loading={submitting}>{isEdit ? t("common.saveChanges") : t("lessonPlans.topicForm.addTopicButton")}</Button>
         </div>
       </form>
     </Modal>

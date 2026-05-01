@@ -1,6 +1,8 @@
 import { useNotification } from "../providers/NotificationProvider";
+import { useTranslation } from "react-i18next";
 
 export default function NotificationPromptBanner() {
+  const { t } = useTranslation();
   const {
     showNotificationPrompt,
     enableNotifications,
@@ -31,31 +33,30 @@ export default function NotificationPromptBanner() {
                 />
               </svg>
               <h3 className="font-semibold text-gray-900 dark:text-white">
-                Stay Updated with Notifications
+                {t("notificationPrompt.title")}
               </h3>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-              Enable push notifications to receive real-time updates about attendance,
-              homework, exams, and important announcements.
+              {t("notificationPrompt.description")}
             </p>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={enableNotifications}
                 className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
               >
-                Enable Notifications
+                {t("notificationPrompt.enable")}
               </button>
               <button
                 onClick={() => dismissNotificationPrompt(false)}
                 className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
               >
-                Maybe Later
+                {t("notificationPrompt.maybeLater")}
               </button>
               <button
                 onClick={() => dismissNotificationPrompt(true)}
                 className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors text-sm font-medium"
               >
-                Don&apos;t Ask Again
+                {t("notificationPrompt.dontAskAgain")}
               </button>
             </div>
           </div>

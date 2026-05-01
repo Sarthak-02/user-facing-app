@@ -19,6 +19,7 @@ import {
   messageId,
   messageTimeLabel,
 } from "./chatUtils";
+import { useTranslation } from "react-i18next";
 
 const POLL_MS = 4000;
 
@@ -63,6 +64,7 @@ function latestCreatedAtIso(msgs) {
  * @param {{ conversationId: string, backTo: string }} props
  */
 export default function ChatThread({ conversationId, backTo }) {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const currentUserId = String(auth?.userId ?? "").trim();
 
@@ -278,7 +280,7 @@ export default function ChatThread({ conversationId, backTo }) {
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <MessageSquare size={36} className="mb-3 text-gray-300" />
                 <p className="text-sm text-gray-400">
-                  No messages yet. Say hello!
+                  {t("chat.noMessages")}
                 </p>
               </div>
             ) : null}
@@ -356,7 +358,7 @@ export default function ChatThread({ conversationId, backTo }) {
             ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Write a message…"
+            placeholder={t("chat.writeMessage")}
             title="Enter to send · Shift+Enter for new line"
             rows={1}
             className="min-h-[40px] flex-1 resize-none rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-gray-800 outline-none placeholder:text-gray-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"

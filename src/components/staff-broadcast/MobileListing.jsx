@@ -1,18 +1,21 @@
 import { Card } from "../../ui-components";
+import { useTranslation } from "react-i18next";
 
 export default function MobileListing({ broadcastList, onSelectBroadcast, className }) {
+  const { t } = useTranslation();
+
   const getStatusBadge = (status) => {
     const statusConfig = {
-      DRAFT: { bg: "bg-gray-100", text: "text-gray-700", label: "Draft" },
-      NOTIFYING: { bg: "bg-blue-100", text: "text-blue-700", label: "Notifying" },
-      SUBMITTED: { bg: "bg-green-100", text: "text-green-700", label: "Submitted" },
+      DRAFT: { bg: "bg-gray-100", text: "text-gray-700", labelKey: "broadcast.status.draft" },
+      NOTIFYING: { bg: "bg-blue-100", text: "text-blue-700", labelKey: "broadcast.status.notifying" },
+      SUBMITTED: { bg: "bg-green-100", text: "text-green-700", labelKey: "broadcast.status.submitted" },
     };
 
     const config = statusConfig[status] || statusConfig.DRAFT;
 
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-        {config.label}
+        {t(config.labelKey)}
       </span>
     );
   };
@@ -20,26 +23,26 @@ export default function MobileListing({ broadcastList, onSelectBroadcast, classN
   const formatTargetInfo = (broadcast) => {
     const targets = broadcast.broadcastTargets || broadcast.targets || [];
     if (targets.length === 0) {
-      return "No targets";
+      return t("broadcast.target.noTargets");
     }
 
     const firstTarget = targets[0];
     const targetType = firstTarget.targetType || firstTarget.target_type || "";
 
     if (targetType === "CAMPUS") {
-      return "Entire Campus";
+      return t("broadcast.target.entireCampus");
     } else if (targetType === "CLASS") {
       const classCount = targets.length;
-      return classCount === 1 ? "1 Class" : `${classCount} Classes`;
+      return t("broadcast.target.classes", { count: classCount });
     } else if (targetType === "SECTION") {
       const sectionCount = targets.length;
-      return sectionCount === 1 ? "1 Section" : `${sectionCount} Sections`;
+      return t("broadcast.target.sections", { count: sectionCount });
     } else if (targetType === "STUDENT") {
       const studentCount = targets.length;
-      return studentCount === 1 ? "1 Student" : `${studentCount} Students`;
+      return t("broadcast.target.students", { count: studentCount });
     }
 
-    return "Unknown target";
+    return t("broadcast.target.unknown");
   };
 
   const formatDate = (dateString) => {
@@ -78,9 +81,9 @@ export default function MobileListing({ broadcastList, onSelectBroadcast, classN
             d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
           />
         </svg>
-        <h3 className="text-lg font-semibold text-gray-600 mb-2">No Broadcasts Yet</h3>
+        <h3 className="text-lg font-semibold text-gray-600 mb-2">{t("broadcast.noBroadcasts")}</h3>
         <p className="text-gray-500 text-center max-w-md px-4">
-          Create your first broadcast to send messages and announcements to students, classes, or the entire school.
+          {t("broadcast.noBroadcastsDesc")}
         </p>
       </Card>
     );
@@ -161,7 +164,7 @@ export default function MobileListing({ broadcastList, onSelectBroadcast, classN
                 />
               </svg>
               <span className="text-gray-700">
-                Created: {formatDate(broadcast.created_at || broadcast.createdAt)} {formatTime(broadcast.created_at || broadcast.createdAt)}
+                {t("broadcast.created")}: {formatDate(broadcast.created_at || broadcast.createdAt)} {formatTime(broadcast.created_at || broadcast.createdAt)}
               </span>
             </div>
 
@@ -183,7 +186,7 @@ export default function MobileListing({ broadcastList, onSelectBroadcast, classN
                   />
                 </svg>
                 <span className="text-gray-700">
-                  Sent: {formatDate(broadcast.submittedAt || broadcast.sentAt || broadcast.sent_at || broadcast.published_at)} {formatTime(broadcast.submittedAt || broadcast.sentAt || broadcast.sent_at || broadcast.published_at)}
+                  {t("broadcast.sent")}: {formatDate(broadcast.submittedAt || broadcast.sentAt || broadcast.sent_at || broadcast.published_at)} {formatTime(broadcast.submittedAt || broadcast.sentAt || broadcast.sent_at || broadcast.published_at)}
                 </span>
               </div>
             )}

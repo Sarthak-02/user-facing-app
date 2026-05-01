@@ -1,5 +1,6 @@
 import { Badge } from "../../ui-components";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 function formatDate(date) {
   if (!date) return "";
@@ -24,15 +25,16 @@ function classSectionLine(hw) {
 }
 
 function getStatusConfig(dueDate) {
-  if (!dueDate) return { badge: "info", label: "Upcoming", border: "border-l-blue-400", bg: "bg-blue-50", icon: "text-blue-500" };
+  if (!dueDate) return { badge: "info", labelKey: "upcoming", border: "border-l-blue-400", bg: "bg-blue-50", icon: "text-blue-500" };
   const now = new Date();
   const due = new Date(dueDate);
-  if (due < now) return { badge: "neutral", label: "Closed", border: "border-l-gray-300", bg: "bg-gray-50", icon: "text-gray-400" };
-  if (due - now < 3 * 24 * 60 * 60 * 1000) return { badge: "warning", label: "Due Soon", border: "border-l-amber-400", bg: "bg-amber-50", icon: "text-amber-500" };
-  return { badge: "info", label: "Upcoming", border: "border-l-blue-400", bg: "bg-blue-50", icon: "text-blue-500" };
+  if (due < now) return { badge: "neutral", labelKey: "closed", border: "border-l-gray-300", bg: "bg-gray-50", icon: "text-gray-400" };
+  if (due - now < 3 * 24 * 60 * 60 * 1000) return { badge: "warning", labelKey: "dueSoon", border: "border-l-amber-400", bg: "bg-amber-50", icon: "text-amber-500" };
+  return { badge: "info", labelKey: "upcoming", border: "border-l-blue-400", bg: "bg-blue-50", icon: "text-blue-500" };
 }
 
 export default function MobileListing({ homeworkList, listFromPath, className }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (homeworkId) => {
@@ -50,7 +52,7 @@ export default function MobileListing({ homeworkList, listFromPath, className })
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <p className="text-sm font-semibold text-gray-700">No homework found</p>
+          <p className="text-sm font-semibold text-gray-700">{t("homework.noHomework")}</p>
         </div>
       </div>
     );
@@ -80,7 +82,7 @@ export default function MobileListing({ homeworkList, listFromPath, className })
                     {homework.subject}
                   </p>
                 </div>
-                <Badge variant={cfg.badge}>{cfg.label}</Badge>
+                <Badge variant={cfg.badge}>{t(`homework.status.${cfg.labelKey}`)}</Badge>
               </div>
 
               <div className="flex flex-wrap gap-x-3 gap-y-1">
@@ -109,7 +111,7 @@ export default function MobileListing({ homeworkList, listFromPath, className })
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span className={`font-medium ${cfg.icon === "text-gray-400" ? "text-gray-400" : "text-gray-500"}`}>
-                  Due: {formatDate(due) || "—"}
+                  {t("homework.due")}: {formatDate(due) || "—"}
                 </span>
               </div>
               <div className="flex items-center gap-2">

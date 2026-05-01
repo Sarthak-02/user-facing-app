@@ -1,11 +1,13 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button, Card } from "../../ui-components";
 import { usePermissions } from "../../store/permissions.store";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import Loader from "../../ui-components/Loader";
 
 export default function StaffHomeworkStudentPick() {
+  const { t } = useTranslation();
   const { sectionId, subjectId: subjectIdParam } = useParams();
   const navigate = useNavigate();
   const { permissions, getSubjectsBySection, getStudentsBySection } = usePermissions();
@@ -44,12 +46,12 @@ export default function StaffHomeworkStudentPick() {
   }, [students, sectionId, subjectIdKey, subjectEnc, navigate]);
 
   const sectionTitle = useMemo(() => {
-    if (!section) return "Section";
+    if (!section) return t("staffPicker.sectionFallback");
     const cls = (permissions.classes || []).find((c) => c.class_id === section.class_id);
     return cls ? `${cls.class_name} · ${section.section_name}` : section.section_name;
-  }, [section, permissions.classes]);
+  }, [section, permissions.classes, t]);
 
-  const subjectTitle = subjectMeta?.subject_name || subjectIdKey || "Subject";
+  const subjectTitle = subjectMeta?.subject_name || subjectIdKey || t("staffPicker.subjectFallback");
 
   const goBack = () => {
     navigate(`/staff/homework/section/${sectionId}`);
@@ -58,9 +60,9 @@ export default function StaffHomeworkStudentPick() {
   if (!sectionId || !section || !subjectIdKey) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-        <p className="text-sm text-gray-600">Invalid homework route.</p>
+        <p className="text-sm text-gray-600">{t("staffPicker.invalidRoute")}</p>
         <Button variant="secondary" className="mt-4 w-fit" onClick={() => navigate("/staff/homework")}>
-          Back
+          {t("common.back")}
         </Button>
       </div>
     );
@@ -69,9 +71,9 @@ export default function StaffHomeworkStudentPick() {
   if (subjectsInSection.length > 0 && !subjectMeta) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-        <p className="text-sm text-gray-600">Subject not found for this section.</p>
+        <p className="text-sm text-gray-600">{t("staffPicker.subjectNotFound")}</p>
         <Button variant="secondary" className="mt-4 w-fit" onClick={goBack}>
-          Back
+          {t("common.back")}
         </Button>
       </div>
     );
@@ -90,11 +92,11 @@ export default function StaffHomeworkStudentPick() {
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
         <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t("common.back")}
         </Button>
         <h1 className="text-xl font-bold text-gray-900">{subjectTitle}</h1>
         <p className="mt-1 text-sm text-gray-600">{sectionTitle}</p>
-        <p className="mt-3 text-sm text-gray-600">No students are listed for this section.</p>
+        <p className="mt-3 text-sm text-gray-600">{t("staffPicker.noStudents")}</p>
       </div>
     );
   }
@@ -103,11 +105,11 @@ export default function StaffHomeworkStudentPick() {
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
       <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
         <ArrowLeft className="h-4 w-4" />
-        Back
+        {t("common.back")}
       </Button>
       <h1 className="text-xl font-bold text-gray-900">{subjectTitle}</h1>
       <p className="mt-1 text-sm text-gray-600">{sectionTitle}</p>
-      <p className="mt-3 text-sm text-gray-600">Choose a student to view homework.</p>
+      <p className="mt-3 text-sm text-gray-600">{t("staffPicker.chooseStudent")}</p>
       <div className="mt-6 space-y-2">
         {students.map((st) => (
           <Card

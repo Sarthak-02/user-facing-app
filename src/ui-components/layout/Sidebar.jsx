@@ -1,7 +1,9 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function Sidebar({ collapsed, setCollapsed, navItems }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -54,12 +56,12 @@ export default function Sidebar({ collapsed, setCollapsed, navItems }) {
         {!collapsed && (
           <>
             <span className="font-bold text-gray-900 text-base truncate flex-1">
-              Digi School
+              {t("sidebar.brandName")}
             </span>
             <button
               onClick={() => setCollapsed(true)}
               className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 flex-shrink-0"
-              aria-label="Collapse sidebar"
+              aria-label={t("sidebar.collapse")}
             >
               <ChevronLeft size={16} />
             </button>
@@ -121,7 +123,7 @@ export default function Sidebar({ collapsed, setCollapsed, navItems }) {
           <button
             onClick={() => setCollapsed(false)}
             className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
-            aria-label="Expand sidebar"
+            aria-label={t("sidebar.expand")}
           >
             <ChevronRight size={16} />
           </button>

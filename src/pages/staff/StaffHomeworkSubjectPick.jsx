@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../ui-components";
 import { usePermissions } from "../../store/permissions.store";
 import {
@@ -82,6 +83,7 @@ function getSubjectConfig(name) {
 }
 
 export default function StaffHomeworkSubjectPick() {
+  const { t } = useTranslation();
   const { sectionId } = useParams();
   const navigate = useNavigate();
   const { permissions, getSubjectsBySection } = usePermissions();
@@ -101,10 +103,10 @@ export default function StaffHomeworkSubjectPick() {
   }, [subjects, sectionId, navigate]);
 
   const sectionTitle = useMemo(() => {
-    if (!section) return "Section";
+    if (!section) return t("staffPicker.sectionFallback");
     const cls = (permissions.classes || []).find((c) => c.class_id === section.class_id);
     return cls ? `${cls.class_name} · ${section.section_name}` : section.section_name;
-  }, [section, permissions.classes]);
+  }, [section, permissions.classes, t]);
 
   const goBack = () => {
     if ((permissions.sections || []).length > 1) {
@@ -117,9 +119,9 @@ export default function StaffHomeworkSubjectPick() {
   if (!sectionId || !section) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-        <p className="text-sm text-gray-600">Section not found.</p>
+        <p className="text-sm text-gray-600">{t("staffPicker.sectionNotFound")}</p>
         <Button variant="secondary" className="mt-4 w-fit" onClick={() => navigate("/staff/homework")}>
-          Back
+          {t("common.back")}
         </Button>
       </div>
     );
@@ -138,10 +140,10 @@ export default function StaffHomeworkSubjectPick() {
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
         <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t("common.back")}
         </Button>
         <h1 className="text-xl font-bold text-gray-900">{sectionTitle}</h1>
-        <p className="mt-3 text-sm text-gray-600">No subjects are assigned for this section.</p>
+        <p className="mt-3 text-sm text-gray-600">{t("staffPicker.noSubjects")}</p>
       </div>
     );
   }
@@ -150,10 +152,10 @@ export default function StaffHomeworkSubjectPick() {
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
       <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
         <ArrowLeft className="h-4 w-4" />
-        Back
+        {t("common.back")}
       </Button>
       <h1 className="text-xl font-bold text-gray-900">{sectionTitle}</h1>
-      <p className="mt-1 text-sm text-gray-600">Choose a subject to view or create homework.</p>
+      <p className="mt-1 text-sm text-gray-600">{t("staffPicker.chooseSubjectHomework")}</p>
       <div className="mt-5 space-y-2">
         {subjects.map((s) => {
           const { Icon, iconBg, iconColor, border } = getSubjectConfig(s.subject_name || s.subject_id);

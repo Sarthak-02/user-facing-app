@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Badge, Button } from "../../ui-components";
 import { getHomeworkDetail } from "../../api/homework.api";
 import Loader from "../../ui-components/Loader";
@@ -56,12 +57,12 @@ function assignedDateValue(hw) {
   return hw?.assignedDate || hw?.assigned_at || hw?.published_at || hw?.createdAt || hw?.created_at || "";
 }
 
-function getStatusConfig(status, dueDate) {
+function getStatusConfig(status, dueDate, t) {
   const now = new Date();
   const due = dueDate ? new Date(dueDate) : null;
-  if (status === "SUBMITTED") return { badge: "success", label: "Submitted", gradient: "from-green-500 to-emerald-600" };
-  if (due && due < now) return { badge: "error", label: "Overdue", gradient: "from-red-500 to-rose-600" };
-  return { badge: "info", label: "Assigned", gradient: "from-blue-500 to-indigo-600" };
+  if (status === "SUBMITTED") return { badge: "success", label: t("studentHomeworkDetail.statusSubmitted"), gradient: "from-green-500 to-emerald-600" };
+  if (due && due < now) return { badge: "error", label: t("studentHomeworkDetail.statusOverdue"), gradient: "from-red-500 to-rose-600" };
+  return { badge: "info", label: t("studentHomeworkDetail.statusAssigned"), gradient: "from-blue-500 to-indigo-600" };
 }
 
 function isDueSoon(dueDate) {
@@ -74,6 +75,7 @@ export default function HomeworkDetail() {
   const { homeworkId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
 
   const [homework, setHomework] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -116,7 +118,7 @@ export default function HomeworkDetail() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-base font-bold text-gray-900">Homework</h1>
+          <h1 className="text-base font-bold text-gray-900">{t("studentHomeworkDetail.title")}</h1>
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
@@ -125,8 +127,8 @@ export default function HomeworkDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-sm text-gray-500 mb-4">{error || "Homework not found"}</p>
-            <Button onClick={handleGoBack}>Back to Homework</Button>
+            <p className="text-sm text-gray-500 mb-4">{error || t("studentHomeworkDetail.notFound")}</p>
+            <Button onClick={handleGoBack}>{t("studentHomeworkDetail.backToHomework")}</Button>
           </div>
         </div>
       </div>
@@ -134,7 +136,7 @@ export default function HomeworkDetail() {
   }
 
   const dueDate = homework.dueDate || homework.due_date;
-  const cfg = getStatusConfig(homework.status, dueDate);
+  const cfg = getStatusConfig(homework.status, dueDate, t);
   const dueSoon = isDueSoon(dueDate);
 
   return (
@@ -153,6 +155,7 @@ export default function HomeworkDetail() {
         <Badge variant={cfg.badge}>{cfg.label}</Badge>
       </div>
 
+
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto min-h-0">
         <div className="max-w-3xl mx-auto p-4 space-y-4 pb-8">
@@ -166,22 +169,22 @@ export default function HomeworkDetail() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
               <div className="bg-white/15 backdrop-blur-sm rounded-lg p-2.5">
-                <p className="text-xs opacity-75 mb-0.5">Class / Section</p>
+                <p className="text-xs opacity-75 mb-0.5">{t("studentHomeworkDetail.classSection")}</p>
                 <p className="text-sm font-semibold">{classSectionLabel(homework)}</p>
               </div>
               <div className="bg-white/15 backdrop-blur-sm rounded-lg p-2.5">
-                <p className="text-xs opacity-75 mb-0.5">Assigned by</p>
+                <p className="text-xs opacity-75 mb-0.5">{t("studentHomeworkDetail.assignedBy")}</p>
                 <p className="text-sm font-semibold truncate">{assignedByLabel(homework)}</p>
               </div>
               <div className="bg-white/15 backdrop-blur-sm rounded-lg p-2.5">
-                <p className="text-xs opacity-75 mb-0.5">Assigned</p>
+                <p className="text-xs opacity-75 mb-0.5">{t("studentHomeworkDetail.assigned")}</p>
                 <p className="text-sm font-semibold">{formatDate(assignedDateValue(homework)) || "—"}</p>
               </div>
               <div className={`rounded-lg p-2.5 ${dueSoon ? "bg-amber-400/30" : "bg-white/15 backdrop-blur-sm"}`}>
-                <p className="text-xs opacity-75 mb-0.5">Due date</p>
+                <p className="text-xs opacity-75 mb-0.5">{t("studentHomeworkDetail.dueDate")}</p>
                 <p className="text-sm font-semibold">
                   {formatDate(dueDate) || "—"}
-                  {dueSoon && <span className="ml-1 text-xs font-normal opacity-90">· Soon</span>}
+                  {dueSoon && <span className="ml-1 text-xs font-normal opacity-90">· {t("studentHomeworkDetail.soon")}</span>}
                 </p>
               </div>
             </div>
@@ -190,7 +193,7 @@ export default function HomeworkDetail() {
           {/* Description */}
           {homework.description && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Description</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t("studentHomeworkDetail.description")}</h3>
               <p className="text-gray-700 leading-relaxed text-sm">{homework.description}</p>
             </div>
           )}
@@ -198,7 +201,7 @@ export default function HomeworkDetail() {
           {/* Instructions */}
           {homework.instructions && homework.instructions.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Instructions</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t("studentHomeworkDetail.instructions")}</h3>
               <ol className="space-y-2">
                 {homework.instructions.map((instruction, index) => (
                   <li key={index} className="flex items-start gap-3">
@@ -216,7 +219,7 @@ export default function HomeworkDetail() {
           {homework.attachments && homework.attachments.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Attachments ({homework.attachments.length})
+                {t("studentHomeworkDetail.attachments", { count: homework.attachments.length })}
               </h3>
               <div className="space-y-2">
                 {homework.attachments.map((attachment, index) => (

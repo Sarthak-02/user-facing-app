@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { usePermissions } from "../../store/permissions.store";
 import { ChevronRight } from "lucide-react";
 import Loader from "../../ui-components/Loader";
@@ -44,6 +45,7 @@ function getClassBadge(className, sectionName) {
 }
 
 export default function StaffHomeworkHome() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { permissions } = usePermissions();
 
@@ -75,10 +77,9 @@ export default function StaffHomeworkHome() {
   if (rows.length === 0) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-        <h1 className="text-xl font-bold text-gray-900">Homework</h1>
+        <h1 className="text-xl font-bold text-gray-900">{t("nav.homework")}</h1>
         <p className="mt-3 text-sm text-gray-600">
-          No class or section assignments were found. If you just logged in, try refreshing after
-          permissions load.
+          {t("staffPicker.noSections")}
         </p>
       </div>
     );
@@ -86,8 +87,8 @@ export default function StaffHomeworkHome() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-      <h1 className="text-xl font-bold text-gray-900">Homework</h1>
-      <p className="mt-1 text-sm text-gray-600">Choose a class and section to continue.</p>
+      <h1 className="text-xl font-bold text-gray-900">{t("nav.homework")}</h1>
+      <p className="mt-1 text-sm text-gray-600">{t("staffPicker.chooseSection")}</p>
       <div className="mt-5 space-y-2">
         {rows.map((r, idx) => {
           const { className, sectionName } = parseLabel(r.label);

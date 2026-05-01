@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { NavLink, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Pencil } from "lucide-react";
 import AttendanceSummary from "../../components/attendance/AttendanceSummary";
@@ -30,6 +31,7 @@ function parseDateInputValue(s) {
 }
 
 export default function StaffAttendanceSection({ readOnly = false }) {
+  const { t } = useTranslation();
   const { sectionId: sectionIdParam } = useParams();
   const navigate = useNavigate();
   const sectionRows = useTeacherSectionRows();
@@ -340,7 +342,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
             onClick={goBack}
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {t("common.back")}
           </Button>
           <h1 className="min-w-0 flex-1 truncate text-right text-lg font-bold leading-tight text-gray-900 md:text-xl">
             {sectionTitle}
@@ -349,16 +351,16 @@ export default function StaffAttendanceSection({ readOnly = false }) {
 
         <div className="flex gap-1 rounded-lg border border-gray-300/80 bg-gray-200/90 p-0.5 dark:border-gray-600 dark:bg-gray-900">
           <NavLink to={markPath} end className={tabClass}>
-            Take attendance
+            {t("staffAttendance.takeAttendance")}
           </NavLink>
           <NavLink to={historyPath} className={tabClass}>
-            Past records
+            {t("staffAttendance.pastRecords")}
           </NavLink>
         </div>
 
         {readOnly && (
           <label className="flex flex-col gap-1 text-sm text-gray-600">
-            <span className="text-xs font-medium text-gray-700">Date</span>
+            <span className="text-xs font-medium text-gray-700">{t("staffAttendance.date")}</span>
             <input
               type="date"
               max={todayInputMax}
@@ -372,7 +374,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <input
             type="text"
-            placeholder="Search by name or roll number..."
+            placeholder={t("staffAttendance.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full min-w-0 max-w-4xl flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
@@ -395,7 +397,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
 
         {!isLoadingAttendance && students.length === 0 && (
           <div className="flex items-center justify-center py-8">
-            <div className="text-gray-500">No students found for this section.</div>
+            <div className="text-gray-500">{t("staffAttendance.noStudentsFound")}</div>
           </div>
         )}
 
@@ -417,9 +419,9 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                   />
                 </svg>
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">No Attendance Recorded</h3>
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">{t("staffAttendance.noAttendanceRecorded")}</h3>
               <p className="text-gray-600">
-                Attendance has not been marked for the selected date.
+                {t("staffAttendance.notMarkedForDate")}
               </p>
             </div>
           </div>
@@ -433,11 +435,11 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                 <div className="mt-3 flex items-center justify-between rounded-lg border border-success-200 bg-success-50 px-4 py-2.5 dark:border-success-800 dark:bg-success-950">
                   <div className="flex items-center gap-2 text-sm font-medium text-success-700 dark:text-success-400">
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    Attendance submitted
+                    {t("staffAttendance.attendanceSubmitted")}
                   </div>
                   <Button variant="secondary" className="h-8 gap-1.5 px-3 text-xs" onClick={() => setIsEditing(true)}>
                     <Pencil className="h-3.5 w-3.5" />
-                    Edit
+                    {t("common.edit")}
                   </Button>
                 </div>
               )}
@@ -467,7 +469,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                 <div className="mx-auto flex max-w-2xl flex-col gap-2">
                   <div>
                     <div className="mb-1 flex items-center justify-between gap-2 text-xs text-gray-500">
-                      <span>Progress</span>
+                      <span>{t("staffAttendance.progress")}</span>
                       <span className="font-medium tabular-nums text-gray-700">
                         {Object.keys(attendance).length} / {students.length}
                       </span>
@@ -487,7 +489,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                     disabled={Object.keys(attendance).length === 0}
                     onClick={() => setShowConfirmation(true)}
                   >
-                    Submit attendance
+                    {t("staffAttendance.submitAttendance")}
                   </Button>
                 </div>
               </div>
@@ -517,7 +519,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                   disabled={Object.keys(attendance).length < students.length}
                   onClick={() => setShowConfirmation(true)}
                 >
-                  Submit attendance
+                  {t("staffAttendance.submitAttendance")}
                 </Button>
               </div>
             )}

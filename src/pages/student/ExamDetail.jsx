@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Badge } from "../../ui-components";
 import { getStudentExamDetail } from "../../api/exam.api";
@@ -46,35 +47,35 @@ function getExamDisplayStatus(exam, statistics, root) {
   return normalized || "PUBLISHED";
 }
 
-function StatusBadge({ status }) {
-  if (status === "COMPLETED") return <Badge variant="success">Completed</Badge>;
-  if (status === "PUBLISHED") return <Badge variant="info">Upcoming</Badge>;
-  if (status === "DRAFT") return <Badge variant="default">Draft</Badge>;
+function StatusBadge({ status, t }) {
+  if (status === "COMPLETED") return <Badge variant="success">{t("studentExams.completed")}</Badge>;
+  if (status === "PUBLISHED") return <Badge variant="info">{t("studentExams.upcoming")}</Badge>;
+  if (status === "DRAFT") return <Badge variant="default">{t("studentExams.draft")}</Badge>;
   if (!status) return <Badge variant="default">—</Badge>;
   return <Badge variant="default">{status}</Badge>;
 }
 
-function getExamTypeLabel(type) {
-  const labels = {
-    UNIT_TEST: "Unit Test",
-    MID_TERM: "Mid Term",
-    FINAL: "Final Exam",
-    QUARTERLY: "Quarterly",
-    HALF_YEARLY: "Half Yearly",
-    ANNUAL: "Annual",
-    OTHER: "Other",
+function getExamTypeLabel(type, t) {
+  const keyMap = {
+    UNIT_TEST: "exams.examTypes.UNIT_TEST",
+    MID_TERM: "exams.examTypes.MID_TERM",
+    FINAL: "exams.examTypes.FINAL",
+    QUARTERLY: "exams.examTypes.QUARTERLY",
+    HALF_YEARLY: "exams.examTypes.HALF_YEARLY",
+    ANNUAL: "exams.examTypes.ANNUAL",
+    OTHER: "exams.examTypes.OTHER",
   };
-  return labels[type] || type;
+  return keyMap[type] ? t(keyMap[type]) : (type || "");
 }
 
-function getGradingTypeLabel(type) {
-  const labels = {
-    PERCENTAGE: "Percentage",
-    GPA: "GPA",
-    LETTER_GRADE: "Letter Grade",
-    PASS_FAIL: "Pass/Fail",
+function getGradingTypeLabel(type, t) {
+  const keyMap = {
+    PERCENTAGE: "studentExamDetail.gradingPercentage",
+    GPA: "studentExamDetail.gradingGpa",
+    LETTER_GRADE: "studentExamDetail.gradingLetterGrade",
+    PASS_FAIL: "studentExamDetail.gradingPassFail",
   };
-  return labels[type] || type;
+  return keyMap[type] ? t(keyMap[type]) : (type || "");
 }
 
 function ScoreRing({ obtained, max, size = 72 }) {
@@ -98,7 +99,7 @@ function ScoreRing({ obtained, max, size = 72 }) {
   );
 }
 
-function MarksCard({ subject, gradingType, maxValue, passingValue }) {
+function MarksCard({ subject, gradingType, maxValue, passingValue, t }) {
   const hasMarks =
     subject.is_graded &&
     subject.grades_obtained !== null &&
@@ -155,7 +156,7 @@ function MarksCard({ subject, gradingType, maxValue, passingValue }) {
                   {isPassing !== null && (gradingType === "PERCENTAGE" || gradingType === "GPA") && (
                     <div className="mt-1">
                       <Badge variant={isPassing ? "success" : "error"}>
-                        {isPassing ? "Pass" : "Fail"}
+                        {isPassing ? t("studentExams.pass") : t("studentExams.fail")}
                       </Badge>
                     </div>
                   )}
@@ -189,13 +190,13 @@ function MarksCard({ subject, gradingType, maxValue, passingValue }) {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Marks not yet available
+            {t("studentExamDetail.marksNotAvailable")}
           </div>
         )}
 
         {hasMarks && subject.remarks && (
           <div className="mt-3 px-3 py-2 bg-amber-50 border border-amber-100 rounded-lg">
-            <p className="text-xs font-semibold text-amber-800 mb-0.5">Teacher's Remarks</p>
+            <p className="text-xs font-semibold text-amber-800 mb-0.5">{t("studentExamDetail.teachersRemarks")}</p>
             <p className="text-xs text-amber-700">{subject.remarks}</p>
           </div>
         )}
@@ -205,6 +206,7 @@ function MarksCard({ subject, gradingType, maxValue, passingValue }) {
 }
 
 export default function StudentExamDetail() {
+  const { t } = useTranslation();
   const { examId } = useParams();
   const navigate = useNavigate();
   const { auth } = useAuth();
@@ -294,13 +296,13 @@ export default function StudentExamDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-1">Unable to load exam</h3>
-            <p className="text-sm text-gray-500 mb-5">{error || "Exam not found"}</p>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">{t("studentExamDetail.unableToLoad")}</h3>
+            <p className="text-sm text-gray-500 mb-5">{error || t("studentExamDetail.examNotFound")}</p>
             <button
               onClick={handleGoBack}
               className="px-4 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
-              Go Back
+              {t("common.back")}
             </button>
           </div>
         </Card>
@@ -329,11 +331,11 @@ export default function StudentExamDetail() {
         </button>
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-bold text-gray-900 truncate">
-            {exam.custom_exam_type || getExamTypeLabel(exam.exam_type)}
+            {exam.custom_exam_type || getExamTypeLabel(exam.exam_type, t)}
           </h1>
-          <p className="text-xs text-gray-500">Exam Details & Marks</p>
+          <p className="text-xs text-gray-500">{t("studentExamDetail.detailsAndMarks")}</p>
         </div>
-        <StatusBadge status={displayStatus} />
+        <StatusBadge status={displayStatus} t={t} />
       </div>
 
       {/* Scrollable Content */}
@@ -345,30 +347,30 @@ export default function StudentExamDetail() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest opacity-80 mb-1">
-                  {getExamTypeLabel(exam.exam_type)}
+                  {getExamTypeLabel(exam.exam_type, t)}
                 </p>
                 <h2 className="text-xl font-bold leading-tight">
-                  {exam.custom_exam_type || getExamTypeLabel(exam.exam_type)}
+                  {exam.custom_exam_type || getExamTypeLabel(exam.exam_type, t)}
                 </h2>
                 <div className="flex flex-wrap gap-3 mt-3 text-sm opacity-90">
                   <span className="flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    {subjects?.length || 0} Subjects
+                    {t("studentExamDetail.subjectsCount", { count: subjects?.length || 0 })}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
-                    {getGradingTypeLabel(exam.grading_type)}
+                    {getGradingTypeLabel(exam.grading_type, t)}
                   </span>
                 </div>
               </div>
               {stats && (
                 <div className="text-right flex-shrink-0">
                   <div className="text-3xl font-black">{stats.percentage}%</div>
-                  <div className="text-xs opacity-80 mt-0.5">Overall Score</div>
+                  <div className="text-xs opacity-80 mt-0.5">{t("studentExamDetail.overallScore")}</div>
                 </div>
               )}
             </div>

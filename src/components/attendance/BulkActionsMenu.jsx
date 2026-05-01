@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "../../ui-components";
 import { MoreVertical, CheckCircle, XCircle, RotateCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function BulkActionsMenu({
   markAllPresent,
@@ -10,6 +11,7 @@ export default function BulkActionsMenu({
   filteredCount = 0,
   totalCount = 0,
 }) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -53,7 +55,7 @@ export default function BulkActionsMenu({
           className="text-xs sm:text-sm"
         >
           <CheckCircle size={16} className="mr-1" />
-          Mark All Present
+          {t("attendance.bulkActions.markAllPresent")}
         </Button>
         <Button
           size="sm"
@@ -62,7 +64,7 @@ export default function BulkActionsMenu({
           className="text-xs sm:text-sm"
         >
           <XCircle size={16} className="mr-1" />
-          Mark All Absent
+          {t("attendance.bulkActions.markAllAbsent")}
         </Button>
         <Button
           size="sm"
@@ -71,11 +73,11 @@ export default function BulkActionsMenu({
           className="text-xs sm:text-sm"
         >
           <RotateCcw size={16} className="mr-1" />
-          Clear All
+          {t("attendance.bulkActions.clearAll")}
         </Button>
         {showFilterCount && (
           <span className="px-3 py-1 text-xs sm:text-sm text-gray-500 bg-gray-100 rounded-lg flex items-center">
-            Showing {filteredCount} of {totalCount} students
+            {t("attendance.bulkActions.showing", { filtered: filteredCount, total: totalCount })}
           </span>
         )}
       </div>
@@ -89,25 +91,25 @@ export default function BulkActionsMenu({
               className="w-full px-4 py-3 text-left text-sm hover:bg-gray-100 flex items-center gap-3 transition-colors"
             >
               <CheckCircle size={18} className="text-success-600" />
-              <span>Mark All Present</span>
+              <span>{t("attendance.bulkActions.markAllPresent")}</span>
             </button>
             <button
               onClick={() => handleAction(markAllAbsent)}
               className="w-full px-4 py-3 text-left text-sm hover:bg-gray-100 flex items-center gap-3 transition-colors"
             >
               <XCircle size={18} className="text-error-600" />
-              <span>Mark All Absent</span>
+              <span>{t("attendance.bulkActions.markAllAbsent")}</span>
             </button>
             <button
               onClick={() => handleAction(clearAll)}
               className="w-full px-4 py-3 text-left text-sm hover:bg-gray-100 flex items-center gap-3 transition-colors"
             >
               <RotateCcw size={18} className="text-gray-600" />
-              <span>Clear All</span>
+              <span>{t("attendance.bulkActions.clearAll")}</span>
             </button>
             {showFilterCount && (
               <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t border-border">
-                Showing {filteredCount} of {totalCount}
+                {t("attendance.bulkActions.showing", { filtered: filteredCount, total: totalCount })}
               </div>
             )}
           </div>
