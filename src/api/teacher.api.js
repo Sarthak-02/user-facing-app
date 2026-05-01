@@ -88,3 +88,31 @@ export async function postTeacherSummary({ campusId, teacherId, teacherSections 
   });
   return response.data;
 }
+
+export async function getTeacherSections(teacherId) {
+  const res = await api.get(`teachers/${teacherId}/report/sections`);
+  return res.data;
+}
+
+export async function getTeacherSectionSummary(teacherId, sectionId, query = {}) {
+  const res = await api.get(
+    `teachers/${teacherId}/report/sections/${sectionId}/summary`,
+    { params: query }
+  );
+  return res.data;
+}
+
+export async function getTeacherSectionGrades(teacherId, sectionId, query = {}) {
+  const res = await api.get(
+    `teachers/${teacherId}/report/sections/${sectionId}/grades`,
+    { params: query }
+  );
+  return res.data;
+}
+
+export async function getTeacherSectionExam(teacherId, sectionId, examId) {
+  const res = await api.get(
+    `teachers/${teacherId}/report/sections/${sectionId}/exams/${examId}`
+  );
+  return res.data;
+}

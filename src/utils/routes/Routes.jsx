@@ -33,6 +33,8 @@ import StaffProfile from "../../pages/staff/Profile";
 import Scholarships from "../../pages/Scholarships";
 import StudentPickup from "../../pages/student/Pickup";
 import StaffPickup from "../../pages/staff/StaffPickup";
+import StaffReportingHome from "../../pages/staff/StaffReportingHome";
+import TeacherReporting from "../../pages/staff/Reporting";
 import StaffLessonPlansHome from "../../pages/staff/StaffLessonPlansHome";
 import StaffLessonPlansSubjectPick from "../../pages/staff/StaffLessonPlansSubjectPick";
 import StaffLessonPlansBrowse from "../../pages/staff/StaffLessonPlansBrowse";
@@ -385,6 +387,22 @@ export const routes = [
         element: (
           <RoleBasedRoute allowedRoles={["teacher", "staff", "admin"]}>
             <StaffPickup />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/reporting",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffReportingHome />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/reporting/section/:sectionId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <TeacherReporting />
           </RoleBasedRoute>
         ),
       },

@@ -62,6 +62,7 @@ export default function Layout() {
         { label: "Exams", icon: FileText, path: "/staff/exams" },
         { label: "Messages", icon: MessageCircle, path: "/staff/chat" },
         { label: "Pickup", icon: Shield, path: "/staff/pickup" },
+        { label: "Reporting", icon: BarChart3, path: "/staff/reporting" },
         { label: "Broadcast", icon: Bell, path: "/broadcast" },
       ];
     }
