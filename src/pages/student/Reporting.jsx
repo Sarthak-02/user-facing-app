@@ -387,6 +387,439 @@ function ConfigPieChart({ title, description, slices, groupByOptions, groupBy, o
   );
 }
 
+// ─── Radar Chart ─────────────────────────────────────────────────────────────
+
+function RadarChart({ title, description, data, groupByOptions, groupBy, onGroupByChange }) {
+  const SIZE = 220;
+  const cx = SIZE / 2;
+  const cy = SIZE / 2;
+  const R = 72;
+  const n = data.length;
+
+  const header = (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
+      </div>
+      <GroupByToggle options={groupByOptions} value={groupBy} onChange={onGroupByChange} />
+    </div>
+  );
+
+  if (!n) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+  if (n < 3) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">Need at least 3 items</p></Card>;
+
+  const maxVal = Math.max(...data.map((d) => d.value), 1);
+  const angles = data.map((_, i) => (2 * Math.PI * i) / n - Math.PI / 2);
+  const getPoint = (angle, frac) => ({ x: cx + R * frac * Math.cos(angle), y: cy + R * frac * Math.sin(angle) });
+  const dataPoints = data.map((d, i) => getPoint(angles[i], d.value / maxVal));
+
+  return (
+    <Card>
+      {header}
+      <div className="flex items-center justify-center overflow-x-auto">
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+          {[0.25, 0.5, 0.75, 1].map((level) => {
+            const pts = angles.map((a) => getPoint(a, level));
+            return <polygon key={level} points={pts.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" stroke="#e5e7eb" strokeWidth={1} />;
+          })}
+          {angles.map((angle, i) => {
+            const outer = getPoint(angle, 1);
+            return <line key={i} x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="#e5e7eb" strokeWidth={1} />;
+          })}
+          <polygon points={dataPoints.map((p) => `${p.x},${p.y}`).join(" ")} fill="#6366f1" fillOpacity={0.2} stroke="#6366f1" strokeWidth={2} />
+          {dataPoints.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={3} fill="#6366f1" />)}
+          {data.map((d, i) => {
+            const lp = getPoint(angles[i], 1.32);
+            return (
+              <text key={d.id} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fontSize={8} fill="#6b7280">
+                {d.label.length > 10 ? d.label.slice(0, 10) + "…" : d.label}
+              </text>
+            );
+          })}
+        </svg>
+      </div>
+    </Card>
+  );
+}
+
+// ─── Heatmap ─────────────────────────────────────────────────────────────────
+
+function Heatmap({ title, description, subjectList, examList, cellMap, groupByOptions, groupBy, onGroupByChange }) {
+  const byExam = groupBy === "exams";
+  const rows = byExam ? examList : subjectList.map((s) => ({ id: s, name: s }));
+  const cols = byExam ? subjectList.map((s) => ({ id: s, name: s })) : examList;
+
+  const getValue = (row, col) => {
+    const key = byExam ? `${col.name ?? col}__${row.id}` : `${row.name ?? row}__${col.id}`;
+    return cellMap[key] ?? null;
+  };
+
+  const allVals = rows.flatMap((row) => cols.map((col) => getValue(row, col))).filter((v) => v != null);
+  const maxVal = allVals.length ? Math.max(...allVals) : 1;
+
+  const header = (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
+      </div>
+      <GroupByToggle options={groupByOptions} value={groupBy} onChange={onGroupByChange} />
+    </div>
+  );
+
+  if (!rows.length || !cols.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+
+  return (
+    <Card>
+      {header}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr>
+              <th className="py-1 pr-2 text-left font-medium text-gray-400" />
+              {cols.map((col) => (
+                <th key={col.id ?? col} className="px-1 py-1 text-center font-medium text-gray-500" style={{ minWidth: 44 }}>
+                  <span className="block truncate" style={{ maxWidth: 60 }} title={col.name ?? col}>
+                    {(col.name ?? col).length > 6 ? (col.name ?? col).slice(0, 6) + "…" : (col.name ?? col)}
+                  </span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id ?? row}>
+                <td className="whitespace-nowrap py-1 pr-2 font-medium text-gray-700" style={{ maxWidth: 80 }}>
+                  <span className="block truncate" title={row.name ?? row}>
+                    {(row.name ?? row).length > 8 ? (row.name ?? row).slice(0, 8) + "…" : (row.name ?? row)}
+                  </span>
+                </td>
+                {cols.map((col) => {
+                  const val = getValue(row, col);
+                  const opacity = val != null ? 0.15 + (val / maxVal) * 0.82 : 0;
+                  return (
+                    <td key={col.id ?? col} className="px-1 py-1 text-center">
+                      <div
+                        className="mx-auto flex h-8 w-10 items-center justify-center rounded text-xs font-semibold"
+                        style={{ backgroundColor: `rgba(99,102,241,${opacity})`, color: opacity > 0.55 ? "#fff" : "#4338ca" }}
+                        title={val != null ? val.toFixed(1) : "—"}
+                      >
+                        {val != null ? val.toFixed(1) : "—"}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+// ─── Line Chart ───────────────────────────────────────────────────────────────
+
+function LineChart({ title, description, points, groupByOptions, groupBy, onGroupByChange }) {
+  const W = 300;
+  const H = 160;
+  const PAD = { top: 12, right: 12, bottom: 32, left: 32 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+  const n = points.length;
+
+  const header = (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
+      </div>
+      <GroupByToggle options={groupByOptions} value={groupBy} onChange={onGroupByChange} />
+    </div>
+  );
+
+  if (n < 2) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">Need at least 2 data points</p></Card>;
+
+  const maxVal = Math.max(...points.map((p) => p.value), 1);
+  const minVal = Math.min(...points.map((p) => p.value), 0);
+  const range = maxVal - minVal || 1;
+
+  const svgPoints = points.map((p, i) => ({
+    x: PAD.left + (i / (n - 1)) * chartW,
+    y: PAD.top + chartH - ((p.value - minVal) / range) * chartH,
+  }));
+  const polyline = svgPoints.map((p) => `${p.x},${p.y}`).join(" ");
+
+  return (
+    <Card>
+      {header}
+      <div className="overflow-x-auto">
+        <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+          {[0, 0.25, 0.5, 0.75, 1].map((t) => {
+            const y = PAD.top + (1 - t) * chartH;
+            const val = minVal + t * range;
+            return (
+              <g key={t}>
+                <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="#f3f4f6" strokeWidth={1} />
+                <text x={PAD.left - 4} y={y} textAnchor="end" dominantBaseline="middle" fontSize={8} fill="#9ca3af">{val.toFixed(1)}</text>
+              </g>
+            );
+          })}
+          <polygon
+            points={`${PAD.left},${PAD.top + chartH} ${polyline} ${W - PAD.right},${PAD.top + chartH}`}
+            fill="#6366f1"
+            fillOpacity={0.08}
+          />
+          <polyline points={polyline} fill="none" stroke="#6366f1" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          {svgPoints.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={3} fill="#6366f1" stroke="#fff" strokeWidth={1.5} />)}
+          {points.map((pt, i) => {
+            const x = PAD.left + (i / (n - 1)) * chartW;
+            return (
+              <text key={pt.id} x={x} y={H - PAD.bottom + 12} textAnchor="middle" fontSize={8} fill="#9ca3af">
+                {pt.label.length > 7 ? pt.label.slice(0, 7) + "…" : pt.label}
+              </text>
+            );
+          })}
+        </svg>
+      </div>
+    </Card>
+  );
+}
+
+// ─── Progress Rings ───────────────────────────────────────────────────────────
+
+function ProgressRings({ title, description, rings, maxValue, groupByOptions, groupBy, onGroupByChange }) {
+  const R = 22;
+  const SW = 5;
+  const circumference = 2 * Math.PI * R;
+  const SIZE = 60;
+  const cx = SIZE / 2;
+  const cy = SIZE / 2;
+
+  const header = (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
+      </div>
+      <GroupByToggle options={groupByOptions} value={groupBy} onChange={onGroupByChange} />
+    </div>
+  );
+
+  if (!rings.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+
+  return (
+    <Card>
+      {header}
+      <div className="flex flex-wrap gap-4">
+        {rings.slice(0, 8).map((ring) => {
+          const fraction = maxValue > 0 ? Math.min(ring.value / maxValue, 1) : 0;
+          const dashLen = fraction * circumference;
+          return (
+            <div key={ring.id} className="flex flex-col items-center gap-1">
+              <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ transform: "rotate(-90deg)" }}>
+                <circle cx={cx} cy={cy} r={R} fill="none" stroke="#f3f4f6" strokeWidth={SW} />
+                <circle cx={cx} cy={cy} r={R} fill="none" stroke={ring.color} strokeWidth={SW} strokeDasharray={`${dashLen} ${circumference}`} strokeLinecap="round" />
+              </svg>
+              <span className="text-xs font-semibold text-gray-700">{ring.displayValue}</span>
+              <span className="max-w-[56px] truncate text-center text-xs text-gray-500" title={ring.label}>
+                {ring.label.length > 8 ? ring.label.slice(0, 8) + "…" : ring.label}
+              </span>
+            </div>
+          );
+        })}
+        {rings.length > 8 && <p className="self-end text-xs text-gray-400">+{rings.length - 8} more</p>}
+      </div>
+    </Card>
+  );
+}
+
+// ─── Table Chart ─────────────────────────────────────────────────────────────
+
+function TableChart({ title, description, rows, groupByOptions, groupBy, onGroupByChange }) {
+  const byExam = groupBy === "exams";
+
+  const header = (
+    <div className="px-5 py-4 flex items-start justify-between gap-3">
+      <div>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
+      </div>
+      <GroupByToggle options={groupByOptions} value={groupBy} onChange={onGroupByChange} />
+    </div>
+  );
+
+  if (!rows.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+
+  return (
+    <Card className="overflow-hidden p-0">
+      {header}
+      <div className="overflow-x-auto border-t border-border">
+        <table className="w-full min-w-[280px] text-left text-sm">
+          <thead>
+            <tr className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-2.5">{byExam ? "Exam" : "Subject"}</th>
+              <th className="px-4 py-2.5">Avg Score</th>
+              <th className="px-4 py-2.5">Graded</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, idx) => (
+              <tr key={row.id} className={`transition-colors hover:bg-gray-50 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
+                <td className="px-4 py-2.5 font-medium text-gray-900">{row.label}</td>
+                <td className="px-4 py-2.5 text-gray-700">{row.displayValue ?? "—"}</td>
+                <td className="px-4 py-2.5 text-gray-500">{row.count ?? "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+// ─── Gauge ────────────────────────────────────────────────────────────────────
+
+function Gauge({ title, description, value, maxValue, displayValue, groupByOptions, groupBy, onGroupByChange }) {
+  const W = 200;
+  const H = 120;
+  const cx = W / 2;
+  const cy = H - 14;
+  const R = 72;
+  const SW = 16;
+  const arc = Math.PI * R;
+  const fraction = maxValue > 0 ? Math.min((value ?? 0) / maxValue, 1) : 0;
+  const color = fraction < 0.4 ? "#ef4444" : fraction < 0.7 ? "#f59e0b" : "#22c55e";
+  const rotate = `rotate(180deg)`;
+  const origin = `${cx}px ${cy}px`;
+
+  const header = (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
+      </div>
+      <GroupByToggle options={groupByOptions} value={groupBy} onChange={onGroupByChange} />
+    </div>
+  );
+
+  if (value == null) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+
+  return (
+    <Card>
+      {header}
+      <div className="flex flex-col items-center">
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+          <circle cx={cx} cy={cy} r={R} fill="none" stroke="#f3f4f6" strokeWidth={SW} strokeDasharray={`${arc} ${arc}`} style={{ transform: rotate, transformOrigin: origin }} />
+          <circle cx={cx} cy={cy} r={R} fill="none" stroke={color} strokeWidth={SW} strokeDasharray={`${fraction * arc} ${arc}`} strokeLinecap="round" style={{ transform: rotate, transformOrigin: origin }} />
+          <text x={cx} y={cy - 10} textAnchor="middle" fontSize={22} fontWeight="bold" fill="#111827">{displayValue}</text>
+          <text x={cx} y={cy + 8} textAnchor="middle" fontSize={10} fill="#6b7280">Overall Avg</text>
+        </svg>
+      </div>
+    </Card>
+  );
+}
+
+// ─── Scatter Plot ─────────────────────────────────────────────────────────────
+
+function ScatterPlot({ title, description, points, xLabels, groupByOptions, groupBy, onGroupByChange }) {
+  const W = 300;
+  const H = 180;
+  const PAD = { top: 12, right: 12, bottom: 36, left: 36 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+
+  const header = (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
+      </div>
+      <GroupByToggle options={groupByOptions} value={groupBy} onChange={onGroupByChange} />
+    </div>
+  );
+
+  if (!points.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+
+  const maxX = Math.max(...points.map((p) => p.x), 0);
+  const maxY = Math.max(...points.map((p) => p.y), 1);
+  const minY = Math.min(...points.map((p) => p.y), 0);
+  const rangeY = maxY - minY || 1;
+
+  const toSvg = (p) => ({
+    x: PAD.left + (maxX > 0 ? (p.x / maxX) * chartW : chartW / 2),
+    y: PAD.top + chartH - ((p.y - minY) / rangeY) * chartH,
+  });
+
+  return (
+    <Card>
+      {header}
+      <div className="overflow-x-auto">
+        <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+          {[0, 0.25, 0.5, 0.75, 1].map((t) => {
+            const y = PAD.top + chartH - t * chartH;
+            const val = minY + t * rangeY;
+            return (
+              <g key={t}>
+                <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="#f3f4f6" strokeWidth={1} />
+                <text x={PAD.left - 4} y={y} textAnchor="end" dominantBaseline="middle" fontSize={8} fill="#9ca3af">{val.toFixed(1)}</text>
+              </g>
+            );
+          })}
+          {xLabels.map((label, i) => {
+            const x = PAD.left + (maxX > 0 ? (i / maxX) * chartW : chartW / 2);
+            return (
+              <text key={i} x={x} y={H - PAD.bottom + 12} textAnchor="middle" fontSize={8} fill="#9ca3af">
+                {label.length > 6 ? label.slice(0, 6) + "…" : label}
+              </text>
+            );
+          })}
+          {points.map((p) => {
+            const sp = toSvg(p);
+            return <circle key={p.id} cx={sp.x} cy={sp.y} r={4} fill={p.color} fillOpacity={0.75} />;
+          })}
+        </svg>
+      </div>
+    </Card>
+  );
+}
+
+// ─── Histogram ────────────────────────────────────────────────────────────────
+
+function Histogram({ title, description, buckets, groupByOptions, groupBy, onGroupByChange }) {
+  const header = (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
+      </div>
+      <GroupByToggle options={groupByOptions} value={groupBy} onChange={onGroupByChange} />
+    </div>
+  );
+
+  if (!buckets.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+
+  const max = Math.max(...buckets.map((b) => b.value), 1);
+
+  return (
+    <Card>
+      {header}
+      <div className="flex items-end gap-1.5" style={{ height: 140 }}>
+        {buckets.map((b) => (
+          <div key={b.id} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+            <span className="text-xs font-semibold text-gray-700">{b.value}</span>
+            <div className="w-full rounded-t-md transition-all duration-700" style={{ height: `${Math.max((b.value / max) * 100, 4)}px`, backgroundColor: b.color }} />
+            <span className="w-full truncate text-center text-xs text-gray-500" title={b.label}>
+              {b.label.length > 9 ? b.label.slice(0, 9) + "…" : b.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 // ─── main page ───────────────────────────────────────────────────────────────
 
 export default function Reporting() {
@@ -551,13 +984,103 @@ export default function Reporting() {
     [subjectGroups]
   );
 
-  function getBarData(chartIdx) {
-    return chartGroupBys[chartIdx] === "exams" ? barDataByExam : barDataBySubject;
-  }
+  const overallAvg = useMemo(() => averageGrade(items), [items]);
 
-  function getPieData(chartIdx) {
-    return chartGroupBys[chartIdx] === "subjects" ? pieDataBySubject : pieDataByExam;
-  }
+  const radarDataBySubject = useMemo(
+    () => subjectGroups.filter((sg) => sg.avgGrade != null).map((sg, i) => ({
+      id: sg.subject_name,
+      label: sg.subject_name,
+      value: sg.avgGrade,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+    })),
+    [subjectGroups]
+  );
+
+  const radarDataByExam = useMemo(
+    () => examGroups.filter((g) => g.avgGrade != null).map((g, i) => ({
+      id: g.exam_id,
+      label: g.exam_name,
+      value: g.avgGrade,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+    })),
+    [examGroups]
+  );
+
+  const heatmapBase = useMemo(() => {
+    const subjectList = [...new Set(items.map((r) => r.subject_name || "Unknown"))].sort();
+    const examList = [...new Set(items.map((r) => r.exam_id))].map((id) => {
+      const row = items.find((r) => r.exam_id === id);
+      return { id, name: row?.exam_name ?? id };
+    });
+    const cellMap = {};
+    subjectList.forEach((subject) => {
+      examList.forEach((exam) => {
+        const rows = items.filter((r) => (r.subject_name || "Unknown") === subject && r.exam_id === exam.id && r.is_graded);
+        const vals = rows.map((r) => parseScore(r.grades_obtained)).filter((n) => n != null);
+        cellMap[`${subject}__${exam.id}`] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+      });
+    });
+    return { subjectList, examList, cellMap };
+  }, [items]);
+
+  const lineDataByExam = useMemo(
+    () => examGroups.filter((g) => g.avgGrade != null).map((g, i) => ({
+      id: g.exam_id,
+      label: g.exam_name,
+      value: g.avgGrade,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+    })),
+    [examGroups]
+  );
+
+  const lineDataBySubject = useMemo(
+    () => subjectGroups.filter((sg) => sg.avgGrade != null).map((sg, i) => ({
+      id: sg.subject_name,
+      label: sg.subject_name,
+      value: sg.avgGrade,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+    })),
+    [subjectGroups]
+  );
+
+  const scatterData = useMemo(() => {
+    const subjectList = [...new Set(items.map((r) => r.subject_name || "Unknown"))].sort();
+    const examIds = [...new Set(items.map((r) => r.exam_id))];
+    return items
+      .filter((r) => r.is_graded)
+      .map((r) => {
+        const score = parseScore(r.grades_obtained);
+        if (score == null) return null;
+        const subjectIdx = subjectList.indexOf(r.subject_name || "Unknown");
+        const examIdx = examIds.indexOf(r.exam_id);
+        return { id: r.grade_id, x: examIdx, y: score, color: CHART_COLORS[subjectIdx % CHART_COLORS.length] };
+      })
+      .filter(Boolean);
+  }, [items]);
+
+  const scatterXLabels = useMemo(
+    () => [...new Set(items.map((r) => r.exam_id))].map((id) => items.find((r) => r.exam_id === id)?.exam_name ?? id),
+    [items]
+  );
+
+  const histogramData = useMemo(() => {
+    const scores = items.filter((r) => r.is_graded).map((r) => parseScore(r.grades_obtained)).filter((n) => n != null);
+    if (!scores.length) return [];
+    const minV = Math.min(...scores);
+    const maxV = Math.max(...scores);
+    const bucketCount = 5;
+    const size = (maxV - minV || 1) / bucketCount;
+    return Array.from({ length: bucketCount }, (_, i) => {
+      const lo = minV + i * size;
+      const hi = minV + (i + 1) * size;
+      return {
+        id: `bucket-${i}`,
+        label: `${lo.toFixed(1)}–${hi.toFixed(1)}`,
+        value: scores.filter((s) => s >= lo && (i === bucketCount - 1 ? s <= hi : s < hi)).length,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      };
+    });
+  }, [items]);
 
   if (loading) {
     return <div className="flex h-screen items-center justify-center"><Loader /></div>;
@@ -628,35 +1151,117 @@ export default function Reporting() {
             <div className="grid gap-4 lg:grid-cols-2">
               {displayCharts.map((chart, i) => {
                 const groupBy = chartGroupBys[i] ?? chart.group_by?.[0];
+                const byExam = groupBy === "exams";
                 const setGroupBy = (v) => setChartGroupBys((prev) => ({ ...prev, [i]: v }));
+                const common = { key: i, groupByOptions: chart.group_by, groupBy, onGroupByChange: setGroupBy };
 
-                if (chart.type === "bar_chart") {
-                  return (
-                    <VerticalBarChart
-                      key={i}
-                      title="Performance"
-                      description={`Average score by ${groupBy}`}
-                      bars={getBarData(i)}
-                      groupByOptions={chart.group_by}
-                      groupBy={groupBy}
-                      onGroupByChange={setGroupBy}
-                    />
-                  );
+                switch (chart.type) {
+                  case "bar_chart":
+                    return (
+                      <VerticalBarChart
+                        {...common}
+                        title="Performance"
+                        description={`Average score by ${groupBy}`}
+                        bars={byExam ? barDataByExam : barDataBySubject}
+                      />
+                    );
+                  case "pie_chart":
+                    return (
+                      <ConfigPieChart
+                        {...common}
+                        title="Grade distribution"
+                        description={`Graded entries by ${groupBy}`}
+                        slices={byExam ? pieDataByExam : pieDataBySubject}
+                      />
+                    );
+                  case "radar_chart":
+                    return (
+                      <RadarChart
+                        {...common}
+                        title="Skill radar"
+                        description={`Scores by ${groupBy}`}
+                        data={byExam ? radarDataByExam : radarDataBySubject}
+                      />
+                    );
+                  case "heatmap":
+                    return (
+                      <Heatmap
+                        {...common}
+                        title="Score heatmap"
+                        description="Average scores across subjects and exams"
+                        subjectList={heatmapBase.subjectList}
+                        examList={heatmapBase.examList}
+                        cellMap={heatmapBase.cellMap}
+                      />
+                    );
+                  case "line_chart":
+                    return (
+                      <LineChart
+                        {...common}
+                        title="Trend"
+                        description={`Score trend by ${groupBy}`}
+                        points={byExam ? lineDataByExam : lineDataBySubject}
+                      />
+                    );
+                  case "progress_rings": {
+                    const ringData = byExam ? barDataByExam : barDataBySubject;
+                    const maxVal = ratingScale?.points ?? (ringData.length ? Math.max(...ringData.map((r) => r.value)) : 1);
+                    return (
+                      <ProgressRings
+                        {...common}
+                        title="Progress"
+                        description={`Score progress by ${groupBy}`}
+                        rings={ringData}
+                        maxValue={maxVal}
+                      />
+                    );
+                  }
+                  case "table": {
+                    const tableRows = byExam
+                      ? examGroups.map((g) => ({ id: g.exam_id, label: g.exam_name, displayValue: formatAvgWithConfig(g.avgGrade, ratingScale), count: g.gradedCount }))
+                      : subjectGroups.map((sg) => ({ id: sg.subject_name, label: sg.subject_name, displayValue: formatAvgWithConfig(sg.avgGrade, ratingScale), count: sg.rows.filter((r) => r.is_graded).length }));
+                    return (
+                      <TableChart
+                        {...common}
+                        title="Summary table"
+                        description={`Grade summary by ${groupBy}`}
+                        rows={tableRows}
+                      />
+                    );
+                  }
+                  case "gauge":
+                    return (
+                      <Gauge
+                        {...common}
+                        title="Overall performance"
+                        description="Average score across all grades"
+                        value={overallAvg}
+                        maxValue={ratingScale?.points ?? 100}
+                        displayValue={formatAvgWithConfig(overallAvg, ratingScale)}
+                      />
+                    );
+                  case "scatter_plot":
+                    return (
+                      <ScatterPlot
+                        {...common}
+                        title="Score distribution"
+                        description="Individual grades plotted by exam"
+                        points={scatterData}
+                        xLabels={scatterXLabels}
+                      />
+                    );
+                  case "histogram":
+                    return (
+                      <Histogram
+                        {...common}
+                        title="Score histogram"
+                        description="Distribution of scores"
+                        buckets={histogramData}
+                      />
+                    );
+                  default:
+                    return null;
                 }
-                if (chart.type === "pie_chart") {
-                  return (
-                    <ConfigPieChart
-                      key={i}
-                      title="Grade distribution"
-                      description={`Graded entries by ${groupBy}`}
-                      slices={getPieData(i)}
-                      groupByOptions={chart.group_by}
-                      groupBy={groupBy}
-                      onGroupByChange={setGroupBy}
-                    />
-                  );
-                }
-                return null;
               })}
             </div>
           )}
