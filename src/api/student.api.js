@@ -14,3 +14,14 @@ export async function getStudentGradesReport(studentId, query = {}) {
   });
   return response.data;
 }
+
+/**
+ * @param {string} campusId
+ * @param {string} sectionId
+ */
+export async function getReportDashboardConfig(campusId, sectionId) {
+  const response = await api.get("report-dashboard-config", {
+    params: { campus_id: campusId, section_id: sectionId },
+  });
+  return response.data;
+}
