@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useTranslation } from "react-i18next";
+import { useTranslation, Trans } from "react-i18next";
 import {
   Shield,
   Users,
@@ -53,6 +53,11 @@ function requestStatusVariant(status) {
     case "EXPIRED": return "error";
     default: return "info"; // PENDING
   }
+}
+
+function pickupRequestStatusLabel(status, t) {
+  const s = (status || "PENDING").toUpperCase();
+  return t(`pickup.requestStatus.${s}`);
 }
 
 // ─── Photo Picker ─────────────────────────────────────────────────────────────
@@ -336,7 +341,6 @@ function PersonCard({ person, onEdit, onDelete }) {
   const { t } = useTranslation();
   const initials = getInitials(person.name);
   const isActive = person?.isActive ?? false ;
-  console.log("person",person)
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3">
       {person.photo_url ? (
@@ -419,7 +423,7 @@ function RequestDetailModal({ request, onClose }) {
         <h2 className="text-base font-bold text-gray-900">{request.name}</h2>
         <div className="mt-1.5">
           <Badge variant={requestStatusVariant(status)}>
-            {status.charAt(0) + status.slice(1).toLowerCase()}
+            {pickupRequestStatusLabel(status, t)}
           </Badge>
         </div>
       </div>
@@ -472,7 +476,7 @@ function RequestCard({ request, onView }) {
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-semibold text-gray-900">{request.name}</p>
           <Badge variant={requestStatusVariant(status)}>
-            {status.charAt(0) + status.slice(1).toLowerCase()}
+            {pickupRequestStatusLabel(status, t)}
           </Badge>
         </div>
         <p className="text-xs text-gray-500 mt-0.5">{request.relationship}</p>
@@ -492,6 +496,7 @@ function RequestCard({ request, onView }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function StudentPickup() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const studentId = auth?.userId;
 
@@ -538,11 +543,11 @@ export default function StudentPickup() {
       const data = Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : [];
       setPersons(data);
     } catch (err) {
-      setPersonsError(err?.message || err?.error || "Failed to load authorized persons");
+      setPersonsError(err?.message || err?.error || t("pickup.errorLoadPersons"));
     } finally {
       setPersonsLoading(false);
     }
-  }, [studentId]);
+  }, [studentId, t]);
 
   const loadRequests = useCallback(async () => {
     if (!studentId) return;
@@ -552,11 +557,11 @@ export default function StudentPickup() {
       const data = await listPickupRequests(studentId);
       setRequests(Array.isArray(data) ? data : []);
     } catch (err) {
-      setRequestsError(err?.message || err?.error || "Failed to load pickup requests");
+      setRequestsError(err?.message || err?.error || t("pickup.errorLoadRequests"));
     } finally {
       setRequestsLoading(false);
     }
-  }, [studentId]);
+  }, [studentId, t]);
 
   useEffect(() => {
     loadPersons();
@@ -592,7 +597,7 @@ export default function StudentPickup() {
       setShowPersonModal(false);
       setEditingPerson(null);
     } catch (err) {
-      setPersonFormError(err?.message || err?.error || "Failed to save. Please try again.");
+      setPersonFormError(err?.message || err?.error || t("pickup.errorSavePerson"));
     } finally {
       setPersonSaving(false);
     }
@@ -641,7 +646,7 @@ export default function StudentPickup() {
       await loadRequests();
       setShowRequestModal(false);
     } catch (err) {
-      setRequestFormError(err?.message || err?.error || "Failed to submit. Please try again.");
+      setRequestFormError(err?.message || err?.error || t("pickup.errorSubmitRequest"));
     } finally {
       setRequestSaving(false);
     }
@@ -667,13 +672,11 @@ export default function StudentPickup() {
             <Shield className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Secure Pickup</h1>
-            <p className="text-blue-200 text-xs mt-0.5">
-              Manage who is authorized to pick up your child
-            </p>
+            <h1 className="text-xl font-bold text-white">{t("pickup.securePickup")}</h1>
+            <p className="text-blue-200 text-xs mt-0.5">{t("pickup.manageSubtitle")}</p>
           </div>
           <div className="ml-auto flex-shrink-0 bg-white/20 text-white text-xs font-semibold rounded-full px-3 py-1">
-            {activePersons.length}/{MAX_AUTHORIZED} persons
+            {t("pickup.personsCount", { active: activePersons.length, max: MAX_AUTHORIZED })}
           </div>
         </div>
       </div>
@@ -692,7 +695,7 @@ export default function StudentPickup() {
             }`}
           >
             <Users className="h-4 w-4" />
-            Authorized Persons
+            {t("pickup.tabAuthorized")}
           </button>
           <button
             type="button"
@@ -704,7 +707,7 @@ export default function StudentPickup() {
             }`}
           >
             <Clock className="h-4 w-4" />
-            One-Time Requests
+            {t("pickup.tabRequests")}
           </button>
         </div>
 
@@ -715,8 +718,11 @@ export default function StudentPickup() {
             <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4 flex items-start gap-2.5">
               <Shield className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-blue-700">
-                Add up to <strong>5 permanently authorized persons</strong>. They can pick up
-                your child on any school day without additional approval.
+                <Trans
+                  i18nKey="pickup.authorizedPersonsBanner"
+                  values={{ max: MAX_AUTHORIZED }}
+                  components={{ strong: <strong /> }}
+                />
               </p>
             </div>
 
@@ -724,10 +730,14 @@ export default function StudentPickup() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm font-semibold text-gray-900">
-                  {activePersons.length === 0 ? "No active persons" : `${activePersons.length} active person${activePersons.length !== 1 ? "s" : ""}`}
+                  {activePersons.length === 0
+                    ? t("pickup.noActivePersonsSummary")
+                    : t("pickup.activePersonsSummary", { count: activePersons.length })}
                 </p>
                 {atCapacity && (
-                  <p className="text-xs text-red-500 mt-0.5">Maximum of {MAX_AUTHORIZED} reached</p>
+                  <p className="text-xs text-red-500 mt-0.5">
+                    {t("pickup.maxCapacityReached", { max: MAX_AUTHORIZED })}
+                  </p>
                 )}
               </div>
               <Button
@@ -741,7 +751,7 @@ export default function StudentPickup() {
                 className="flex items-center gap-1.5 text-sm"
               >
                 <Plus className="h-4 w-4" />
-                Add Person
+                {t("pickup.addPerson")}
               </Button>
             </div>
 
@@ -754,7 +764,7 @@ export default function StudentPickup() {
                 <AlertCircle className="h-8 w-8 text-red-300 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 mb-3">{personsError}</p>
                 <Button variant="secondary" onClick={loadPersons}>
-                  Retry
+                  {t("common.tryAgain")}
                 </Button>
               </div>
             ) : persons.length === 0 ? (
@@ -763,10 +773,10 @@ export default function StudentPickup() {
                   <Users className="h-7 w-7 text-indigo-200" />
                 </div>
                 <p className="text-sm font-semibold text-gray-700 mb-1">
-                  No authorized persons yet
+                  {t("pickup.emptyAuthorizedTitle")}
                 </p>
                 <p className="text-xs text-gray-400">
-                  Add trusted people who can pick up your child at any time.
+                  {t("pickup.emptyAuthorizedSubtitle")}
                 </p>
               </div>
             ) : (
@@ -793,7 +803,7 @@ export default function StudentPickup() {
                 {inactivePersons.length > 0 && (
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
-                      Inactive
+                      {t("pickup.inactiveSection")}
                     </p>
                     <div className="space-y-2">
                       {inactivePersons.map((person) => {
@@ -823,11 +833,13 @@ export default function StudentPickup() {
                               type="button"
                               onClick={() => handleReactivatePerson(person)}
                               disabled={busy || atCapacity}
-                              title={atCapacity ? "Remove an active person first" : "Reactivate"}
+                              title={
+                                atCapacity ? t("pickup.reactivateBlockedTitle") : t("pickup.reactivate")
+                              }
                               className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors disabled:opacity-50"
                             >
                               <RotateCcw className="h-3.5 w-3.5" />
-                              {busy ? "…" : "Reactivate"}
+                              {busy ? "…" : t("pickup.reactivate")}
                             </button>
                           </div>
                         );
@@ -835,7 +847,7 @@ export default function StudentPickup() {
                     </div>
                     {atCapacity && (
                       <p className="text-xs text-gray-400 mt-2 px-1">
-                        Remove an active person to reactivate someone.
+                        {t("pickup.reactivateCapacityHint")}
                       </p>
                     )}
                   </div>
@@ -852,14 +864,13 @@ export default function StudentPickup() {
             <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 mb-4 flex items-start gap-2.5">
               <Clock className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-orange-700">
-                Request a <strong>one-time pickup</strong> for a specific date. The school will
-                review and approve or reject the request.
+                <Trans i18nKey="pickup.requestsInfoBanner" components={{ strong: <strong /> }} />
               </p>
             </div>
 
             {/* Header row */}
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-gray-900">Your Requests</p>
+              <p className="text-sm font-semibold text-gray-900">{t("pickup.yourRequests")}</p>
               <Button
                 variant="primary"
                 onClick={() => {
@@ -869,7 +880,7 @@ export default function StudentPickup() {
                 className="flex items-center gap-1.5 text-sm"
               >
                 <Plus className="h-4 w-4" />
-                New Request
+                {t("pickup.newRequest")}
               </Button>
             </div>
 
@@ -886,7 +897,7 @@ export default function StudentPickup() {
                       : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                   }`}
                 >
-                  {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+                  {pickupRequestStatusLabel(s === "ALL" ? "ALL" : s, t)}
                 </button>
               ))}
             </div>
@@ -900,7 +911,7 @@ export default function StudentPickup() {
                 <AlertCircle className="h-8 w-8 text-red-300 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 mb-3">{requestsError}</p>
                 <Button variant="secondary" onClick={loadRequests}>
-                  Retry
+                  {t("common.tryAgain")}
                 </Button>
               </div>
             ) : filteredRequests.length === 0 ? (
@@ -909,12 +920,14 @@ export default function StudentPickup() {
                   <Clock className="h-7 w-7 text-orange-200" />
                 </div>
                 <p className="text-sm font-semibold text-gray-700 mb-1">
-                  {requests.length === 0 ? "No requests yet" : "No matching requests"}
+                  {requests.length === 0
+                    ? t("pickup.emptyRequestsNone")
+                    : t("pickup.emptyRequestsFiltered")}
                 </p>
                 <p className="text-xs text-gray-400">
                   {requests.length === 0
-                    ? "Submit a one-time request for a specific pickup date."
-                    : "Try a different status filter."}
+                    ? t("pickup.emptyRequestsHintNone")
+                    : t("pickup.emptyRequestsHintFiltered")}
                 </p>
               </div>
             ) : (

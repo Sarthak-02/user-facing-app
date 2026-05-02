@@ -52,13 +52,13 @@ export default function StudentExams() {
         setExamData(response.data || response || []);
       } catch (err) {
         console.error("Error fetching exams:", err);
-        setError(err.message || "Failed to fetch exams");
+        setError(err.message || t("studentExams.fetchFailed"));
       } finally {
         setLoading(false);
       }
     };
     fetchExams();
-  }, [auth.userId]);
+  }, [auth.userId, t]);
 
   const filteredExams = useMemo(() => {
     let filtered = [...examData];
@@ -252,7 +252,7 @@ export default function StudentExams() {
                     ? "bg-blue-500 text-white border-blue-500"
                     : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                 }`}
-                aria-label="Open filters"
+                aria-label={t("ui.openFilters")}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />

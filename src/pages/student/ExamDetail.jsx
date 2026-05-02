@@ -225,18 +225,18 @@ export default function StudentExamDetail() {
         if (response.success && response.data) {
           setExamData(response.data);
         } else {
-          setError("Failed to load exam details");
+          setError(t("studentExamDetail.loadFailedDetails"));
         }
       } catch (err) {
         console.error("Error fetching exam detail:", err);
-        setError(err.message || "Failed to fetch exam details");
+        setError(err.message || t("studentExamDetail.fetchFailedDetails"));
       } finally {
         setLoading(false);
       }
     };
 
     if (examId) fetchExamDetail();
-  }, [examId, auth.userId]);
+  }, [examId, auth.userId, t]);
 
   const handleGoBack = () => navigate("/student/exams");
 
@@ -380,12 +380,12 @@ export default function StudentExamDetail() {
               <div className="flex gap-2 mt-4">
                 {exam.grading_extras?.max_value && (
                   <span className="text-xs bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 font-medium">
-                    Max: {exam.grading_extras.max_value}
+                    {t("studentExamDetail.maxMarksChip", { value: exam.grading_extras.max_value })}
                   </span>
                 )}
                 {exam.grading_extras?.passing_value && (
                   <span className="text-xs bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 font-medium">
-                    Pass: {exam.grading_extras.passing_value}
+                    {t("studentExamDetail.passMarksChip", { value: exam.grading_extras.passing_value })}
                   </span>
                 )}
               </div>
@@ -395,19 +395,21 @@ export default function StudentExamDetail() {
           {/* Overall Performance */}
           {stats && statistics?.graded_subjects > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Overall Performance</h3>
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
+                {t("studentExamDetail.overallPerformance")}
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-blue-50 rounded-xl p-3 text-center">
                   <p className="text-2xl font-black text-blue-700">
                     {stats.obtainedMarks}
                     <span className="text-base font-normal text-blue-400">/{stats.totalMarks}</span>
                   </p>
-                  <p className="text-xs text-blue-600 mt-0.5 font-medium">Total Marks</p>
+                  <p className="text-xs text-blue-600 mt-0.5 font-medium">{t("studentExamDetail.totalMarks")}</p>
                 </div>
 
                 <div className="bg-indigo-50 rounded-xl p-3 text-center">
                   <p className="text-2xl font-black text-indigo-700">{stats.percentage}%</p>
-                  <p className="text-xs text-indigo-600 mt-0.5 font-medium">Score</p>
+                  <p className="text-xs text-indigo-600 mt-0.5 font-medium">{t("studentExamDetail.score")}</p>
                 </div>
 
                 <div className="bg-purple-50 rounded-xl p-3 text-center">
@@ -415,15 +417,17 @@ export default function StudentExamDetail() {
                     {stats.gradedSubjects}
                     <span className="text-base font-normal text-purple-400">/{stats.totalSubjects}</span>
                   </p>
-                  <p className="text-xs text-purple-600 mt-0.5 font-medium">Graded</p>
+                  <p className="text-xs text-purple-600 mt-0.5 font-medium">{t("studentExamDetail.graded")}</p>
                 </div>
 
                 {stats.isPassing !== null && (
                   <div className={`rounded-xl p-3 text-center ${stats.isPassing ? "bg-green-50" : "bg-red-50"}`}>
                     <p className={`text-2xl font-black ${stats.isPassing ? "text-green-700" : "text-red-700"}`}>
-                      {stats.isPassing ? "Pass" : "Fail"}
+                      {stats.isPassing ? t("studentExams.pass") : t("studentExams.fail")}
                     </p>
-                    <p className={`text-xs mt-0.5 font-medium ${stats.isPassing ? "text-green-600" : "text-red-600"}`}>Result</p>
+                    <p className={`text-xs mt-0.5 font-medium ${stats.isPassing ? "text-green-600" : "text-red-600"}`}>
+                      {t("studentExamDetail.result")}
+                    </p>
                   </div>
                 )}
               </div>
@@ -434,9 +438,12 @@ export default function StudentExamDetail() {
           {statistics && statistics.total_subjects > 0 && statistics.graded_subjects < statistics.total_subjects && (
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Grading Progress</span>
+                <span className="text-sm font-medium text-gray-700">{t("studentExamDetail.gradingProgress")}</span>
                 <span className="text-sm font-semibold text-gray-900">
-                  {statistics.graded_subjects}/{statistics.total_subjects} subjects
+                  {t("studentExamDetail.gradingProgressSubjects", {
+                    graded: statistics.graded_subjects,
+                    total: statistics.total_subjects,
+                  })}
                 </span>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -446,7 +453,9 @@ export default function StudentExamDetail() {
                 />
               </div>
               <p className="text-xs text-gray-400 mt-1.5">
-                {statistics.total_subjects - statistics.graded_subjects} subject(s) pending grading
+                {t("studentExamDetail.pendingGrading", {
+                  count: statistics.total_subjects - statistics.graded_subjects,
+                })}
               </p>
             </div>
           )}
@@ -454,7 +463,7 @@ export default function StudentExamDetail() {
           {/* Subject-wise Marks */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-              Subject-wise Marks
+              {t("studentExamDetail.subjectWiseMarks")}
             </h3>
             {subjects && subjects.length > 0 ? (
               <div className="space-y-3">
@@ -469,7 +478,7 @@ export default function StudentExamDetail() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-6">No subjects scheduled</p>
+              <p className="text-sm text-gray-400 text-center py-6">{t("studentExamDetail.noSubjectsScheduled")}</p>
             )}
           </div>
 
@@ -480,10 +489,8 @@ export default function StudentExamDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <h4 className="text-sm font-semibold text-blue-900 mb-0.5">Exam Scheduled</h4>
-                <p className="text-xs text-blue-700">
-                  This exam is upcoming. Marks will be available after the exam is completed and graded by your teacher.
-                </p>
+                <h4 className="text-sm font-semibold text-blue-900 mb-0.5">{t("studentExamDetail.examScheduled")}</h4>
+                <p className="text-xs text-blue-700">{t("studentExamDetail.examScheduledDescription")}</p>
               </div>
             </div>
           )}

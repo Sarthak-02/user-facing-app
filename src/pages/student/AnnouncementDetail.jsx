@@ -62,11 +62,11 @@ export default function AnnouncementDetail() {
         const found = list.find((a) => a.id === announcementId);
         if (!cancelled) {
           if (found) setAnnouncement(found);
-          else { setAnnouncement(null); setError("Announcement not found"); }
+          else { setAnnouncement(null); setError(t("studentAnnouncements.detailNotFound")); }
         }
       } catch (err) {
         console.error("Error loading announcement:", err);
-        if (!cancelled) { setError(err.message || "Failed to load announcement"); setAnnouncement(null); }
+        if (!cancelled) { setError(err.message || t("studentAnnouncements.detailLoadFailed")); setAnnouncement(null); }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -74,7 +74,7 @@ export default function AnnouncementDetail() {
 
     resolve();
     return () => { cancelled = true; };
-  }, [announcementId, auth.userId, location.state]);
+  }, [announcementId, auth.userId, location.state, t]);
 
   const handleGoBack = () => navigate("/student/announcements");
 
@@ -123,7 +123,7 @@ export default function AnnouncementDetail() {
     label: attachmentLabel(att) || t("studentAnnouncements.attachmentIndex", { index: i + 1 }),
   }));
   const validAttachments = withLinks;
-  const sender = announcement.senderName || announcement.createdBy || "School";
+  const sender = announcement.senderName || announcement.createdBy || t("studentAnnouncements.senderFallback");
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">

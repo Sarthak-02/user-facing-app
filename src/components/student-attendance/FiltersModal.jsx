@@ -1,18 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, Select } from "../../ui-components";
 import { Calendar } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
-
-const DATE_RANGE_OPTIONS = [
-  { label: "Full Term", value: "ALL" },
-  { label: "Last 7 Days", value: "7" },
-  { label: "Last 15 Days", value: "15" },
-  { label: "Last 30 Days", value: "30" },
-  { label: "Last 60 Days", value: "60" },
-  { label: "Last 90 Days", value: "90" },
-  { label: "Custom Range", value: "custom" },
-];
 
 function formatDate(date) {
   if (!date) return "";
@@ -30,8 +21,28 @@ export default function FiltersModal({
   setDateRange,
   customDateRange,
   setCustomDateRange,
-  periodOptions = [{ label: "All Periods", value: "ALL" }],
+  periodOptions,
 }) {
+  const { t } = useTranslation();
+  const resolvedPeriodOptions = useMemo(
+    () =>
+      periodOptions ?? [{ label: t("studentAttendance.allPeriods"), value: "ALL" }],
+    [periodOptions, t],
+  );
+
+  const dateRangeOptions = useMemo(
+    () => [
+      { label: t("studentAttendance.dateRangeFullTerm"), value: "ALL" },
+      { label: t("studentAttendance.dateRangeLast7"), value: "7" },
+      { label: t("studentAttendance.dateRangeLast15"), value: "15" },
+      { label: t("studentAttendance.dateRangeLast30"), value: "30" },
+      { label: t("studentAttendance.dateRangeLast60"), value: "60" },
+      { label: t("studentAttendance.dateRangeLast90"), value: "90" },
+      { label: t("studentAttendance.dateRangeCustom"), value: "custom" },
+    ],
+    [t],
+  );
+
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
   const startCalendarRef = useRef(null);
@@ -65,24 +76,24 @@ export default function FiltersModal({
     <div className="flex items-center gap-3 flex-wrap">
       <div className="flex items-center gap-2">
         <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-          Period:
+          {t("studentAttendance.filterPeriodLabel")}
         </label>
         <Select
           value={period}
           onChange={(e) => setPeriod(e.target.value)}
-          options={periodOptions}
+          options={resolvedPeriodOptions}
           className="min-w-[140px]"
         />
       </div>
 
       <div className="flex items-center gap-2">
         <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-          Date Range:
+          {t("studentAttendance.filterDateRangeLabel")}
         </label>
         <Select
           value={dateRange}
           onChange={(e) => setDateRange(e.target.value)}
-          options={DATE_RANGE_OPTIONS}
+          options={dateRangeOptions}
           className="min-w-[140px]"
         />
       </div>
@@ -96,7 +107,9 @@ export default function FiltersModal({
           >
             <Calendar size={16} />
             <span className="text-gray-500">
-              {customDateRange.start ? formatDate(customDateRange.start) : "Start Date"}
+              {customDateRange.start
+                ? formatDate(customDateRange.start)
+                : t("studentAttendance.pickStartDate")}
             </span>
           </Button>
 
@@ -118,7 +131,7 @@ export default function FiltersModal({
             </div>
           )}
 
-          <span className="text-gray-500">to</span>
+          <span className="text-gray-500">{t("studentAttendance.dateRangeTo")}</span>
 
           <Button
             onClick={() => setShowEndCalendar((v) => !v)}
@@ -126,7 +139,9 @@ export default function FiltersModal({
           >
             <Calendar size={16} />
             <span className="text-gray-500">
-              {customDateRange.end ? formatDate(customDateRange.end) : "End Date"}
+              {customDateRange.end
+                ? formatDate(customDateRange.end)
+                : t("studentAttendance.pickEndDate")}
             </span>
           </Button>
 

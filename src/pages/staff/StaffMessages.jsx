@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { MessageSquare } from "lucide-react";
 import ChatInbox from "../../components/chat/ChatInbox";
 import ChatThread from "../../components/chat/ChatThread";
@@ -6,6 +7,7 @@ import ChatThread from "../../components/chat/ChatThread";
 const BASE = "/staff/chat";
 
 export default function StaffMessages() {
+  const { t } = useTranslation();
   const { conversationId } = useParams();
   return (
     <div className="flex min-h-0 flex-1 flex-row">
@@ -32,7 +34,7 @@ export default function StaffMessages() {
           <div className="text-center">
             <MessageSquare size={40} className="mx-auto mb-3 text-gray-300" />
             <p className="text-sm text-gray-400">
-              Select a conversation to start chatting
+              {t("chatUi.selectConversation")}
             </p>
           </div>
         </div>

@@ -1,5 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "../i18n";
 import {
   requestNotificationPermission,
   getFCMToken,
@@ -17,6 +19,7 @@ import {
 const NotificationContext = createContext(null);
 
 export function NotificationProvider({ children }) {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const [notificationPermission, setNotificationPermission] = useState(
     typeof Notification !== "undefined" ? Notification.permission : "default"
@@ -50,7 +53,7 @@ export function NotificationProvider({ children }) {
 
     const unsubscribe = onMessageListener((payload) => {
       setLastNotification({
-        title: payload.notification?.title || "New Notification",
+        title: payload.notification?.title || i18n.t("notificationToast.newNotification"),
         body: payload.notification?.body || "",
         data: payload.data || {},
         timestamp: Date.now(),
@@ -60,7 +63,7 @@ export function NotificationProvider({ children }) {
 
       if (!document.hasFocus() && payload.notification) {
         showBrowserNotification(
-          payload.notification.title || "Digi School",
+          payload.notification.title || i18n.t("app.name"),
           {
             body: payload.notification.body || "",
             icon: payload.notification.icon || DEFAULT_NOTIFICATION_ICON_URL,
@@ -99,7 +102,7 @@ export function NotificationProvider({ children }) {
         showToastNotification(payload);
 
         setLastNotification({
-          title: notification.title || "New Notification",
+          title: notification.title || i18n.t("notificationToast.newNotification"),
           body: notification.body || "",
           data: notification.data || {},
           timestamp: notification.timestamp || Date.now(),
@@ -149,8 +152,8 @@ export function NotificationProvider({ children }) {
                   role: auth.role,
                   token: token,
                 });
-                toast.success("Notifications Enabled!", {
-                  description: "You will now receive push notifications",
+                toast.success(t("notificationToast.enabledSuccess"), {
+                  description: t("notificationToast.enabledSuccessDescription"),
                   duration: 3000,
                 });
               } catch (error) {
@@ -173,7 +176,7 @@ export function NotificationProvider({ children }) {
         permissionStatus.removeEventListener('change', () => {});
       }
     };
-  }, [auth.userId, auth.role, fcmToken]);
+  }, [auth.userId, auth.role, fcmToken, t]);
 
   // Sync FCM token when user logs in with already-granted permissions
   useEffect(() => {
@@ -247,8 +250,8 @@ export function NotificationProvider({ children }) {
           token: token,
         });
         
-        toast.success("Notifications Enabled!", {
-          description: "You will now receive push notifications",
+        toast.success(t("notificationToast.enabledSuccess"), {
+          description: t("notificationToast.enabledSuccessDescription"),
           duration: 3000,
         });
       } catch (error) {

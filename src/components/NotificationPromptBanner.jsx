@@ -63,7 +63,7 @@ export default function NotificationPromptBanner() {
           <button
             onClick={() => dismissNotificationPrompt(false)}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0"
-            aria-label="Close"
+            aria-label={t("ui.close")}
           >
             <svg
               className="w-5 h-5"

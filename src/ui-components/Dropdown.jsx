@@ -1,16 +1,19 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function Dropdown({
   label,
   options = [],
   multi = false,
-  placeholder = "Select...",
+  placeholder,
   selected,
   onChange,
   width = "w-full",
   maxHeight = "max-h-72",
   error = false,
 }) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("ui.selectPlaceholder");
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const ref = useRef(null);
@@ -42,11 +45,11 @@ export default function Dropdown({
 
   const renderLabel = () => {
     if (multi) {
-      if (!selected?.length) return placeholder;
+      if (!selected?.length) return resolvedPlaceholder;
       return selected.map((item) => item.label).join(", ");
     }
 
-    return selected ? selected.label : placeholder;
+    return selected ? selected.label : resolvedPlaceholder;
   };
 
   const filteredOptions = options.filter((o) =>
@@ -125,7 +128,7 @@ export default function Dropdown({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
+              placeholder={t("ui.searchPlaceholder")}
               className="w-full px-2 py-1 border rounded text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
             />
           </div>
@@ -137,7 +140,7 @@ export default function Dropdown({
               className="px-3 py-2 cursor-pointer flex items-center justify-between hover:bg-gray-100 border-b bg-gray-50 font-medium text-sm"
             >
               <span className="text-blue-600">
-                {allFilteredSelected ? "Deselect All" : "Select All"}
+                {allFilteredSelected ? t("ui.deselectAll") : t("ui.selectAll")}
               </span>
               {allFilteredSelected && (
                 <span className="text-blue-600 text-sm font-bold">✓</span>
@@ -169,7 +172,7 @@ export default function Dropdown({
             })
           ) : (
             <div className="px-3 py-2 text-gray-500 text-sm italic">
-              No results found
+              {t("ui.noResults")}
             </div>
           )}
         </div>

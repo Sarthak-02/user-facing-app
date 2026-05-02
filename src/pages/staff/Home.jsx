@@ -33,6 +33,8 @@ const JS_DAY_TO_API_DAY_ID = {
   6: "day-6",
 };
 
+const STAFF_NON_CLASS_SLOT_TYPES = new Set(["assembly", "lunch", "break"]);
+
 function timeToMinutes(hhmm) {
   if (!hhmm || typeof hhmm !== "string") return 0;
   const [h, m] = hhmm.split(":").map(Number);
@@ -99,11 +101,10 @@ function normalizeHomeworkDueList(payload) {
     const subjectRaw = h.subject?.name ?? h.subject_name ?? h.subject;
     return {
       id: String(h.id ?? h.homework_id ?? h.homeworkId ?? `hw-${i}`),
-      title: (h.title ?? h.homework_title ?? "Homework").toString().trim() || "Homework",
-      subject:
-        (typeof subjectRaw === "string" ? subjectRaw : subjectRaw?.name ?? "—")
-          .toString()
-          .trim() || "—",
+      title: (h.title ?? h.homework_title ?? "").toString().trim(),
+      subject: (typeof subjectRaw === "string" ? subjectRaw : subjectRaw?.name ?? "")
+        .toString()
+        .trim(),
       dueDate: h.dueDate ?? h.due_date ?? h.dueAt ?? h.due_at ?? "",
     };
   });
@@ -120,7 +121,7 @@ function mapAnnouncementsReceived(list) {
   if (!Array.isArray(list)) return [];
   return list.map((b, i) => ({
     id: String(b.id ?? b.broadcastId ?? b.announcement_id ?? `ann-${i}`),
-    title: b.title?.trim?.() || "Announcement",
+    title: b.title?.trim?.() || "",
     body: (b.message || b.body || b.description || "").trim(),
     date:
       b.submittedAt ||
@@ -141,7 +142,7 @@ function announcementsFromPayload(payload) {
   return mapAnnouncementsReceived(raw);
 }
 
-function buildTodaysPeriods(timetable, now = new Date(), sectionMeta = null) {
+function buildTodaysPeriods(timetable, now = new Date(), sectionMeta = null, slotLabel = null) {
   if (!timetable?.entries?.length || !timetable?.slots?.length) return [];
 
   const dayId = JS_DAY_TO_API_DAY_ID[now.getDay()];
@@ -166,8 +167,8 @@ function buildTodaysPeriods(timetable, now = new Date(), sectionMeta = null) {
       subject = entry.subject.trim() || "—";
     } else if (entry.subject && typeof entry.subject.name === "string") {
       subject = entry.subject.name.trim() || "—";
-    } else if (slot?.type === "lunch") {
-      subject = "Lunch";
+    } else if (slot?.type && STAFF_NON_CLASS_SLOT_TYPES.has(slot.type)) {
+      subject = slotLabel ? slotLabel(slot.type) : slot.type;
     } else if (slot?.label) {
       subject = slot.label.split(" - ")[0] || "—";
     }
@@ -183,7 +184,7 @@ function buildTodaysPeriods(timetable, now = new Date(), sectionMeta = null) {
   });
 }
 
-function todaysPeriodsFromSummaryPayload(payload, now = new Date()) {
+function todaysPeriodsFromSummaryPayload(payload, now = new Date(), slotLabel = null) {
   const rows = payload?.timetables_by_section;
   if (Array.isArray(rows) && rows.length > 0) {
     const merged = [];
@@ -192,7 +193,7 @@ function todaysPeriodsFromSummaryPayload(payload, now = new Date()) {
       const periods = buildTodaysPeriods(row.timetable, now, {
         sectionName: row.section_name,
         sectionId: row.section_id,
-      });
+      }, slotLabel);
       merged.push(...periods);
     }
     merged.sort((a, b) => {
@@ -205,7 +206,7 @@ function todaysPeriodsFromSummaryPayload(payload, now = new Date()) {
   }
 
   const tt = payload?.timetable;
-  return tt ? buildTodaysPeriods(tt, now) : [];
+  return tt ? buildTodaysPeriods(tt, now, null, slotLabel) : [];
 }
 
 function currentPeriodIndexFor(periods) {
@@ -372,6 +373,14 @@ function daysUntil(iso) {
   }
 }
 
+function periodSubjectLabel(period, t) {
+  if (!period) return "";
+  if (period.slotType === "lunch") return t("home.slots.lunch");
+  if (period.slotType === "assembly") return t("home.slots.assembly");
+  if (period.slotType === "break") return t("home.slots.break");
+  return period.subject ?? "";
+}
+
 function QuickStatContent({ icon, label, value, colorClass, hint }) {
   return createElement(
     "span",
@@ -389,7 +398,7 @@ function QuickStatContent({ icon, label, value, colorClass, hint }) {
   );
 }
 
-function QuickStat({ icon, label, value, colorClass, onClick }) {
+function QuickStat({ icon, label, value, colorClass, onClick, hint }) {
   if (onClick) {
     return (
       <button
@@ -397,7 +406,7 @@ function QuickStat({ icon, label, value, colorClass, onClick }) {
         onClick={onClick}
         className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-95"
       >
-        <QuickStatContent icon={icon} label={label} value={value} colorClass={colorClass} hint="Tap to view →" />
+        <QuickStatContent icon={icon} label={label} value={value} colorClass={colorClass} hint={hint} />
       </button>
     );
   }
@@ -428,8 +437,8 @@ export default function StaffHome() {
       d.teacher_first_name?.trim() ||
       auth?.username?.trim();
     if (fromAuth) return fromAuth.split(/\s+/)[0] || fromAuth;
-    return "there";
-  }, [auth?.details, auth?.username]);
+    return t("home.greeting.nameFallback");
+  }, [auth?.details, auth?.username, t]);
 
   const campusId = auth.campus_id;
   const teacherId = auth.userId;
@@ -458,19 +467,19 @@ export default function StaffHome() {
         setSummaryPayload(payload);
       } else {
         setSummaryPayload(null);
-        setError(message || "Could not load summary.");
+        setError(message || t("home.staff.errorCouldNotLoadSummary"));
       }
     } catch (e) {
       setSummaryPayload(null);
       const msg =
         e?.response?.data?.message ||
         e?.message ||
-        "Failed to load summary.";
-      setError(typeof msg === "string" ? msg : "Failed to load summary.");
+        t("home.staff.errorFailedToLoadSummary");
+      setError(typeof msg === "string" ? msg : t("home.staff.errorFailedToLoadSummary"));
     } finally {
       setLoading(false);
     }
-  }, [campusId, teacherId, teacherSections]);
+  }, [campusId, teacherId, teacherSections, t]);
 
   useEffect(() => {
     loadSummary();
@@ -481,7 +490,9 @@ export default function StaffHome() {
     const greeting = `${t(greetingKeyForHour(now.getHours()))},`;
     const dayLine = formatDisplayDate(now);
 
-    const periodsToday = todaysPeriodsFromSummaryPayload(summaryPayload, now);
+    const periodsToday = todaysPeriodsFromSummaryPayload(summaryPayload, now, (type) =>
+      t(`home.slots.${type}`)
+    );
     const idx = currentPeriodIndexFor(periodsToday);
     const subjectRows = subjectsFromSummaryPayload(summaryPayload);
 
@@ -491,7 +502,7 @@ export default function StaffHome() {
       currentPeriodIndex: idx,
       subjects: subjectRows,
     };
-  }, [summaryPayload, firstName]);
+  }, [summaryPayload, firstName, t]);
 
   const messagesUnreadTotal =
     summaryPayload?.messages?.total_unread ?? summaryPayload?.messages?.totalUnread ?? 0;
@@ -592,7 +603,7 @@ export default function StaffHome() {
                 <div className="flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1.5 backdrop-blur-sm">
                   <School size={14} className="shrink-0 text-indigo-100" aria-hidden />
                   <p className="text-xs font-semibold text-white">
-                    {teacherSections.length === 1 ? "1 section" : `${teacherSections.length} sections`}
+                    {t("home.staff.sectionCount", { count: teacherSections.length })}
                   </p>
                 </div>
               </div>
@@ -622,7 +633,7 @@ export default function StaffHome() {
                   {activeClassInfo.kind === "now" ? t("home.staff.period.now") : t("home.staff.period.upNext")}
                 </p>
                 <p className="truncate font-semibold text-gray-900">
-                  {activeClassInfo.period.subject}
+                  {periodSubjectLabel(activeClassInfo.period, t)}
                   {activeClassInfo.period.sectionName ? (
                     <span className="ml-1.5 font-normal text-gray-600">· {activeClassInfo.period.sectionName}</span>
                   ) : null}
@@ -643,6 +654,7 @@ export default function StaffHome() {
               value={periods.length}
               colorClass="bg-sky-100 text-sky-600"
               onClick={() => setIsScheduleModalOpen(true)}
+              hint={t("home.staff.tapToView")}
             />
             <QuickStat
               icon={BookOpen}
@@ -650,6 +662,7 @@ export default function StaffHome() {
               value={subjects.length}
               colorClass="bg-emerald-100 text-emerald-600"
               onClick={() => setIsSubjectsModalOpen(true)}
+              hint={t("home.staff.tapToView")}
             />
             <QuickStat
               icon={Bell}
@@ -657,6 +670,7 @@ export default function StaffHome() {
               value={upcomingHomework.length}
               colorClass="bg-amber-100 text-amber-600"
               onClick={() => setIsHomeworkModalOpen(true)}
+              hint={t("home.staff.tapToView")}
             />
             <QuickStat
               icon={Megaphone}
@@ -664,6 +678,7 @@ export default function StaffHome() {
               value={announcements.length}
               colorClass="bg-purple-100 text-purple-600"
               onClick={() => setIsAnnouncementsModalOpen(true)}
+              hint={t("home.staff.tapToView")}
             />
           </div>
 
@@ -752,7 +767,7 @@ export default function StaffHome() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className={`truncate font-semibold ${isCurrent ? "text-sky-900" : "text-gray-900"}`}>
-                      {p.subject}
+                      {periodSubjectLabel(p, t)}
                       {isCurrent ? (
                         <span className="ml-2 inline-flex items-center gap-1 rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
@@ -780,9 +795,9 @@ export default function StaffHome() {
         onClose={() => setIsSubjectsModalOpen(false)}
         className="max-w-sm"
       >
-        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Your Subjects</h2>
+        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.staff.yourSubjects")}</h2>
         {subjects.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-500">No subjects found. Contact your administrator.</p>
+          <p className="py-4 text-center text-sm text-gray-500">{t("home.staff.noSubjectsFound")}</p>
         ) : (
           <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
             {subjects.map((s) => {
@@ -836,7 +851,7 @@ export default function StaffHome() {
           onClick={() => setIsSubjectsModalOpen(false)}
           className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
         >
-          All lesson plans
+          {t("home.staff.allLessonPlans")}
           <ChevronRight size={14} />
         </Link>
       </Modal>
@@ -847,9 +862,9 @@ export default function StaffHome() {
         onClose={() => setIsHomeworkModalOpen(false)}
         className="max-w-sm"
       >
-        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Homework Due</h2>
+        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.staff.homeworkDue")}</h2>
         {upcomingHomework.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-500">No upcoming homework due.</p>
+          <p className="py-4 text-center text-sm text-gray-500">{t("home.staff.noHomeworkDue")}</p>
         ) : (
           <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
             {upcomingHomework.map((h) => {
@@ -877,9 +892,11 @@ export default function StaffHome() {
                             : "bg-primary-50 text-primary-700"
                       }`}
                     >
-                      {h.subject}
+                      {h.subject?.trim() ? h.subject : t("common.na")}
                     </span>
-                    <p className="mt-1.5 font-semibold text-gray-900">{h.title}</p>
+                    <p className="mt-1.5 font-semibold text-gray-900">
+                      {h.title?.trim() ? h.title : t("home.staff.fallbackHomeworkTitle")}
+                    </p>
                     <div className="mt-1.5 flex items-center gap-2">
                       {days !== null ? (
                         <span
@@ -891,7 +908,11 @@ export default function StaffHome() {
                                 : "bg-gray-100 text-gray-600"
                           }`}
                         >
-                          {days === 0 ? "Due today" : days === 1 ? "Tomorrow" : `${days}d left`}
+                          {days === 0
+                            ? t("common.dueToday")
+                            : days === 1
+                              ? t("common.tomorrow")
+                              : t("common.daysLeft", { days })}
                         </span>
                       ) : null}
                       <p className="text-xs text-gray-400">
@@ -909,7 +930,7 @@ export default function StaffHome() {
           onClick={() => setIsHomeworkModalOpen(false)}
           className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-amber-200 bg-amber-50 py-2 text-sm font-bold text-amber-700 hover:bg-amber-100"
         >
-          View all homework
+          {t("home.staff.viewAllHomework")}
           <ChevronRight size={14} />
         </Link>
       </Modal>
@@ -920,9 +941,9 @@ export default function StaffHome() {
         onClose={() => setIsAnnouncementsModalOpen(false)}
         className="max-w-sm"
       >
-        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">Announcements</h2>
+        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.staff.announcements")}</h2>
         {announcements.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-500">No announcements received.</p>
+          <p className="py-4 text-center text-sm text-gray-500">{t("home.staff.noAnnouncements")}</p>
         ) : (
           <ul className="max-h-[60vh] divide-y divide-gray-100 overflow-y-auto">
             {announcements.map((a) => (
@@ -935,7 +956,11 @@ export default function StaffHome() {
                     <Megaphone size={15} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900">{a.title}</p>
+                    <p className="font-semibold text-gray-900">
+                      {a.title?.trim()
+                        ? a.title
+                        : t("home.staff.announcementFallback")}
+                    </p>
                     {a.body ? (
                       <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{a.body}</p>
                     ) : null}

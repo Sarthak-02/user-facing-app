@@ -90,14 +90,14 @@ export default function HomeworkDetail() {
         setHomework(data);
       } catch (err) {
         console.error("Error fetching homework detail:", err);
-        setError(err.message || "Failed to fetch homework details");
+        setError(err.message || t("studentHomeworkDetail.fetchFailed"));
       } finally {
         setLoading(false);
       }
     };
 
     if (homeworkId) fetchHomeworkDetail();
-  }, [homeworkId]);
+  }, [homeworkId, t]);
 
   const handleGoBack = () => navigate(location.state?.from || "/student/homework");
 

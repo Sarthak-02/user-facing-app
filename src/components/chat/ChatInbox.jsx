@@ -77,12 +77,12 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
       const msg =
         e?.response?.data?.message ||
         e?.message ||
-        "Could not load conversations.";
-      setError(typeof msg === "string" ? msg : "Could not load conversations.");
+        t("chat.couldNotLoadConversations");
+      setError(typeof msg === "string" ? msg : t("chat.couldNotLoadConversations"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadConversations();
@@ -99,12 +99,12 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
         const list = await listTeachersBySection(campusId, sectionId);
         if (!cancelled) {
           setContacts(
-            list.map((t) => ({
-              userId: String(t.teacher_id ?? t.id ?? "").trim(),
-              name: [t.teacher_first_name, t.teacher_middle_name, t.teacher_last_name]
+            list.map((row) => ({
+              userId: String(row.teacher_id ?? row.id ?? "").trim(),
+              name: [row.teacher_first_name, row.teacher_middle_name, row.teacher_last_name]
                 .filter(Boolean)
-                .join(" ") || "Teacher",
-            })).filter((t) => t.userId)
+                .join(" ") || t("chat.defaultTeacherName"),
+            })).filter((row) => row.userId)
           );
         }
       } catch {
@@ -116,7 +116,7 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
     return () => {
       cancelled = true;
     };
-  }, [mode, auth.campus_id, auth.sections]);
+  }, [mode, auth.campus_id, auth.sections, t]);
 
   const staffStudents = useMemo(() => {
     if (mode !== "staff") return [];
@@ -124,10 +124,10 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
     for (const s of permissions.students || []) {
       const id = String(s.student_id ?? "").trim();
       if (!id || seen.has(id)) continue;
-      seen.set(id, String(s.student_name || "Student").trim() || "Student");
+      seen.set(id, String(s.student_name || t("chat.defaultStudentName")).trim() || t("chat.defaultStudentName"));
     }
     return [...seen.entries()].map(([userId, name]) => ({ userId, name }));
-  }, [mode, permissions.students]);
+  }, [mode, permissions.students, t]);
 
   const startWith = async (otherUserId) => {
     const id = String(otherUserId || "").trim();
@@ -138,7 +138,7 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
       const created = await createDirectConversation(id);
       const cid = pickConversationId(created);
       if (!cid) {
-        setError("Could not start conversation. Try again.");
+        setError(t("chat.couldNotStartConversation"));
         return;
       }
       setNewOpen(false);
@@ -148,8 +148,8 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
       const msg =
         e?.response?.data?.message ||
         e?.message ||
-        "Could not start conversation.";
-      setError(typeof msg === "string" ? msg : "Could not start conversation.");
+        t("chat.couldNotStartConversation2");
+      setError(typeof msg === "string" ? msg : t("chat.couldNotStartConversation2"));
     } finally {
       setCreatingId("");
     }

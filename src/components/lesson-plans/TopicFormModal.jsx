@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Input, Modal, Dropdown } from "../../ui-components";
 import Textarea from "../../ui-components/TextArea";
 import { addClassPlanTopics, updateClassPlanTopic } from "../../api/lessonPlans.api";
 import { useTranslation } from "react-i18next";
 
-const STATUS_OPTIONS = [
-  { value: "PENDING", label: "Pending" },
-  { value: "IN_PROGRESS", label: "In progress" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "SKIPPED", label: "Skipped" },
-];
+const TOPIC_STATUS_ORDER = ["PENDING", "IN_PROGRESS", "COMPLETED", "SKIPPED"];
+
+function topicStatusLabelKey(value) {
+  if (value === "IN_PROGRESS") return "inProgress";
+  return value.toLowerCase();
+}
 
 function toDateInputValue(iso) {
   if (!iso) return "";
@@ -32,15 +32,30 @@ export default function TopicFormModal({
   const { t } = useTranslation();
   const isEdit = !!topic;
 
+  const topicStatusOptions = useMemo(
+    () =>
+      TOPIC_STATUS_ORDER.map((value) => ({
+        value,
+        label: t(`lessonPlans.topicForm.status_${topicStatusLabelKey(value)}`),
+      })),
+    [t],
+  );
+
   const [chapterTitle, setChapterTitle] = useState("");
   const [chapterNumber, setChapterNumber] = useState("");
   const [title, setTitle] = useState("");
-  const [status, setStatus] = useState(STATUS_OPTIONS[0]);
+  const [topicStatus, setTopicStatus] = useState("PENDING");
   const [scheduledDate, setScheduledDate] = useState("");
   const [teacherNotes, setTeacherNotes] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const selectedTopicStatus = useMemo(() => {
+    return (
+      topicStatusOptions.find((o) => o.value === topicStatus) ?? topicStatusOptions[0]
+    );
+  }, [topicStatusOptions, topicStatus]);
 
   useEffect(() => {
     if (!open) return;
@@ -49,14 +64,15 @@ export default function TopicFormModal({
       setChapterTitle(topic.chapter_title ?? "");
       setChapterNumber(topic.chapter_number != null ? String(topic.chapter_number) : "");
       setTitle(topic.title ?? "");
-      setStatus(STATUS_OPTIONS.find((o) => o.value === (topic.status ?? "PENDING")) ?? STATUS_OPTIONS[0]);
+      const st = topic.status ?? "PENDING";
+      setTopicStatus(TOPIC_STATUS_ORDER.includes(st) ? st : "PENDING");
       setScheduledDate(toDateInputValue(topic.scheduled_date));
       setTeacherNotes(topic.teacher_notes ?? "");
     } else {
       setChapterTitle(prefillChapterTitle);
       setChapterNumber(prefillChapterNumber != null ? String(prefillChapterNumber) : "");
       setTitle("");
-      setStatus(STATUS_OPTIONS[0]);
+      setTopicStatus("PENDING");
       setScheduledDate("");
       setTeacherNotes("");
     }
@@ -73,13 +89,17 @@ export default function TopicFormModal({
       setError(t("lessonPlans.topicForm.errorTopicRequired"));
       return;
     }
+    if (!isEdit && !classPlanId) {
+      setError(t("lessonPlans.topicForm.errorNoClassPlan"));
+      return;
+    }
     setSubmitting(true);
     try {
       if (isEdit) {
         const body = {
           chapter_title: chapterTitle.trim(),
           title: title.trim(),
-          status: status.value,
+          status: topicStatus,
           scheduled_date: scheduledDate || null,
           teacher_notes: teacherNotes.trim() || null,
         };
@@ -90,12 +110,11 @@ export default function TopicFormModal({
         }
         await updateClassPlanTopic(topic.id, body);
       } else {
-        if (!classPlanId) throw new Error("No class plan ID");
         const topicPayload = {
           chapter_title: chapterTitle.trim(),
           title: title.trim(),
           display_order: (existingTopicsCount + 1) * 10,
-          status: status.value,
+          status: topicStatus,
         };
         if (chapterNumber !== "") topicPayload.chapter_number = parseInt(chapterNumber, 10) || undefined;
         if (scheduledDate) topicPayload.scheduled_date = scheduledDate;
@@ -121,7 +140,9 @@ export default function TopicFormModal({
         {/* Chapter info */}
         {lockChapter ? (
           <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-border px-3 py-2">
-            <span className="text-xs font-medium text-gray-500 shrink-0">Chapter</span>
+            <span className="text-xs font-medium text-gray-500 shrink-0">
+              {t("lessonPlans.topicForm.chapter")}
+            </span>
             <span className="font-medium text-gray-900 text-sm truncate">{chapterTitle}</span>
             {chapterNumber && (
               <span className="ml-auto shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-600">#{chapterNumber}</span>
@@ -170,7 +191,12 @@ export default function TopicFormModal({
         <div className="flex gap-3">
           <div className="flex-1">
             <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.topicForm.status")}</label>
-            <Dropdown options={STATUS_OPTIONS} selected={status} onChange={setStatus} placeholder={t("lessonPlans.topicForm.status")} />
+            <Dropdown
+              options={topicStatusOptions}
+              selected={selectedTopicStatus}
+              onChange={(opt) => setTopicStatus(opt.value)}
+              placeholder={t("lessonPlans.topicForm.status")}
+            />
           </div>
           <div className="flex-1">
             <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.topicForm.scheduledDate")}</label>

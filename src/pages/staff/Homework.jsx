@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Card, Button } from "../../ui-components";
 import DesktopListing from "../../components/staff-homework/DesktopListing";
@@ -65,13 +66,16 @@ function homeworkAppliesToStudent(homework, studentId, sectionId, sectionRecord)
   return appliesSectionOrClass;
 }
 
-const STATUS_OPTIONS = [
-  { value: "", label: "All" },
-  { value: "DRAFT", label: "Draft" },
-  { value: "PUBLISHED", label: "Published" },
-];
-
 export default function TeacherHomework() {
+  const { t } = useTranslation();
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: "", label: t("staffHomework.filterAll") },
+      { value: "DRAFT", label: t("staffHomework.filterDraft") },
+      { value: "PUBLISHED", label: t("staffHomework.filterPublished") },
+    ],
+    [t]
+  );
   const { auth } = useAuth();
   const { sectionId, subjectId: subjectIdParam, studentId: studentIdParam } = useParams();
   const navigate = useNavigate();
@@ -345,7 +349,10 @@ export default function TeacherHomework() {
       }
     } catch (error) {
       console.error("Error submitting homework:", error);
-      setSubmitError(error.message || `Failed to ${editingHomework ? 'update' : 'create'} homework. Please try again.`);
+      setSubmitError(
+        error.message ||
+          (editingHomework ? t("staffHomework.saveFailedUpdate") : t("staffHomework.saveFailedCreate")),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -381,7 +388,11 @@ export default function TeacherHomework() {
     } catch (error) {
       console.error("Error publishing homework:", error);
       // TODO: Show error notification
-      alert(`Failed to publish homework: ${error.message || 'Please try again'}`);
+      alert(
+        t("staffHomework.publishFailed", {
+          reason: error.message || t("common.tryAgain"),
+        }),
+      );
     } finally {
       setIsPublishing(false);
     }
@@ -420,7 +431,7 @@ export default function TeacherHomework() {
       setHomeworkList(homeworkArray);
     } catch (error) {
       console.error("Error fetching homework:", error);
-      setLoadError(error.message || "Failed to load homework. Please try again.");
+      setLoadError(error.message || t("staffHomework.loadListFailed"));
       // Set empty array on error to prevent iteration errors
       setHomeworkList([]);
     } finally {
@@ -446,15 +457,15 @@ export default function TeacherHomework() {
   if (routeInvalid) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-        <p className="text-sm text-gray-600">Invalid homework route.</p>
+        <p className="text-sm text-gray-600">{t("staffHomework.invalidRoute")}</p>
         <Button variant="secondary" className="mt-4 w-fit" onClick={() => navigate("/staff/homework")}>
-          Back
+          {t("common.back")}
         </Button>
       </div>
     );
   }
 
-  const headerSubtitle = subjectMeta?.subject_name || subjectIdKey || "Subject";
+  const headerSubtitle = subjectMeta?.subject_name || subjectIdKey || t("staffHomework.subjectFallback");
   const studentLine = studentIdKey
     ? (studentRecord?.student_name || studentIdKey)
     : sectionTitle;
@@ -468,7 +479,7 @@ export default function TeacherHomework() {
           onClick={goBack}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t("common.back")}
         </Button>
         <div className="mx-10 max-w-[min(100%,calc(100%-5.5rem))] text-center md:mx-14">
           <h1 className="text-xl font-bold text-gray-900 md:text-2xl">
@@ -482,7 +493,7 @@ export default function TeacherHomework() {
       <Card className="hidden md:block !py-3 !px-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-            {STATUS_OPTIONS.map((opt) => (
+            {statusFilterOptions.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setStatusFilter(opt.value)}
@@ -498,9 +509,9 @@ export default function TeacherHomework() {
           </div>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-sm text-gray-400 whitespace-nowrap">
-              {filteredHomework.length} {filteredHomework.length === 1 ? "item" : "items"}
+              {t("staffHomework.items", { count: filteredHomework.length })}
             </span>
-            <Button onClick={handleCreateHomework}>+ Create</Button>
+            <Button onClick={handleCreateHomework}>{t("staffHomework.createShort")}</Button>
           </div>
         </div>
       </Card>
@@ -510,7 +521,7 @@ export default function TeacherHomework() {
         <Card className="!p-3">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg flex-1">
-              {STATUS_OPTIONS.map((opt) => (
+              {statusFilterOptions.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setStatusFilter(opt.value)}
@@ -536,7 +547,7 @@ export default function TeacherHomework() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-gray-600">Loading homework...</p>
+            <p className="mt-4 text-gray-600">{t("staffHomework.loadingList")}</p>
           </div>
         </div>
       )}
@@ -563,11 +574,11 @@ export default function TeacherHomework() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Error Loading Homework</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t("staffHomework.errorLoadingTitle")}</h3>
                 <p className="text-gray-600 mt-2">{loadError}</p>
               </div>
               <Button onClick={fetchHomework}>
-                Try Again
+                {t("common.tryAgain")}
               </Button>
             </div>
           </Card>
@@ -604,7 +615,7 @@ export default function TeacherHomework() {
         type="button"
         onClick={handleCreateHomework}
         className="md:hidden fixed bottom-20 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-blue-600 active:scale-95 active:bg-blue-700"
-        aria-label="Create new homework"
+        aria-label={t("ui.createNewHomework")}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -642,14 +653,12 @@ export default function TeacherHomework() {
           <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold text-gray-900">Publish Homework?</h3>
+              <h3 className="text-xl font-semibold text-gray-900">{t("staffHomework.publishModalTitle")}</h3>
             </div>
 
             {/* Modal Content */}
             <div className="p-6 space-y-4">
-              <p className="text-gray-700">
-                Are you sure you want to publish this homework? Students will be able to see and submit it.
-              </p>
+              <p className="text-gray-700">{t("staffHomework.publishModalBody")}</p>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900">{homeworkToPublish.title}</h4>
                 <p className="text-sm text-gray-600 mt-1">{homeworkToPublish.subject}</p>
@@ -657,10 +666,12 @@ export default function TeacherHomework() {
                   {homeworkToPublish.class} - {homeworkToPublish.section}
                 </p>
                 <p className="text-sm text-gray-600 mt-2">
-                  Due: {new Date(homeworkToPublish.dueDate).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
+                  {t("common.due", {
+                    date: new Date(homeworkToPublish.dueDate).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    }),
                   })}
                 </p>
               </div>
@@ -673,13 +684,13 @@ export default function TeacherHomework() {
                 onClick={cancelPublish}
                 disabled={isPublishing}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={confirmPublish}
                 disabled={isPublishing}
               >
-                {isPublishing ? "Publishing..." : "Publish"}
+                {isPublishing ? t("staffHomework.publishing") : t("common.publish")}
               </Button>
             </div>
           </div>

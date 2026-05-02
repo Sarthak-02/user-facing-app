@@ -58,8 +58,8 @@ export default function StaffAttendanceSection({ readOnly = false }) {
 
   const sectionTitle = useMemo(() => {
     const row = sectionRows.find((r) => String(r.sectionId) === String(selectedClass));
-    return row?.label || "Section";
-  }, [sectionRows, selectedClass]);
+    return row?.label || t("targetSelector.section");
+  }, [sectionRows, selectedClass, t]);
 
   const allowedIds = useMemo(
     () => new Set(sectionRows.map((r) => String(r.sectionId))),
@@ -499,7 +499,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
               <div className="fixed bottom-14 left-0 right-0 z-[45] flex flex-col gap-2 border-t border-border bg-[var(--color-surface)] px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] shadow-[0_-2px_10px_rgba(0,0,0,0.06)] md:hidden">
                 <div>
                   <div className="mb-1 flex items-center justify-between gap-2 text-xs text-gray-500">
-                    <span>Progress</span>
+                    <span>{t("staffAttendance.progress")}</span>
                     <span className="tabular-nums font-medium text-gray-800">
                       {Object.keys(attendance).length} / {students.length}
                     </span>

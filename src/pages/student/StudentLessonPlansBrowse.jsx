@@ -25,17 +25,28 @@ function formatDate(d) {
   return x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function topicStatusConfig(status) {
+function topicStatusConfig(status, t) {
   switch (status) {
     case "COMPLETED":
-      return { Icon: CheckCircle2, color: "text-green-500", badge: "bg-green-100 text-green-700", label: "Completed" };
+      return { Icon: CheckCircle2, color: "text-green-500", badge: "bg-green-100 text-green-700", label: t("staffTopicDetail.topicStatusCompleted") };
     case "IN_PROGRESS":
-      return { Icon: Zap, color: "text-blue-500", badge: "bg-blue-100 text-blue-700", label: "In Progress" };
+      return { Icon: Zap, color: "text-blue-500", badge: "bg-blue-100 text-blue-700", label: t("staffTopicDetail.topicStatusInProgress") };
     case "SKIPPED":
-      return { Icon: MinusCircle, color: "text-gray-400", badge: "bg-gray-100 text-gray-400", label: "Skipped" };
+      return { Icon: MinusCircle, color: "text-gray-400", badge: "bg-gray-100 text-gray-400", label: t("staffTopicDetail.topicStatusSkipped") };
     default:
-      return { Icon: Clock, color: "text-amber-400", badge: "bg-amber-100 text-amber-700", label: "Upcoming" };
+      return { Icon: Clock, color: "text-amber-400", badge: "bg-amber-100 text-amber-700", label: t("staffTopicDetail.topicStatusUpcoming") };
   }
+}
+
+function resourceSummaryLine(assignments, quizzes, materials, t) {
+  const parts = [];
+  if (assignments.length)
+    parts.push(t("studentLessonPlansBrowse.browseTask", { count: assignments.length }));
+  if (quizzes.length)
+    parts.push(t("studentTopicDetail.quizCount", { count: quizzes.length }));
+  if (materials.length)
+    parts.push(t("studentLessonPlansBrowse.browseFile", { count: materials.length }));
+  return parts.join(" · ");
 }
 
 function groupTopicsByChapter(topics) {
@@ -57,6 +68,7 @@ function groupTopicsByChapter(topics) {
 }
 
 export default function StudentLessonPlansBrowse() {
+  const { t } = useTranslation();
   const { subjectId } = useParams();
   const navigate = useNavigate();
   const { auth } = useAuth();
@@ -91,7 +103,9 @@ export default function StudentLessonPlansBrowse() {
             if (id) subjectMap.set(id, name);
           }
         }
-      } catch (_) {}
+      } catch {
+        /* optional profile data */
+      }
       setSubjectCount(subjectMap.size);
       if (subjectMap.has(subjectId)) resolvedName = subjectMap.get(subjectId);
       setSubjectName(resolvedName);
@@ -116,11 +130,11 @@ export default function StudentLessonPlansBrowse() {
         if (resolvedName === subjectId && match.subject) setSubjectName(match.subject);
       }
     } catch (err) {
-      setLoadError(err?.message || "Failed to load");
+      setLoadError(err?.message || t("studentLessonPlansBrowse.failedToLoad"));
     } finally {
       setLoading(false);
     }
-  }, [subjectId, auth.campus_id, auth.userId]);
+  }, [subjectId, auth.campus_id, auth.userId, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -166,7 +180,9 @@ export default function StudentLessonPlansBrowse() {
           </h1>
           {!loading && chapters.length > 0 && (
             <p className="text-xs text-gray-500">
-              {chapters.length} chapter{chapters.length !== 1 ? "s" : ""} · {totalTopics} topic{totalTopics !== 1 ? "s" : ""}
+              {t("studentLessonPlansBrowse.chapterCount", { count: chapters.length })}
+              {" · "}
+              {t("lessonPlansBrowse.topicCount", { count: totalTopics })}
             </p>
           )}
         </div>
@@ -192,9 +208,9 @@ export default function StudentLessonPlansBrowse() {
             <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
               <BookOpen className="h-8 w-8 text-indigo-300" />
             </div>
-            <p className="text-sm font-semibold text-gray-700 mb-1">No content yet</p>
+            <p className="text-sm font-semibold text-gray-700 mb-1">{t("studentLessonPlansBrowse.noContentYet")}</p>
             <p className="text-xs text-gray-400 text-center max-w-xs">
-              Your teacher hasn&apos;t published lessons for this subject yet.
+              {t("studentLessonPlansBrowse.emptySubtitle")}
             </p>
           </div>
         ) : (
@@ -204,9 +220,9 @@ export default function StudentLessonPlansBrowse() {
             {chapters.length > 0 && totalTopics > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Progress</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t("studentLessonPlansBrowse.progress")}</p>
                   <p className="text-xs font-semibold text-indigo-600">
-                    {completedTopics}/{totalTopics} topics completed
+                    {t("studentLessonPlansBrowse.topicsCompleted", { completed: completedTopics, total: totalTopics })}
                   </p>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -222,7 +238,7 @@ export default function StudentLessonPlansBrowse() {
             {chapters.length > 0 && (
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-0.5">
-                  Curriculum
+                  {t("studentLessonPlansBrowse.curriculum")}
                 </p>
                 <div className="space-y-2.5">
                   {chapters.map((chapter, chIdx) => {
@@ -244,7 +260,9 @@ export default function StudentLessonPlansBrowse() {
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 truncate">{chapter.title}</p>
+                            <p className="text-sm font-semibold text-gray-900 truncate">
+                              {chapter.title === "General" ? t("lessonPlansBrowse.generalChapter") : chapter.title}
+                            </p>
                             <div className="flex items-center gap-2 mt-1">
                               <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[100px]">
                                 <div
@@ -264,7 +282,7 @@ export default function StudentLessonPlansBrowse() {
                           <div className="border-t border-gray-100 divide-y divide-gray-50">
                             {chapter.topics.map((topic) => {
                               const tid = topic.id ?? topic.class_plan_topic_id;
-                              const sc = topicStatusConfig(topic.status);
+                              const sc = topicStatusConfig(topic.status, t);
                               const { Icon } = sc;
                               const assignments = topic.assignments ?? [];
                               const quizzes = topic.quizzes ?? [];
@@ -309,11 +327,7 @@ export default function StudentLessonPlansBrowse() {
                                       )}
                                       {resourceCount > 0 && (
                                         <span className="text-xs text-gray-400">
-                                          {[
-                                            assignments.length && `${assignments.length} task${assignments.length > 1 ? "s" : ""}`,
-                                            quizzes.length && `${quizzes.length} quiz${quizzes.length > 1 ? "zes" : ""}`,
-                                            materials.length && `${materials.length} file${materials.length > 1 ? "s" : ""}`,
-                                          ].filter(Boolean).join(" · ")}
+                                          {resourceSummaryLine(assignments, quizzes, materials, t)}
                                         </span>
                                       )}
                                     </div>

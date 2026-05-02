@@ -28,6 +28,7 @@ import {
   DEFAULT_NOTIFICATION_BADGE_URL,
   DEFAULT_NOTIFICATION_ICON_URL,
 } from "./utils/notification-default-icon.js";
+import en from "./i18n/locales/en/translation.json";
 
 // ⚠️ CRITICAL: This placeholder MUST be present for workbox-build to inject the manifest
 precacheAndRoute(self.__WB_MANIFEST);
@@ -100,7 +101,10 @@ async function handleCachedPost(request) {
     const cached = await cache.match(cacheKey);
     if (cached) return cached;
     return new Response(
-      JSON.stringify({ success: false, message: "You are offline and this data hasn't been cached yet." }),
+      JSON.stringify({
+        success: false,
+        message: en.pwa?.offlineUncached ?? "You are offline and this data hasn't been cached yet.",
+      }),
       { status: 503, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -121,7 +125,7 @@ try {
 
   // Handle background push notifications
   onBackgroundMessage(messaging, (payload) => {
-    const notificationTitle = payload?.notification?.title ?? "Digi School";
+    const notificationTitle = payload?.notification?.title ?? en.app?.name ?? "Digi School";
     const notificationOptions = {
       body: payload?.notification?.body ?? "",
       icon: payload?.notification?.icon || DEFAULT_NOTIFICATION_ICON_URL,

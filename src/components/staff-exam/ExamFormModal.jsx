@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, Dropdown } from "../../ui-components";
 import TargetSelector from "../TargetSelector";
 import { usePermissions } from "../../store/permissions.store";
@@ -6,29 +7,52 @@ import { useAuth } from "../../store/auth.store";
 import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
 
-// Mock data - Replace with actual API calls
-
-
-const TARGET_OPTIONS = [
-  { value: "CLASS", label: "Class" },
-  { value: "SECTION", label: "Section" },
-  { value: "STUDENT", label: "Student" },
-];
-
 export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmitting, submitError }) {
+  const { t } = useTranslation();
   const isEditing = !!exam;
 
   const { permissions } = usePermissions();
 
+  const {
+    auth: {
+      campus: { campus_exam_types, class_grading_config },
+    },
+  } = useAuth();
 
-  const {auth : {campus:{campus_exam_types,class_grading_config}}} = useAuth();
-  // Get EXAM_TYPES from auth store
-  const EXAM_TYPES = campus_exam_types.map((examType) => ({
-    value: examType,
-    label: examType
-  }));
+  const targetOpts = useMemo(
+    () => [
+      { value: "CLASS", label: t("broadcast.targetOptions.class") },
+      { value: "SECTION", label: t("broadcast.targetOptions.section") },
+      { value: "STUDENT", label: t("broadcast.targetOptions.student") },
+    ],
+    [t]
+  );
+
+  const pickExamTarget = (value) => targetOpts.find((o) => o.value === value) ?? targetOpts[0];
+
+  const EXAM_TYPE_OPTIONS = useMemo(
+    () =>
+      (campus_exam_types || []).map((examType) => {
+        const key = `exams.examTypes.${examType}`;
+        const translated = t(key);
+        return { value: examType, label: translated === key ? examType : translated };
+      }),
+    [campus_exam_types, t]
+  );
 
   const GRADING_TYPES = class_grading_config?.GRADING_TYPES || [];
+  const gradingTypesDisplay = useMemo(
+    () =>
+      GRADING_TYPES.map((type) => {
+        const key = `exams.gradingTypeLabels.${type.value}`;
+        const translated = t(key);
+        return {
+          ...type,
+          label: translated === key ? type.label : translated,
+        };
+      }),
+    [GRADING_TYPES, t]
+  );
   const LETTER_GRADES = class_grading_config?.LETTER_GRADES || [];
   
   // Current step in the form (1-4)
@@ -38,7 +62,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
   const [formData, setFormData] = useState({
     examType: "",
     customExamType: "",
-    targetType: { value: "CLASS", label: "Class" },
+    targetType: pickExamTarget("CLASS"),
     classId: [],
     sectionId: null,
     studentId: [],
@@ -131,7 +155,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
   useEffect(() => {
     if (exam) {
       // Determine target type and extract target IDs from the targets array
-      let targetType = { value: "CLASS", label: "Class" };
+      let targetType = pickExamTarget("CLASS");
       let classId = [];
       let sectionId = null;
       let studentId = [];
@@ -140,12 +164,12 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
         const firstTarget = exam.targets[0];
         
         if (firstTarget.targetType === "CLASS") {
-          targetType = { value: "CLASS", label: "Class" };
+          targetType = pickExamTarget("CLASS");
           // Find the class in permissions to get the label
           const classItem = permissions.classes?.find(c => c.class_id === firstTarget.targetId);
           classId = classItem ? { value: classItem.class_id, label: classItem.class_name } : null;
         } else if (firstTarget.targetType === "SECTION") {
-          targetType = { value: "SECTION", label: "Section" };
+          targetType = pickExamTarget("SECTION");
           const sectionItem = permissions.sections?.find(s => s.section_id === firstTarget.targetId);
           sectionId = sectionItem ? { value: sectionItem.section_id, label: sectionItem.section_name } : null;
           if (sectionItem) {
@@ -153,7 +177,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
             classId = classItem ? { value: classItem.class_id, label: classItem.class_name } : null;
           }
         } else if (firstTarget.targetType === "STUDENT") {
-          targetType = { value: "STUDENT", label: "Student" };
+          targetType = pickExamTarget("STUDENT");
           studentId = exam.targets.map(target => {
             const studentItem = permissions.students?.find(s => s.student_id === target.targetId);
             return studentItem ? { value: studentItem.student_id, label: studentItem.student_name } : null;
@@ -207,7 +231,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
       setFormData({
         examType: "",
         customExamType: "",
-        targetType: { value: "CLASS", label: "Class" },
+        targetType: pickExamTarget("CLASS"),
         classId: [],
         sectionId: null,
         studentId: [],
@@ -226,7 +250,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
       });
     }
     setCurrentStep(1);
-  }, [exam, isOpen, permissions.classes, permissions.sections, permissions.students]);
+  }, [exam, isOpen, permissions.classes, permissions.sections, permissions.students, targetOpts]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -279,34 +303,32 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
 
 
   const formatTargetLabel = () => {
-    const targetTypeLabel = TARGET_OPTIONS.find(opt => opt.value === formData.targetType?.value)?.label || "";
-    
-    // Handle class selection (can be array when target type is CLASS)
+    const targetTypeLabel = targetOpts.find((opt) => opt.value === formData.targetType?.value)?.label || "";
+
     let c = "";
     if (formData.targetType?.value === "CLASS" && Array.isArray(formData.classId) && formData.classId.length > 0) {
       if (formData.classId.length === 1) {
         c = formData.classId[0].label;
       } else {
-        c = `${formData.classId.length} classes`;
+        c = t("exams.multiClassSummary", { count: formData.classId.length });
       }
     } else if (formData.classId?.value) {
       c = permissions.classes.find((x) => x.class_id === formData.classId?.value)?.class_name;
     }
-    
+
     const s = permissions.sections.find((x) => x.section_id === formData.sectionId?.value)?.section_name;
 
-    // Handle student selection (can be array for multiple students)
     let st = "";
     if (formData.targetType?.value === "STUDENT" && Array.isArray(formData.studentId) && formData.studentId.length > 0) {
       if (formData.studentId.length === 1) {
         st = formData.studentId[0].label;
       } else {
-        st = `${formData.studentId.length} students`;
+        st = t("exams.multiStudentSummary", { count: formData.studentId.length });
       }
     }
 
     const parts = [targetTypeLabel, c, s, st].filter(Boolean);
-    return parts.length > 0 ? parts.join(" • ") : "Select Target";
+    return parts.length > 0 ? parts.join(" • ") : t("exams.selectTargetFallback");
   };
 
   const handleSubmit = (status) => {
@@ -356,7 +378,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900">
-              {isEditing ? "Edit Exam" : "Create New Exam"}
+              {isEditing ? t("exams.editExam") : t("exams.createNewExam")}
             </h2>
             <button
               onClick={onClose}
@@ -405,10 +427,10 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                     )}
                   </div>
                   <p className="text-xs mt-2 text-center font-medium">
-                    {step === 1 && "Exam Type"}
-                    {step === 2 && "Target"}
-                    {step === 3 && "Subjects & Dates"}
-                    {step === 4 && "Grading"}
+                    {step === 1 && t("exams.steps.examType")}
+                    {step === 2 && t("exams.steps.target")}
+                    {step === 3 && t("exams.steps.subjectsAndDates")}
+                    {step === 4 && t("exams.steps.grading")}
                   </p>
                 </div>
                 {step < 4 && (
@@ -428,9 +450,9 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
           {currentStep === 1 && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Exam Type</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("exams.selectExamType")}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {EXAM_TYPES.map((type) => (
+                  {EXAM_TYPE_OPTIONS.map((type) => (
                     <button
                       key={type.value}
                       type="button"
@@ -462,7 +484,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
               {formData.examType === "OTHER" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Custom Exam Type <span className="text-red-500">*</span>
+                    {t("exams.customExamType")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -470,7 +492,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                     value={formData.customExamType}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter custom exam type"
+                    placeholder={t("exams.customExamTypePlaceholder")}
                     required
                   />
                 </div>
@@ -482,17 +504,17 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
           {currentStep === 2 && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Target Audience</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("exams.selectTargetAudience")}</h3>
                 <div className="mb-4">
                   <div className="p-4 rounded-lg border border-gray-300 bg-gray-50">
-                    <p className="text-sm text-gray-600 mb-1">Selected Target:</p>
+                    <p className="text-sm text-gray-600 mb-1">{t("exams.selectedTarget")}</p>
                     <p className="text-base font-semibold text-gray-900">{formatTargetLabel()}</p>
                   </div>
                 </div>
                 <TargetSelector
                   targetType={formData.targetType}
                   handleTargetTypeChange={setTargetType}
-                  TARGET_OPTIONS={TARGET_OPTIONS}
+                  TARGET_OPTIONS={targetOpts}
                   schema={targetSchema}
                 />
               </div>
@@ -503,7 +525,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
           {currentStep === 3 && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Subjects & Exam Schedule</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t("exams.subjectsAndSchedule")}</h3>
                 <Button type="button" onClick={addSubject} size="sm" variant="secondary">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -519,7 +541,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                       d="M12 4v16m8-8H4"
                     />
                   </svg>
-                  Add Subject
+                  {t("exams.addSubject")}
                 </Button>
               </div>
 
@@ -527,7 +549,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                 {formData.subjects.map((subject, index) => (
                   <div key={index} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <div className="flex items-start justify-between mb-3">
-                      <h4 className="font-semibold text-gray-900">Subject {index + 1}</h4>
+                      <h4 className="font-semibold text-gray-900">{t("exams.subject", { index: index + 1 })}</h4>
                       {formData.subjects.length > 1 && (
                         <button
                           type="button"
@@ -555,11 +577,11 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Subject <span className="text-red-500">*</span>
+                          {t("exams.subjectLabel")} <span className="text-red-500">*</span>
                         </label>
 
                         <Dropdown
-                          label="Subject"
+                          label={t("exams.subjectLabel")}
                           options={subjects}
                           selected={subject.subjectId}
                           onChange={(option) => handleSubjectChange(index, "subjectId", option)}
@@ -570,7 +592,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Exam Date <span className="text-red-500">*</span>
+                          {t("exams.examDate")} <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="date"
@@ -584,7 +606,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Start Time <span className="text-red-500">*</span>
+                            {t("exams.startTime")} <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="time"
@@ -597,7 +619,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            End Time <span className="text-red-500">*</span>
+                            {t("exams.endTime")} <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="time"
@@ -618,11 +640,11 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
           {/* Step 4: Grading Configuration */}
           {currentStep === 4 && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900">Grading Configuration</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t("exams.gradingConfiguration")}</h3>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Grading Type <span className="text-red-500">*</span>
+                  {t("exams.gradingType")} <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="gradingType"
@@ -631,7 +653,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
                 >
-                  {GRADING_TYPES.map((type) => (
+                  {gradingTypesDisplay.map((type) => (
                     <option key={type.value} value={type.value}>
                       {type.label}
                     </option>
@@ -644,7 +666,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Maximum Marks <span className="text-red-500">*</span>
+                      {t("exams.maximumMarks")} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -652,7 +674,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                       value={formData.maxValue}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="100"
+                      placeholder={t("examForm.maxMarksPlaceholder")}
                       min="0"
                       required
                     />
@@ -660,7 +682,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Passing Marks <span className="text-red-500">*</span>
+                      {t("exams.passingMarks")} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -668,7 +690,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                       value={formData.passingValue}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="40"
+                      placeholder={t("examForm.passMarksPlaceholder")}
                       min="0"
                       max={formData.maxValue}
                       required
@@ -682,7 +704,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Maximum GPA <span className="text-red-500">*</span>
+                      {t("exams.maximumGpa")} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -691,7 +713,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                       value={formData.maxValue}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="4.0"
+                      placeholder={t("examForm.maxGpaPlaceholder")}
                       min="0"
                       max="10"
                       required
@@ -700,7 +722,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Passing GPA <span className="text-red-500">*</span>
+                      {t("exams.passingGpa")} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -709,7 +731,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                       value={formData.passingValue}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="2.0"
+                      placeholder={t("examForm.passGpaPlaceholder")}
                       min="0"
                       max={formData.maxValue}
                       required
@@ -723,7 +745,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Maximum Grade <span className="text-red-500">*</span>
+                      {t("exams.maximumGrade")} <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="maxValue"
@@ -732,7 +754,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     >
-                      <option value="">Select maximum grade</option>
+                      <option value="">{t("exams.selectMaxGrade")}</option>
                       {LETTER_GRADES.map((grade) => (
                         <option key={grade.value} value={grade.value}>
                           {grade.label}
@@ -743,7 +765,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Passing Grade <span className="text-red-500">*</span>
+                      {t("exams.passingGrade")} <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="passingValue"
@@ -752,7 +774,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     >
-                      <option value="">Select passing grade</option>
+                      <option value="">{t("exams.selectPassingGrade")}</option>
                       {LETTER_GRADES.map((grade) => (
                         <option key={grade.value} value={grade.value}>
                           {grade.label}
@@ -766,9 +788,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
               {/* Pass/Fail: No additional fields needed */}
               {formData.gradingType === "PASS_FAIL" && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-700">
-                    <span className="font-semibold">Pass/Fail Grading:</span> Students will receive either "Pass" or "Fail" based on their performance. No additional configuration required.
-                  </p>
+                  <p className="text-sm text-blue-700">{t("exams.passFail")}</p>
                 </div>
               )}
             </div>
@@ -793,7 +813,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                   />
                 </svg>
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-red-800">Error</h4>
+                  <h4 className="text-sm font-semibold text-red-800">{t("exams.error")}</h4>
                   <p className="text-sm text-red-700 mt-1">{submitError}</p>
                 </div>
               </div>
@@ -807,7 +827,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
             <div>
               {currentStep > 1 && (
                 <Button type="button" variant="secondary" onClick={handlePrevious} disabled={isSubmitting}>
-                  Previous
+                  {t("common.previous")}
                 </Button>
               )}
             </div>
@@ -824,7 +844,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                     (currentStep === 3 && !canProceedStep3)
                   }
                 >
-                  Next
+                  {t("common.next")}
                 </Button>
               ) : (
                 <>
@@ -834,14 +854,14 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
                     disabled={!canSubmit || isSubmitting}
                     onClick={() => handleSubmit("DRAFT")}
                   >
-                    {isSubmitting ? "Saving..." : "Save as Draft"}
+                    {isSubmitting ? t("exams.savingDraft") : t("exams.saveAsDraft")}
                   </Button>
                   <Button
                     type="button"
                     disabled={!canSubmit || isSubmitting}
                     onClick={() => handleSubmit("PUBLISHED")}
                   >
-                    {isSubmitting ? "Publishing..." : "Publish Exam"}
+                    {isSubmitting ? t("exams.publishing") : t("exams.publishExam")}
                   </Button>
                 </>
               )}

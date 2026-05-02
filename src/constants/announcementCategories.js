@@ -1,13 +1,14 @@
 /**
  * Categories for school broadcasts / announcements (sent as `category` string on create/update API).
+ * Use `labelKey` with i18n — keys under `announcementCategories.*`.
  */
 export const ANNOUNCEMENT_CATEGORY_OPTIONS = [
-  { label: "General", value: "general" },
-  { label: "Sports", value: "sports" },
-  { label: "Fun", value: "fun" },
-  { label: "Urgent", value: "urgent" },
-  { label: "Academic", value: "academic" },
-  { label: "Events", value: "events" },
+  { labelKey: "announcementCategories.general", value: "general" },
+  { labelKey: "announcementCategories.sports", value: "sports" },
+  { labelKey: "announcementCategories.fun", value: "fun" },
+  { labelKey: "announcementCategories.urgent", value: "urgent" },
+  { labelKey: "announcementCategories.academic", value: "academic" },
+  { labelKey: "announcementCategories.events", value: "events" },
 ];
 
 export const DEFAULT_ANNOUNCEMENT_CATEGORY = ANNOUNCEMENT_CATEGORY_OPTIONS[0];

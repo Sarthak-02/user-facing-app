@@ -1,5 +1,6 @@
 import { Card } from "../../ui-components";
 import { CheckCircle2, XCircle, LayoutGrid, TrendingUp } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function AttendanceSummary({
   total,
@@ -8,6 +9,7 @@ export default function AttendanceSummary({
   statusFilter,
   onStatusFilterChange
 }) {
+  const { t } = useTranslation();
   const presentPercentage = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
 
   const rateColor = parseFloat(presentPercentage) >= 75
@@ -36,7 +38,9 @@ export default function AttendanceSummary({
       >
         <div className="flex items-center gap-1 mb-1">
           <LayoutGrid className="h-3 w-3 text-gray-400 shrink-0" />
-          <span className="text-[10px] font-medium text-gray-500 sm:text-[11px]">Total</span>
+          <span className="text-[10px] font-medium text-gray-500 sm:text-[11px]">
+            {t("studentAttendance.summaryTotal")}
+          </span>
         </div>
         <div className="text-base font-bold tabular-nums text-gray-800 sm:text-xl">{total}</div>
       </Card>
@@ -50,7 +54,9 @@ export default function AttendanceSummary({
       >
         <div className="flex items-center gap-1 mb-1">
           <CheckCircle2 className="h-3 w-3 text-success-500 shrink-0" />
-          <span className="text-[10px] font-medium text-gray-500 sm:text-[11px]">Present</span>
+          <span className="text-[10px] font-medium text-gray-500 sm:text-[11px]">
+            {t("studentAttendance.present")}
+          </span>
         </div>
         <div className="text-base font-bold tabular-nums text-success-600 sm:text-xl">{present}</div>
       </Card>
@@ -64,7 +70,9 @@ export default function AttendanceSummary({
       >
         <div className="flex items-center gap-1 mb-1">
           <XCircle className="h-3 w-3 text-error-500 shrink-0" />
-          <span className="text-[10px] font-medium text-gray-500 sm:text-[11px]">Absent</span>
+          <span className="text-[10px] font-medium text-gray-500 sm:text-[11px]">
+            {t("studentAttendance.absent")}
+          </span>
         </div>
         <div className="text-base font-bold tabular-nums text-error-600 sm:text-xl">{absent}</div>
       </Card>
@@ -73,7 +81,9 @@ export default function AttendanceSummary({
       <Card className="!p-2 sm:!p-3 !shadow-sm rounded-xl border border-border">
         <div className="flex items-center gap-1 mb-1">
           <TrendingUp className="h-3 w-3 text-primary-400 shrink-0" />
-          <span className="text-[10px] font-medium text-gray-500 sm:text-[11px]">Rate</span>
+          <span className="text-[10px] font-medium text-gray-500 sm:text-[11px]">
+            {t("studentAttendance.summaryRate")}
+          </span>
         </div>
         <div className={`text-base font-bold tabular-nums sm:text-xl ${rateColor}`}>
           {presentPercentage}%

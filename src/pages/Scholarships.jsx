@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ExternalLink, GraduationCap, Calendar, Search, SlidersHorizontal, X, ChevronRight, Building2, Award } from "lucide-react";
 import { getScholarships } from "../api/scholarships.api";
 import { Badge, Loader, Dropdown, Modal } from "../ui-components";
@@ -93,14 +94,6 @@ function scholarshipIncludesClassGrade(scholarship, grade) {
   return cls.some((c) => parseGradeFromClassEntry(c) === grade);
 }
 
-const CLASS_FILTER_OPTIONS = [
-  { value: "", label: "All classes" },
-  ...Array.from({ length: 12 }, (_, i) => {
-    const n = i + 1;
-    return { value: String(n), label: `Class ${n}` };
-  }),
-];
-
 function DetailRow({ label, children }) {
   return (
     <div>
@@ -115,6 +108,7 @@ function DetailRow({ label, children }) {
 }
 
 function ScholarshipDetailModal({ scholarship, onClose }) {
+  const { t } = useTranslation();
   if (!scholarship) return null;
   const s = scholarship;
   const closeDate = formatDateShort(s.closeDate);
@@ -138,7 +132,7 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
                 id="scholarship-detail-title"
                 className="text-base font-bold text-gray-900 leading-snug"
               >
-                {s.scholarshipName || "Scholarship"}
+                {s.scholarshipName || t("scholarships.fallbackTitle")}
               </h2>
               {s.sourceName && (
                 <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
@@ -159,7 +153,7 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
             {closeDate && days != null && days > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-orange-700 px-2 py-1 text-xs font-medium">
                 <Calendar className="h-3 w-3" />
-                {days} day{days !== 1 ? "s" : ""} left
+                {t("scholarships.daysLeft", { count: days })}
               </span>
             )}
           </div>
@@ -170,14 +164,14 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
           aria-labelledby="scholarship-detail-title"
         >
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <DetailRow label="Source">{s.sourceName || "—"}</DetailRow>
-            <DetailRow label="Source type">{s.sourceType || "—"}</DetailRow>
-            <DetailRow label="Classes">{formatList(s.classes)}</DetailRow>
-            <DetailRow label="Target group">{formatList(s.targetGroup)}</DetailRow>
-            <DetailRow label="Opens">{formatDateTime(s.openDate)}</DetailRow>
-            <DetailRow label="Closes">{formatDateTime(s.closeDate)}</DetailRow>
+            <DetailRow label={t("scholarships.source")}>{s.sourceName || "—"}</DetailRow>
+            <DetailRow label={t("scholarships.sourceType")}>{s.sourceType || "—"}</DetailRow>
+            <DetailRow label={t("scholarships.classes")}>{formatList(s.classes)}</DetailRow>
+            <DetailRow label={t("scholarships.targetGroup")}>{formatList(s.targetGroup)}</DetailRow>
+            <DetailRow label={t("scholarships.opens")}>{formatDateTime(s.openDate)}</DetailRow>
+            <DetailRow label={t("scholarships.closes")}>{formatDateTime(s.closeDate)}</DetailRow>
             {s.rawTitle && s.rawTitle !== s.scholarshipName && (
-              <DetailRow label="Original title">{s.rawTitle}</DetailRow>
+              <DetailRow label={t("scholarships.originalTitle")}>{s.rawTitle}</DetailRow>
             )}
           </dl>
 
@@ -185,13 +179,13 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
             <div className="space-y-3 pt-2 border-t border-border">
               {s.benefitSummary && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Benefits</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{t("scholarships.benefits")}</p>
                   <p className="text-sm text-gray-800 leading-relaxed">{s.benefitSummary}</p>
                 </div>
               )}
               {s.eligibilitySummary && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Eligibility</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{t("scholarships.eligibility")}</p>
                   <p className="text-sm text-gray-800 leading-relaxed">{s.eligibilitySummary}</p>
                 </div>
               )}
@@ -199,11 +193,11 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
           )}
 
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border">
-            <DetailRow label="Last checked">
+            <DetailRow label={t("scholarships.lastChecked")}>
               {formatDateTime(s.lastCheckedAt)}
             </DetailRow>
-            <DetailRow label="Updated">{formatDateTime(s.updatedAt)}</DetailRow>
-            <DetailRow label="Record ID">
+            <DetailRow label={t("scholarships.updated")}>{formatDateTime(s.updatedAt)}</DetailRow>
+            <DetailRow label={t("scholarships.recordId")}>
               <span className="font-mono text-xs">{s.id}</span>
             </DetailRow>
           </dl>
@@ -221,7 +215,7 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
                     if (w) w.opener = null;
                   }}
                 >
-                  Official details
+                  {t("scholarships.officialDetails")}
                   <ExternalLink className="h-4 w-4" aria-hidden />
                 </Button>
               )}
@@ -236,7 +230,7 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
                     if (w) w.opener = null;
                   }}
                 >
-                  Announcement
+                  {t("scholarships.announcement")}
                   <ExternalLink className="h-4 w-4" aria-hidden />
                 </Button>
               )}
@@ -249,6 +243,7 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
 }
 
 function ScholarshipCard({ s, onOpen }) {
+  const { t } = useTranslation();
   const closeDate = formatDateShort(s.closeDate);
   const days = daysUntil(s.closeDate);
   const status = (s.status || "").toUpperCase();
@@ -260,7 +255,9 @@ function ScholarshipCard({ s, onOpen }) {
     <div
       role="button"
       tabIndex={0}
-      aria-label={`View details: ${s.scholarshipName || "Scholarship"}`}
+      aria-label={t("scholarships.viewDetailsAria", {
+        name: s.scholarshipName || t("scholarships.fallbackTitle"),
+      })}
       className="group bg-white rounded-2xl border border-gray-100 border-l-4 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
       style={{ borderLeftColor: isOpen ? "#4ade80" : status === "CLOSED" || status === "EXPIRED" ? "#fca5a5" : "#93c5fd" }}
       onClick={() => onOpen(s)}
@@ -287,7 +284,7 @@ function ScholarshipCard({ s, onOpen }) {
                   </span>
                 )}
                 <h2 className="text-sm font-bold text-gray-900 mt-0.5 line-clamp-2 leading-snug group-hover:text-indigo-700 transition-colors">
-                  {s.scholarshipName || "Untitled"}
+                  {s.scholarshipName || t("scholarships.untitled")}
                 </h2>
               </div>
               {s.status && (
@@ -323,12 +320,14 @@ function ScholarshipCard({ s, onOpen }) {
                 key={i}
                 className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600"
               >
-                Class {parseGradeFromClassEntry(c) ?? c}
+                {t("scholarships.classChip", {
+                  label: parseGradeFromClassEntry(c) ?? c,
+                })}
               </span>
             ))}
             {extraClasses > 0 && (
               <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
-                +{extraClasses} more
+                {t("scholarships.moreClasses", { count: extraClasses })}
               </span>
             )}
           </div>
@@ -341,12 +340,12 @@ function ScholarshipCard({ s, onOpen }) {
           {closeDate && (
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
               <Calendar className="h-3.5 w-3.5" />
-              <span>Closes {closeDate}</span>
+              <span>{t("scholarships.closesOnShort", { date: closeDate })}</span>
             </div>
           )}
           {days != null && days > 0 && days <= 30 && (
             <span className="inline-flex items-center rounded-full bg-orange-100 text-orange-700 px-2 py-0.5 text-xs font-semibold">
-              {days}d left
+              {t("scholarships.daysLeftShort", { days })}
             </span>
           )}
         </div>
@@ -357,6 +356,7 @@ function ScholarshipCard({ s, onOpen }) {
 }
 
 export default function Scholarships() {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -380,7 +380,7 @@ export default function Scholarships() {
           const msg =
             typeof err === "string"
               ? err
-              : err?.message || err?.error || "Failed to load scholarships";
+              : err?.message || err?.error || t("scholarships.failedToLoadShort");
           setError(msg);
         }
       } finally {
@@ -399,20 +399,31 @@ export default function Scholarships() {
     items.forEach((s) => {
       if (s.category) set.add(s.category);
     });
-    const opts = [{ value: "", label: "All categories" }];
+    const opts = [{ value: "", label: t("scholarships.allCategories") }];
     [...set].sort().forEach((c) => opts.push({ value: c, label: c }));
     return opts;
-  }, [items]);
+  }, [items, t]);
 
   const statusOptions = useMemo(() => {
     const set = new Set();
     items.forEach((s) => {
       if (s.status) set.add(s.status);
     });
-    const opts = [{ value: "", label: "All statuses" }];
+    const opts = [{ value: "", label: t("scholarships.allStatuses") }];
     [...set].sort().forEach((st) => opts.push({ value: st, label: st }));
     return opts;
-  }, [items]);
+  }, [items, t]);
+
+  const classFilterOptions = useMemo(
+    () => [
+      { value: "", label: t("scholarships.allClasses") },
+      ...Array.from({ length: 12 }, (_, i) => {
+        const n = i + 1;
+        return { value: String(n), label: t("studyChat.classNumber", { n: String(n) }) };
+      }),
+    ],
+    [t]
+  );
 
   const filtered = useMemo(() => {
     let list = [...items];
@@ -481,10 +492,10 @@ export default function Scholarships() {
             <GraduationCap className="h-7 w-7 text-red-300" />
           </div>
           <h2 className="text-base font-bold text-gray-900 mb-2">
-            Could not load scholarships
+            {t("scholarships.couldNotLoadTitle")}
           </h2>
           <p className="text-gray-500 text-sm mb-5">{String(error)}</p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
+          <Button onClick={() => window.location.reload()}>{t("scholarships.retry")}</Button>
         </div>
       </div>
     );
@@ -499,14 +510,14 @@ export default function Scholarships() {
             <GraduationCap className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Scholarships</h1>
+            <h1 className="text-xl font-bold text-white">{t("scholarships.title")}</h1>
             <p className="text-indigo-200 text-xs mt-0.5">
-              Government and private scholarship listings
+              {t("scholarships.heroSubtitle")}
             </p>
           </div>
           {openCount > 0 && (
             <div className="ml-auto flex-shrink-0 bg-green-400 text-white text-xs font-bold rounded-full px-3 py-1">
-              {openCount} open
+              {t("scholarships.openCountBadge", { count: openCount })}
             </div>
           )}
         </div>
@@ -519,11 +530,11 @@ export default function Scholarships() {
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
             type="search"
-            placeholder="Search by name, source, or keywords…"
+            placeholder={t("scholarships.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition bg-gray-50"
-            aria-label="Search scholarships"
+            aria-label={t("scholarships.searchAria")}
           />
         </div>
 
@@ -535,19 +546,19 @@ export default function Scholarships() {
               selected={categoryFilter}
               onChange={setCategoryFilter}
               options={categoryOptions}
-              placeholder="Category"
+              placeholder={t("scholarships.categoryPlaceholder")}
             />
             <Dropdown
               selected={statusFilter}
               onChange={setStatusFilter}
               options={statusOptions}
-              placeholder="Status"
+              placeholder={t("scholarships.statusPlaceholder")}
             />
             <Dropdown
               selected={classFilter}
               onChange={setClassFilter}
-              options={CLASS_FILTER_OPTIONS}
-              placeholder="Class"
+              options={classFilterOptions}
+              placeholder={t("scholarships.classPlaceholder")}
             />
           </div>
           {hasFilters && (
@@ -557,7 +568,7 @@ export default function Scholarships() {
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex-shrink-0"
             >
               <X className="h-3.5 w-3.5" />
-              Clear
+              {t("scholarships.clearFilters")}
             </button>
           )}
         </div>
@@ -566,7 +577,7 @@ export default function Scholarships() {
       {/* Results count */}
       <div className="flex items-center gap-2 px-1">
         <p className="text-sm text-gray-500">
-          Showing <span className="font-semibold text-gray-700">{filtered.length}</span> of <span className="font-semibold text-gray-700">{items.length}</span> scholarships
+          {t("scholarships.showingOf", { filtered: filtered.length, total: items.length })}
         </p>
         {hasFilters && (
           <button
@@ -574,7 +585,7 @@ export default function Scholarships() {
             onClick={clearFilters}
             className="text-xs text-indigo-500 hover:text-indigo-700 font-medium underline underline-offset-2"
           >
-            Clear filters
+            {t("scholarships.clearFilters")}
           </button>
         )}
       </div>
@@ -585,11 +596,11 @@ export default function Scholarships() {
           <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <GraduationCap className="h-8 w-8 text-indigo-200" />
           </div>
-          <p className="text-base font-semibold text-gray-700 mb-1">No scholarships found</p>
-          <p className="text-sm text-gray-400 mb-4">Try adjusting your search or filters.</p>
+          <p className="text-base font-semibold text-gray-700 mb-1">{t("scholarships.noScholarshipsFound")}</p>
+          <p className="text-sm text-gray-400 mb-4">{t("scholarships.tryAdjustingFilters")}</p>
           {hasFilters && (
             <Button variant="secondary" onClick={clearFilters}>
-              Clear filters
+              {t("scholarships.clearFilters")}
             </Button>
           )}
         </div>

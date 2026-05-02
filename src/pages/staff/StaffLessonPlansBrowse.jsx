@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button, Modal } from "../../ui-components";
 import { usePermissions } from "../../store/permissions.store";
@@ -66,8 +67,15 @@ function statusColor(status) {
   }
 }
 
-function statusLabel(status) {
-  if (!status) return "Pending";
+function statusLabel(status, t) {
+  if (!status) return t("lessonPlansBrowse.pending");
+  const keys = {
+    COMPLETED: "lessonPlans.topicForm.status_completed",
+    IN_PROGRESS: "lessonPlans.topicForm.status_inProgress",
+    SKIPPED: "lessonPlans.topicForm.status_skipped",
+    PENDING: "lessonPlans.topicForm.status_pending",
+  };
+  if (keys[status]) return t(keys[status]);
   return String(status).replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
 }
 
@@ -82,6 +90,7 @@ function ResourcePill({ icon: Icon, count, color, label }) {
 }
 
 function TopicRow({ topic, classPlanId, sectionId, subjectId, onEdit, onDelete }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const assignments = topic.assignments ?? [];
   const quizzes = topic.quizzes ?? [];
@@ -102,7 +111,7 @@ function TopicRow({ topic, classPlanId, sectionId, subjectId, onEdit, onDelete }
           <p className="font-medium text-gray-900 leading-snug">{topic.title}</p>
           {topic.status && topic.status !== "PENDING" && (
             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(topic.status)}`}>
-              {statusLabel(topic.status)}
+              {statusLabel(topic.status, t)}
             </span>
           )}
         </div>
@@ -113,9 +122,9 @@ function TopicRow({ topic, classPlanId, sectionId, subjectId, onEdit, onDelete }
         )}
         {(assignments.length > 0 || quizzes.length > 0 || materials.length > 0) && (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <ResourcePill icon={ClipboardList} count={assignments.length} label={assignments.length === 1 ? "Assignment" : "Assignments"} color="bg-blue-50 text-blue-700" />
-            <ResourcePill icon={Brain} count={quizzes.length} label={quizzes.length === 1 ? "Quiz" : "Quizzes"} color="bg-purple-50 text-purple-700" />
-            <ResourcePill icon={BookOpen} count={materials.length} label={materials.length === 1 ? "Material" : "Materials"} color="bg-green-50 text-green-700" />
+            <ResourcePill icon={ClipboardList} count={assignments.length} label={assignments.length === 1 ? t("lessonPlansBrowse.assignment") : t("lessonPlansBrowse.assignments")} color="bg-blue-50 text-blue-700" />
+            <ResourcePill icon={Brain} count={quizzes.length} label={quizzes.length === 1 ? t("lessonPlansBrowse.quiz") : t("lessonPlansBrowse.quizzes")} color="bg-purple-50 text-purple-700" />
+            <ResourcePill icon={BookOpen} count={materials.length} label={materials.length === 1 ? t("lessonPlansBrowse.material") : t("lessonPlansBrowse.materials")} color="bg-green-50 text-green-700" />
           </div>
         )}
       </button>
@@ -124,7 +133,7 @@ function TopicRow({ topic, classPlanId, sectionId, subjectId, onEdit, onDelete }
           type="button"
           onClick={(e) => { e.stopPropagation(); onEdit(topic); }}
           className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-          aria-label="Edit topic"
+          aria-label={t("ui.editTopic")}
         >
           <Pencil className="h-3.5 w-3.5" />
         </button>
@@ -132,7 +141,7 @@ function TopicRow({ topic, classPlanId, sectionId, subjectId, onEdit, onDelete }
           type="button"
           onClick={(e) => { e.stopPropagation(); onDelete(topic); }}
           className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
-          aria-label="Delete topic"
+          aria-label={t("ui.deleteTopic")}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -152,6 +161,8 @@ function ChapterSection({
   sectionId,
   subjectId,
 }) {
+  const { t } = useTranslation();
+  const titleDisplay = chapter.title === "General" ? t("lessonPlansBrowse.generalChapter") : chapter.title;
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm">
       <div className="flex items-center gap-2 px-4 py-3">
@@ -167,12 +178,12 @@ function ChapterSection({
           )}
           <div className="min-w-0 flex-1">
             {chapter.number != null && (
-              <p className="text-xs font-medium text-gray-400">Chapter {chapter.number}</p>
+              <p className="text-xs font-medium text-gray-400">{t("lessonPlansBrowse.chapterNumber", { number: chapter.number })}</p>
             )}
-            <p className="font-semibold text-gray-900 leading-snug">{chapter.title}</p>
+            <p className="font-semibold text-gray-900 leading-snug">{titleDisplay}</p>
           </div>
           <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-            {chapter.topics.length} {chapter.topics.length === 1 ? "topic" : "topics"}
+            {t("lessonPlansBrowse.topicCount", { count: chapter.topics.length })}
           </span>
         </button>
       </div>
@@ -180,7 +191,7 @@ function ChapterSection({
       {expanded && (
         <div className="border-t border-border bg-gray-50/60 px-4 py-3 space-y-2">
           {chapter.topics.length === 0 ? (
-            <p className="py-2 text-center text-sm text-gray-400">No topics in this chapter.</p>
+            <p className="py-2 text-center text-sm text-gray-400">{t("lessonPlansBrowse.noTopicsInChapter")}</p>
           ) : (
             chapter.topics.map((topic) => (
               <TopicRow
@@ -200,7 +211,7 @@ function ChapterSection({
             className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 transition-colors hover:border-primary-400 hover:text-primary-600"
           >
             <Plus className="h-4 w-4" />
-            Add topic to this chapter
+            {t("lessonPlansBrowse.addTopicToChapter")}
           </button>
         </div>
       )}
@@ -209,6 +220,7 @@ function ChapterSection({
 }
 
 export default function StaffLessonPlansBrowse() {
+  const { t } = useTranslation();
   const { sectionId, subjectId } = useParams();
   const navigate = useNavigate();
   const { auth } = useAuth();
@@ -248,7 +260,7 @@ export default function StaffLessonPlansBrowse() {
   );
   const subjectMeta = subjectsInSection.find((s) => s.subject_id === subjectId);
   const subjectName = subjectMeta?.subject_name || "";
-  const headerSubtitle = subjectName || subjectId || "Subject";
+  const headerSubtitle = subjectName || subjectId || t("profile.subjectFallback");
   const academicYear = getCurrentAcademicYear();
 
   const context = useMemo(
@@ -298,11 +310,11 @@ export default function StaffLessonPlansBrowse() {
       }
     } catch (err) {
       console.error(err);
-      setLoadError(err?.message || "Failed to load class plan");
+      setLoadError(err?.message || t("lessonPlansBrowse.failedToLoadClassPlan"));
     } finally {
       setLoading(false);
     }
-  }, [permissions.teacher_id, auth.campus_id, subjectName, className, academicYear]);
+  }, [permissions.teacher_id, auth.campus_id, subjectName, className, academicYear, t]);
 
   useEffect(() => { fetchClassPlan(); }, [fetchClassPlan]);
 
@@ -398,9 +410,9 @@ export default function StaffLessonPlansBrowse() {
   if (!sectionId || !subjectId || !section) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-        <p className="text-sm text-gray-600">Invalid lesson plan route.</p>
+        <p className="text-sm text-gray-600">{t("staffPicker.invalidRoute")}</p>
         <Button variant="secondary" className="mt-4 w-fit" onClick={() => navigate("/staff/lesson-plans")}>
-          Back
+          {t("common.back")}
         </Button>
       </div>
     );
@@ -410,7 +422,7 @@ export default function StaffLessonPlansBrowse() {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 md:p-6">
       <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
         <ArrowLeft className="h-4 w-4" />
-        Back
+        {t("common.back")}
       </Button>
 
       {/* Header */}
@@ -425,12 +437,12 @@ export default function StaffLessonPlansBrowse() {
           <div className="flex flex-wrap items-center gap-2">
             {!classPlan.is_published && (
               <Button variant="secondary" loading={publishing} onClick={handlePublish}>
-                Publish
+                {t("common.publish")}
               </Button>
             )}
             <Button className="gap-2" onClick={() => handleAddTopic()}>
               <Plus className="h-4 w-4" />
-              Add Chapter
+              {t("lessonPlansBrowse.addChapter")}
             </Button>
           </div>
         )}
@@ -450,19 +462,19 @@ export default function StaffLessonPlansBrowse() {
             <BookOpen className="h-8 w-8 text-gray-400" />
           </div>
           <div>
-            <p className="font-medium text-gray-700">No class plan yet</p>
+            <p className="font-medium text-gray-700">{t("lessonPlansBrowse.noClassPlanYet")}</p>
             <p className="mt-1 text-sm text-gray-500">
-              Start from a master syllabus or create a blank plan.
+              {t("lessonPlansBrowse.noClassPlanSubtitle")}
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
             <Button variant="secondary" className="gap-2" onClick={() => setMasterPlanOpen(true)}>
               <Download className="h-4 w-4" />
-              Pull from Master Plan
+              {t("lessonPlansBrowse.pullFromMasterPlan")}
             </Button>
             <Button className="gap-2" loading={creatingPlan} onClick={handleCreateBlankPlan}>
               <Plus className="h-4 w-4" />
-              Create blank plan
+              {t("lessonPlansBrowse.createBlankPlan")}
             </Button>
           </div>
         </div>
@@ -473,13 +485,13 @@ export default function StaffLessonPlansBrowse() {
             <BookOpen className="h-8 w-8 text-gray-400" />
           </div>
           <div>
-            <p className="font-medium text-gray-700">No topics added yet</p>
-            <p className="mt-1 text-sm text-gray-500">Add your first topic to get started.</p>
+            <p className="font-medium text-gray-700">{t("lessonPlansBrowse.noTopicsAddedYet")}</p>
+            <p className="mt-1 text-sm text-gray-500">{t("lessonPlansBrowse.noTopicsAddedSubtitle")}</p>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
             <Button className="gap-2" onClick={() => handleAddTopic()}>
               <Plus className="h-4 w-4" />
-              Add Chapter
+              {t("lessonPlansBrowse.addChapter")}
             </Button>
           </div>
         </div>
@@ -535,13 +547,13 @@ export default function StaffLessonPlansBrowse() {
 
       {/* Delete topic confirmation */}
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} className="max-w-md">
-        <h3 className="text-lg font-semibold text-gray-900">Delete topic?</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t("lessonPlansBrowse.deleteTopicTitle")}</h3>
         <p className="mt-2 text-sm text-gray-600">
-          This will remove the topic and all its attached resources. This cannot be undone.
+          {t("lessonPlansBrowse.deleteTopicMessage")}
         </p>
         <div className="mt-6 flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-          <Button variant="danger" loading={deleting} onClick={handleDeleteTopic}>Delete</Button>
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>{t("common.cancel")}</Button>
+          <Button variant="danger" loading={deleting} onClick={handleDeleteTopic}>{t("common.delete")}</Button>
         </div>
       </Modal>
     </div>

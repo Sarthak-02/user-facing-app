@@ -24,16 +24,12 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [activeNav, setActiveNav] = useState("");
   
-  // Get user role
   const userRole = auth?.role?.toLowerCase();
-  console.log("userRole", auth);
-  // Define navigation items based on role
+
   const navItems = useMemo(() => {
-    const baseNavItems = [
-      { label: "Home", icon: Home, path: "/home" },
-    ];
+    const baseNavItems = [{ labelKey: "nav.home", icon: Home, path: "/home" }];
     const scholarshipsNav = {
-      label: "Scholarships",
+      labelKey: "nav.scholarships",
       icon: GraduationCap,
       path: "/scholarships",
     };
@@ -42,32 +38,32 @@ export default function Layout() {
       return [
         ...baseNavItems,
         scholarshipsNav,
-        { label: "Attendance", icon: ClipboardCheck, path: "/student/attendance" },
-        { label: "Homework", icon: BookOpen, path: "/student/homework" },
-        { label: "Lesson plans", icon: NotebookPen, path: "/student/lesson-plans" },
-        { label: "Announcements", icon: Megaphone, path: "/student/announcements" },
-        { label: "Exams", icon: FileText, path: "/student/exams" },
-        { label: "Messages", icon: MessageCircle, path: "/student/chat" },
-        { label: "Pickup", icon: Shield, path: "/student/pickup" },
-        { label: "Reporting", icon: BarChart3, path: "/student/reporting" },
-        { label: "Study", icon: Sparkles, path: "/student/study" },
+        { labelKey: "nav.attendance", icon: ClipboardCheck, path: "/student/attendance" },
+        { labelKey: "nav.homework", icon: BookOpen, path: "/student/homework" },
+        { labelKey: "nav.lessonPlans", icon: NotebookPen, path: "/student/lesson-plans" },
+        { labelKey: "nav.announcements", icon: Megaphone, path: "/student/announcements" },
+        { labelKey: "nav.exams", icon: FileText, path: "/student/exams" },
+        { labelKey: "nav.messages", icon: MessageCircle, path: "/student/chat" },
+        { labelKey: "nav.pickup", icon: Shield, path: "/student/pickup" },
+        { labelKey: "nav.reporting", icon: BarChart3, path: "/student/reporting" },
+        { labelKey: "nav.study", icon: Sparkles, path: "/student/study" },
       ];
-    } else if (userRole === "teacher" || userRole === "staff") {
+    }
+    if (userRole === "teacher" || userRole === "staff") {
       return [
         ...baseNavItems,
         scholarshipsNav,
-        { label: "Attendance", icon: ClipboardCheck, path: "/staff/attendance" },
-        { label: "Homework", icon: BookOpen, path: "/staff/homework" },
-        { label: "Lesson plans", icon: NotebookPen, path: "/staff/lesson-plans" },
-        { label: "Exams", icon: FileText, path: "/staff/exams" },
-        { label: "Messages", icon: MessageCircle, path: "/staff/chat" },
-        { label: "Pickup", icon: Shield, path: "/staff/pickup" },
-        { label: "Reporting", icon: BarChart3, path: "/staff/reporting" },
-        { label: "Broadcast", icon: Bell, path: "/broadcast" },
+        { labelKey: "nav.attendance", icon: ClipboardCheck, path: "/staff/attendance" },
+        { labelKey: "nav.homework", icon: BookOpen, path: "/staff/homework" },
+        { labelKey: "nav.lessonPlans", icon: NotebookPen, path: "/staff/lesson-plans" },
+        { labelKey: "nav.exams", icon: FileText, path: "/staff/exams" },
+        { labelKey: "nav.messages", icon: MessageCircle, path: "/staff/chat" },
+        { labelKey: "nav.pickup", icon: Shield, path: "/staff/pickup" },
+        { labelKey: "nav.reporting", icon: BarChart3, path: "/staff/reporting" },
+        { labelKey: "nav.broadcast", icon: Bell, path: "/broadcast" },
       ];
     }
 
-    // Default navigation items
     return [...baseNavItems, scholarshipsNav];
   }, [userRole]);
 
@@ -87,7 +83,7 @@ export default function Layout() {
         {/* Header */}
         <div
           className={`${
-            ["Home",""].includes(activeNav) ? "" : "hidden md:block"
+            ["nav.home", ""].includes(activeNav) ? "" : "hidden md:block"
           }`}
         >
           <Header />

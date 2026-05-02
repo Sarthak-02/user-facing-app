@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { Badge, Button, Card } from "../../ui-components";
 import { usePermissions } from "../../store/permissions.store";
@@ -28,8 +29,15 @@ function statusVariant(status) {
   }
 }
 
-function statusLabel(status) {
+function lessonPlanStatusDisplay(status, t) {
   if (!status) return "";
+  const keys = {
+    PLANNED: "lessonPlans.lessonPlanForm.status_planned",
+    PARTIALLY_COMPLETED: "lessonPlans.lessonPlanForm.status_partiallyCompleted",
+    COMPLETED: "lessonPlans.lessonPlanForm.status_completed",
+    SKIPPED: "lessonPlans.lessonPlanForm.status_skipped",
+  };
+  if (keys[status]) return t(keys[status]);
   return String(status).replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
 }
 
@@ -52,6 +60,7 @@ function classSectionLabel(p) {
 }
 
 export default function StaffLessonPlanDetail() {
+  const { t } = useTranslation();
   const { sectionId, subjectId, planId } = useParams();
   const navigate = useNavigate();
   const { auth } = useAuth();
@@ -85,12 +94,12 @@ export default function StaffLessonPlanDetail() {
       setPlan(data);
     } catch (err) {
       console.error(err);
-      setError(err?.message || err?.error || "Failed to load lesson plan");
+      setError(err?.message || err?.error || t("staffLessonPlanDetail.loadFailed"));
       setPlan(null);
     } finally {
       setLoading(false);
     }
-  }, [planId]);
+  }, [planId, t]);
 
   useEffect(() => {
     load();
@@ -113,9 +122,9 @@ export default function StaffLessonPlanDetail() {
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
         <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t("common.back")}
         </Button>
-        <p className="text-sm text-error-600">{error || "Lesson plan not found."}</p>
+        <p className="text-sm text-error-600">{error || t("staffLessonPlanDetail.notFound")}</p>
       </div>
     );
   }
@@ -130,13 +139,13 @@ export default function StaffLessonPlanDetail() {
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6 ">
       <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
         <ArrowLeft className="h-4 w-4" />
-        Back
+        {t("common.back")}
       </Button>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">
-            {plan.chapter_topic ?? plan.chapterTopic ?? "Lesson plan"}
+            {plan.chapter_topic ?? plan.chapterTopic ?? t("staffLessonPlanDetail.lessonPlanFallback")}
           </h1>
           <p className="mt-1 text-sm text-gray-600">
             {formatDate(plan.lesson_date ?? plan.lessonDate)}
@@ -145,64 +154,66 @@ export default function StaffLessonPlanDetail() {
             <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
               {plan.subject_name ? <span>{plan.subject_name}</span> : null}
               {classSection ? <span>{classSection}</span> : null}
-              {teacherName ? <span>Teacher: {teacherName}</span> : null}
+              {teacherName ? <span>{t("staffLessonPlanDetail.teacherPrefix", { name: teacherName })}</span> : null}
             </p>
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant={statusVariant(plan.status)}>{statusLabel(plan.status)}</Badge>
-          <Button onClick={() => setFormOpen(true)}>Edit</Button>
+          <Badge variant={statusVariant(plan.status)}>
+            {lessonPlanStatusDisplay(plan.status, t)}
+          </Badge>
+          <Button onClick={() => setFormOpen(true)}>{t("common.edit")}</Button>
         </div>
       </div>
 
       {plan.description ? (
-        <Card className="mt-6" title="Description">
+        <Card className="mt-6" title={t("staffLessonPlanDetail.description")}>
           <p className="whitespace-pre-wrap text-sm text-gray-800">{plan.description}</p>
         </Card>
       ) : null}
 
-      <Card className={plan.description ? "mt-4" : "mt-6"} title="Learning objectives">
+      <Card className={plan.description ? "mt-4" : "mt-6"} title={t("staffLessonPlanDetail.learningObjectives")}>
         <ol className="list-decimal space-y-2 pl-5 text-sm text-gray-800">
           {objectives.length ? (
             objectives.map((o, i) => <li key={i}>{o}</li>)
           ) : (
-            <li className="list-none pl-0 text-gray-500">None listed</li>
+            <li className="list-none pl-0 text-gray-500">{t("staffLessonPlanDetail.noneListed")}</li>
           )}
         </ol>
       </Card>
 
-      <Card className="mt-4" title="Activities">
+      <Card className="mt-4" title={t("staffLessonPlanDetail.activities")}>
         <ul className="space-y-3 text-sm text-gray-800">
           {activities.length ? (
             activities.map((a, i) => (
               <li key={i} className="rounded-lg border border-border bg-surface/40 p-3">
-                <p className="font-medium capitalize">{a.type || "Activity"}</p>
+                <p className="font-medium capitalize">{a.type || t("staffLessonPlanDetail.activityFallback")}</p>
                 {(a.duration_minutes != null || a.durationMinutes != null) && (
                   <p className="mt-1 text-xs text-gray-600">
-                    {a.duration_minutes ?? a.durationMinutes} minutes
+                    {t("staffLessonPlanDetail.minutes", { count: a.duration_minutes ?? a.durationMinutes })}
                   </p>
                 )}
                 {a.description && <p className="mt-2 text-gray-700">{a.description}</p>}
               </li>
             ))
           ) : (
-            <li className="text-gray-500">None listed</li>
+            <li className="text-gray-500">{t("staffLessonPlanDetail.noneListed")}</li>
           )}
         </ul>
       </Card>
 
       {plan.homework ? (
-        <Card className="mt-4" title="Homework">
+        <Card className="mt-4" title={t("staffLessonPlanDetail.homework")}>
           <p className="whitespace-pre-wrap text-sm text-gray-800">{plan.homework}</p>
         </Card>
       ) : null}
 
       {attachments.length > 0 ? (
-        <Card className="mt-4" title="Attachments">
+        <Card className="mt-4" title={t("staffLessonPlanDetail.attachments")}>
           <ul className="space-y-2 text-sm">
             {attachments.map((a, i) => {
               const url = a.fileUrl || a.file_url;
-              const name = a.fileName || a.file_name || `Attachment ${i + 1}`;
+              const name = a.fileName || a.file_name || t("staffLessonPlanDetail.attachmentFallback", { index: i + 1 });
               return (
                 <li key={a.attachment_id || a.id || i}>
                   {url ? (

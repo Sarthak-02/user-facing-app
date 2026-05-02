@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../ui-components";
 import Dropdown from "../../ui-components/Dropdown";
 import {
@@ -10,26 +11,25 @@ import { usePermissions } from "../../store/permissions.store";
 import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
 
-const TARGET_OPTIONS = [
-  { value: "CAMPUS", label: "Entire Campus" },
-  { value: "CLASS", label: "Class" },
-  { value: "SECTION", label: "Section" },
-  { value: "STUDENT", label: "Student" },
-];
+function pickTarget(value, targetOpts) {
+  return targetOpts.find((o) => o.value === value) ?? targetOpts[0];
+}
 
-const EMPTY_BROADCAST_FORM = {
-  title: "",
-  message: "",
-  category: DEFAULT_ANNOUNCEMENT_CATEGORY,
-  targetType: { value: "CAMPUS", label: "Entire Campus" },
-  sectionId: null,
-  studentId: [],
-  classId: null,
-  attachments: [],
-  status: "NOTIFYING",
-};
+function getEmptyBroadcastForm(targetOpts) {
+  return {
+    title: "",
+    message: "",
+    category: DEFAULT_ANNOUNCEMENT_CATEGORY,
+    targetType: pickTarget("CAMPUS", targetOpts),
+    sectionId: null,
+    studentId: [],
+    classId: null,
+    attachments: [],
+    status: "NOTIFYING",
+  };
+}
 
-function buildFormFromBroadcast(broadcast, permissions) {
+function buildFormFromBroadcast(broadcast, permissions, targetOpts) {
   const targets = broadcast.broadcastTargets || broadcast.targets || [];
   const base = {
     title: broadcast.title || "",
@@ -37,7 +37,7 @@ function buildFormFromBroadcast(broadcast, permissions) {
     category: announcementCategoryOptionFromValue(
       broadcast.category ?? broadcast.announcementCategory
     ),
-    targetType: TARGET_OPTIONS[0],
+    targetType: pickTarget("CAMPUS", targetOpts),
     sectionId: null,
     studentId: [],
     classId: null,
@@ -53,14 +53,14 @@ function buildFormFromBroadcast(broadcast, permissions) {
   const first = targets[0];
   const tt = first.targetType || first.target_type;
 
-  if (tt === "CAMPUS") return { ...base, targetType: TARGET_OPTIONS[0] };
+  if (tt === "CAMPUS") return { ...base, targetType: pickTarget("CAMPUS", targetOpts) };
 
   if (tt === "CLASS") {
     const firstId = first.targetId || first.target_id;
     const classOption = permissions.classes.find((c) => c.class_id === firstId);
     return {
       ...base,
-      targetType: TARGET_OPTIONS[1],
+      targetType: pickTarget("CLASS", targetOpts),
       classId: classOption
         ? { value: classOption.class_id, label: classOption.class_name }
         : { value: firstId, label: String(firstId) },
@@ -74,7 +74,7 @@ function buildFormFromBroadcast(broadcast, permissions) {
       : null;
     return {
       ...base,
-      targetType: TARGET_OPTIONS[2],
+      targetType: pickTarget("SECTION", targetOpts),
       classId: classOption
         ? { value: classOption.class_id, label: classOption.class_name }
         : null,
@@ -84,8 +84,8 @@ function buildFormFromBroadcast(broadcast, permissions) {
     };
   }
   if (tt === "STUDENT") {
-    const studentOptions = targets.map((t) => {
-      const id = t.targetId || t.target_id;
+    const studentOptions = targets.map((tg) => {
+      const id = tg.targetId || tg.target_id;
       const st = permissions.students.find((s) => s.student_id === id);
       return st
         ? { value: st.student_id, label: st.student_name, section_id: st.section_id }
@@ -102,7 +102,7 @@ function buildFormFromBroadcast(broadcast, permissions) {
       : null;
     return {
       ...base,
-      targetType: TARGET_OPTIONS[3],
+      targetType: pickTarget("STUDENT", targetOpts),
       classId: classFromSection
         ? { value: classFromSection.class_id, label: classFromSection.class_name }
         : null,
@@ -125,20 +125,38 @@ const CATEGORY_ICONS = {
 };
 
 export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmitting, submitError, existingBroadcast = null }) {
+  const { t } = useTranslation();
   const { permissions } = usePermissions();
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const [formData, setFormData] = useState(() =>
-    existingBroadcast
-      ? buildFormFromBroadcast(existingBroadcast, permissions)
-      : { ...EMPTY_BROADCAST_FORM }
+  const targetOpts = useMemo(
+    () => [
+      { value: "CAMPUS", label: t("broadcast.targetOptions.entireCampus") },
+      { value: "CLASS", label: t("broadcast.targetOptions.class") },
+      { value: "SECTION", label: t("broadcast.targetOptions.section") },
+      { value: "STUDENT", label: t("broadcast.targetOptions.student") },
+    ],
+    [t]
   );
 
-  const isViewingExisting = Boolean(existingBroadcast);
+  const [formData, setFormData] = useState(null);
   const [attachmentError, setAttachmentError] = useState("");
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setAttachmentError("");
+    setFormData(
+      existingBroadcast
+        ? buildFormFromBroadcast(existingBroadcast, permissions, targetOpts)
+        : getEmptyBroadcastForm(targetOpts)
+    );
+  }, [isOpen, existingBroadcast, permissions, targetOpts]);
+
+  const isViewingExisting = Boolean(existingBroadcast);
+
   const targetSchema = useMemo(() => {
+    if (!formData) return [];
     const data = {
       class: {
         selected: formData.classId,
@@ -179,7 +197,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
       return updateSchema(STUDENT_TARGET_SCHEMA, data);
     }
     return [];
-  }, [formData.targetType, formData.sectionId, formData.classId, formData.studentId, permissions.classes, permissions.sections, permissions.students]);
+  }, [formData, permissions.classes, permissions.sections, permissions.students]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -190,14 +208,15 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
     setFormData((prev) => ({ ...prev, targetType: type, sectionId: null, studentId: [], classId: null }));
 
   const processFiles = (files) => {
+    if (!formData) return;
     setAttachmentError("");
     if (formData.attachments.length + files.length > 3) {
-      setAttachmentError("Maximum 3 attachments allowed");
+      setAttachmentError(t("broadcast.errorMaxAttachments"));
       return;
     }
     const oversized = files.filter((f) => f.size > 10 * 1024 * 1024);
     if (oversized.length > 0) {
-      setAttachmentError("Each file must be less than 10MB");
+      setAttachmentError(t("broadcast.errorFileSize"));
       return;
     }
     setFormData((prev) => ({ ...prev, attachments: [...prev.attachments, ...files] }));
@@ -230,19 +249,21 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
     onSubmit({ ...formData, status: "NOTIFYING" });
   };
 
-  const canSubmit =
-    formData.title.trim() &&
-    formData.message.trim() &&
-    (formData.targetType?.value === "CAMPUS" ||
-      (formData.targetType?.value === "CLASS" && formData.classId?.value) ||
-      (formData.targetType?.value === "SECTION" && formData.classId?.value && formData.sectionId?.value) ||
-      (formData.targetType?.value === "STUDENT" &&
-        formData.classId?.value &&
-        formData.sectionId?.value &&
-        Array.isArray(formData.studentId) &&
-        formData.studentId.length > 0));
+  const canSubmit = Boolean(
+    formData &&
+      formData.title.trim() &&
+      formData.message.trim() &&
+      (formData.targetType?.value === "CAMPUS" ||
+        (formData.targetType?.value === "CLASS" && formData.classId?.value) ||
+        (formData.targetType?.value === "SECTION" && formData.classId?.value && formData.sectionId?.value) ||
+        (formData.targetType?.value === "STUDENT" &&
+          formData.classId?.value &&
+          formData.sectionId?.value &&
+          Array.isArray(formData.studentId) &&
+          formData.studentId.length > 0))
+  );
 
-  if (!isOpen) return null;
+  if (!isOpen || formData == null) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-16">
@@ -254,10 +275,10 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
-              {isViewingExisting ? "Broadcast Details" : "New Broadcast"}
+              {isViewingExisting ? t("broadcast.broadcastDetails") : t("broadcast.newBroadcast")}
             </h2>
             {!isViewingExisting && (
-              <p className="text-xs text-gray-500 mt-0.5">Send an announcement to your audience</p>
+              <p className="text-xs text-gray-500 mt-0.5">{t("broadcast.newBroadcastSubtitle")}</p>
             )}
           </div>
           <button
@@ -275,10 +296,10 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
 
           {/* Category */}
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Category</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">{t("broadcast.category")}</p>
             {isViewingExisting ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
-                {CATEGORY_ICONS[formData.category?.value]} {formData.category?.label ?? "—"}
+                {CATEGORY_ICONS[formData.category?.value]} {formData.category?.labelKey ? t(formData.category.labelKey) : "—"}
               </span>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -293,7 +314,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
-                    {CATEGORY_ICONS[opt.value]} {opt.label}
+                    {CATEGORY_ICONS[opt.value]} {t(opt.labelKey)}
                   </button>
                 ))}
               </div>
@@ -303,7 +324,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
           {/* Send To */}
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">
-              Send To <span className="text-red-500">*</span>
+              {t("broadcast.sendTo")} <span className="text-red-500">*</span>
             </p>
             {isViewingExisting ? (
               <div className="px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900">
@@ -311,13 +332,13 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
                 {formData.classId && ` • ${formData.classId.label}`}
                 {formData.sectionId && ` • ${formData.sectionId.label}`}
                 {Array.isArray(formData.studentId) && formData.studentId.length > 0 &&
-                  ` • ${formData.studentId.length === 1 ? formData.studentId[0].label : `${formData.studentId.length} students`}`}
+                  ` • ${formData.studentId.length === 1 ? formData.studentId[0].label : t("broadcast.studentsSelectedCount", { count: formData.studentId.length })}`}
               </div>
             ) : (
               <div className="space-y-3">
                 {/* Target type pills */}
                 <div className="flex flex-wrap gap-2">
-                  {TARGET_OPTIONS.map((opt) => (
+                  {targetOpts.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
@@ -348,10 +369,10 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
           <div>
             <div className="flex items-center justify-between mb-2">
               <label htmlFor="title" className="text-sm font-medium text-gray-700">
-                Title <span className="text-red-500">*</span>
+                {t("broadcast.title")} <span className="text-red-500">*</span>
               </label>
               {!isViewingExisting && (
-                <span className="text-xs text-gray-400">{formData.title.length}/100</span>
+                <span className="text-xs text-gray-400">{t("broadcast.titleCounter", { current: formData.title.length })}</span>
               )}
             </div>
             <input
@@ -363,7 +384,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
               onChange={handleChange}
               readOnly={isViewingExisting}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 read-only:bg-gray-50 read-only:cursor-default transition-colors"
-              placeholder="Give your broadcast a clear title"
+              placeholder={t("broadcast.titlePlaceholder")}
               required
             />
           </div>
@@ -372,10 +393,10 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
           <div>
             <div className="flex items-center justify-between mb-2">
               <label htmlFor="message" className="text-sm font-medium text-gray-700">
-                Message <span className="text-red-500">*</span>
+                {t("broadcast.message")} <span className="text-red-500">*</span>
               </label>
               {!isViewingExisting && (
-                <span className="text-xs text-gray-400">{formData.message.length} chars</span>
+                <span className="text-xs text-gray-400">{t("broadcast.chars", { count: formData.message.length })}</span>
               )}
             </div>
             <textarea
@@ -386,7 +407,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
               readOnly={isViewingExisting}
               rows={5}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none read-only:bg-gray-50 read-only:cursor-default transition-colors"
-              placeholder="Write your message here..."
+              placeholder={t("broadcast.messagePlaceholder")}
               required
             />
           </div>
@@ -396,12 +417,12 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
             formData.attachments.length > 0 && (
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-2">
-                  Attachments ({formData.attachments.length})
+                  {t("broadcast.attachmentsWithCount", { count: formData.attachments.length })}
                 </p>
                 <div className="space-y-2">
                   {formData.attachments.map((att, index) => {
                     const href = att?.fileUrl || att?.url || att?.href || att?.link;
-                    const label = att?.fileName || att?.name || att?.title || `Attachment ${index + 1}`;
+                    const label = att?.fileName || att?.name || att?.title || t("broadcast.attachmentFallback", { index: index + 1 });
                     const row = (
                       <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg">
                         <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
@@ -426,7 +447,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
           ) : (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-gray-700">Attachments</p>
+                <p className="text-sm font-medium text-gray-700">{t("broadcast.attachments")}</p>
                 <span className="text-xs text-gray-400">{formData.attachments.length}/3</span>
               </div>
 
@@ -446,9 +467,9 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                   </svg>
                   <p className="text-sm text-gray-500">
-                    <span className="font-medium text-blue-500">Click to upload</span> or drag & drop
+                    <span className="font-medium text-blue-500">{t("broadcast.clickToUpload")}</span> {t("broadcast.orDragDrop")}
                   </p>
-                  <p className="text-xs text-gray-400">Max 3 files · 10MB each</p>
+                  <p className="text-xs text-gray-400">{t("broadcast.maxFiles")}</p>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -506,7 +527,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
-            {isViewingExisting ? "Close" : "Cancel"}
+            {isViewingExisting ? t("common.close") : t("common.cancel")}
           </Button>
           {!isViewingExisting && (
             <Button
@@ -514,7 +535,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
               disabled={!canSubmit || isSubmitting}
               onClick={handleSubmit}
             >
-              {isSubmitting ? "Sending..." : "Send Broadcast"}
+              {isSubmitting ? t("broadcast.sending") : t("broadcast.send")}
             </Button>
           )}
         </div>

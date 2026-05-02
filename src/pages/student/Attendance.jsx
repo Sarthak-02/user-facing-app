@@ -50,15 +50,15 @@ export default function StudentAttendance() {
     // Convert to array and sort
     const periods = Array.from(uniquePeriods).sort();
 
-    // Create options array with "All Periods" first
     const options = [{ label: t("studentAttendance.allPeriods"), value: "ALL" }];
 
     periods.forEach((period) => {
-      // Format the label (e.g., "PERIOD_1" -> "Period 1", "OVERALL" -> "Overall")
       let label = period;
-      if (period.startsWith("PERIOD_")) {
+      if (period === "OVERALL") {
+        label = t("studentAttendance.periodOverall");
+      } else if (period.startsWith("PERIOD_")) {
         const num = period.split("_")[1];
-        label = t("studentAttendance.period", { num });
+        label = t("studentAttendance.periodNumber", { number: num });
       } else {
         label = period.charAt(0) + period.slice(1).toLowerCase();
       }
@@ -67,7 +67,7 @@ export default function StudentAttendance() {
     });
 
     return options;
-  }, [records]);
+  }, [records, t]);
 
   // Fetch attendance data once on mount
   useEffect(() => {
@@ -117,14 +117,14 @@ export default function StudentAttendance() {
         }
       } catch (err) {
         console.error("Failed to fetch attendance:", err);
-        setError(err.message || "Failed to load attendance data");
+        setError(err.message || t("studentAttendance.loadFailed"));
       } finally {
         setLoading(false);
       }
     };
 
     fetchAttendance();
-  }, [auth.userId, auth.sections, auth.campus, setAttendanceData, setLoading, setError]);
+  }, [auth.userId, auth.sections, auth.campus, setAttendanceData, setLoading, setError, t]);
   
   // Date + period only — summary counts stay stable when toggling present/absent filter
   const recordsForSummary = useMemo(() => {

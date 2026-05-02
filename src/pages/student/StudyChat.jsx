@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, Button, Select } from "../../ui-components";
 import { useAuth } from "../../store/auth.store";
 import { ragAsk } from "../../api/rag.api";
@@ -6,25 +7,22 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Sparkles, SendHorizontal, BookMarked, ChevronLeft } from "lucide-react";
 
-const SUBJECT_OPTIONS = [
-  { value: "", label: "Select subject" },
-  { value: "Physics", label: "Physics" },
-  { value: "Chemistry", label: "Chemistry" },
-  { value: "Mathematics", label: "Mathematics" },
-  { value: "Biology", label: "Biology" },
-  { value: "English", label: "English" },
-  { value: "Hindi", label: "Hindi" },
-  { value: "History", label: "History" },
-  { value: "Geography", label: "Geography" },
-  { value: "Political Science", label: "Political Science" },
-  { value: "Economics", label: "Economics" },
-  { value: "Computer Science", label: "Computer Science" },
+/** API `subject` values (English) for RAG; labels come from i18n. */
+const STUDY_SUBJECTS = [
+  { apiValue: "Physics", labelKey: "studyChat.subjectOptions.physics" },
+  { apiValue: "Chemistry", labelKey: "studyChat.subjectOptions.chemistry" },
+  { apiValue: "Mathematics", labelKey: "studyChat.subjectOptions.mathematics" },
+  { apiValue: "Biology", labelKey: "studyChat.subjectOptions.biology" },
+  { apiValue: "English", labelKey: "studyChat.subjectOptions.english" },
+  { apiValue: "Hindi", labelKey: "studyChat.subjectOptions.hindi" },
+  { apiValue: "History", labelKey: "studyChat.subjectOptions.history" },
+  { apiValue: "Geography", labelKey: "studyChat.subjectOptions.geography" },
+  { apiValue: "Political Science", labelKey: "studyChat.subjectOptions.politicalScience" },
+  { apiValue: "Economics", labelKey: "studyChat.subjectOptions.economics" },
+  { apiValue: "Computer Science", labelKey: "studyChat.subjectOptions.computerScience" },
 ];
 
-const CLASS_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"].map((c) => ({
-  value: c,
-  label: `Class ${c}`,
-}));
+const CLASS_NUMBERS = ["6", "7", "8", "9", "10", "11", "12"];
 
 function inferClassFromAuth(auth) {
   const label =
@@ -101,6 +99,7 @@ function AnswerMarkdown({ markdown }) {
 }
 
 function SourceBlock({ item, index }) {
+  const { t } = useTranslation();
   const pct = formatMatchPct(item.similarity);
   const isQuestion = String(item.id || "").startsWith("question_");
   const locationParts = [
@@ -118,12 +117,12 @@ function SourceBlock({ item, index }) {
           {index + 1}
         </span>
         {pct != null && (
-          <span title="How closely this passage matches your question">
-            {pct}% match
+          <span title={t("studyChat.matchScoreTitle")}>
+            {t("studyChat.matchPercent", { pct })}
           </span>
         )}
         {item.page != null && item.page !== "" && (
-          <span>Page {item.page}</span>
+          <span>{t("studyChat.pageLabel", { page: item.page })}</span>
         )}
       </div>
       {locationParts.length > 0 && (
@@ -133,7 +132,7 @@ function SourceBlock({ item, index }) {
       )}
       {isQuestion && (
         <p className="mt-1 text-xs font-medium uppercase tracking-wide text-primary-600 dark:text-primary-400">
-          From textbook exercises
+          {t("studyChat.fromTextbookExercises")}
         </p>
       )}
       <p className="mt-2 text-sm leading-relaxed text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
@@ -144,6 +143,7 @@ function SourceBlock({ item, index }) {
 }
 
 export default function StudyChat() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const [subject, setSubject] = useState("");
   const [classGrade, setClassGrade] = useState("");
@@ -152,6 +152,17 @@ export default function StudyChat() {
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
+
+  const subjectOptions = useMemo(
+    () => [
+      { value: "", label: t("studyChat.selectSubject") },
+      ...STUDY_SUBJECTS.map((s) => ({
+        value: s.apiValue,
+        label: t(s.labelKey),
+      })),
+    ],
+    [t]
+  );
 
   const inferredClass = useMemo(() => inferClassFromAuth(auth), [auth]);
   const needsClassPick = !inferredClass;
@@ -167,8 +178,14 @@ export default function StudyChat() {
   const effectiveClass = inferredClass || classGrade;
   const canStart = Boolean(subject && effectiveClass);
   const classSelectOptions = useMemo(
-    () => [{ value: "", label: "Select class" }, ...CLASS_OPTIONS],
-    []
+    () => [
+      { value: "", label: t("studyChat.selectClass") },
+      ...CLASS_NUMBERS.map((c) => ({
+        value: c,
+        label: t("studyChat.classNumber", { n: c }),
+      })),
+    ],
+    [t]
   );
 
   const handleStart = useCallback(() => {
@@ -204,7 +221,7 @@ export default function StudyChat() {
         ...prev,
         {
           role: "assistant",
-          error: e?.message || "Something went wrong. Try again.",
+          error: e?.message || t("studyChat.errorGeneric"),
         },
       ]);
     } finally {
@@ -229,22 +246,21 @@ export default function StudyChat() {
           </div>
           <div className="text-center space-y-2">
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-              Study assistant
+              {t("studyChat.title")}
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              First pick your subject. Then chat in plain language — we search your
-              textbook and show the most relevant passages and questions.
+              {t("studyChat.subtitle")}
             </p>
           </div>
           <Select
-            label="Subject"
+            label={t("studyChat.subject")}
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            options={SUBJECT_OPTIONS}
+            options={subjectOptions}
           />
           {needsClassPick && (
             <Select
-              label="Class"
+              label={t("studyChat.class")}
               value={classGrade}
               onChange={(e) => setClassGrade(e.target.value)}
               options={classSelectOptions}
@@ -252,7 +268,7 @@ export default function StudyChat() {
           )}
           {!needsClassPick && inferredClass && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Using class {inferredClass} from your profile section.
+              {t("studyChat.usingClassFromProfile", { class: inferredClass })}
             </p>
           )}
           <Button
@@ -261,7 +277,7 @@ export default function StudyChat() {
             disabled={!canStart}
             onClick={handleStart}
           >
-            Continue
+            {t("studyChat.continue")}
           </Button>
         </Card>
       </div>
@@ -276,7 +292,7 @@ export default function StudyChat() {
             type="button"
             onClick={resetSession}
             className="rounded-lg p-2 text-gray-600 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/10"
-            aria-label="Change subject"
+            aria-label={t("studyChat.changeSubject")}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -286,7 +302,10 @@ export default function StudyChat() {
               {subject}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Class {effectiveClass} · Textbook Q&A
+              {t("studyChat.headerSubtitle", {
+                class: effectiveClass,
+                suffix: t("studyChat.textbookQa"),
+              })}
             </p>
           </div>
         </div>
@@ -296,8 +315,7 @@ export default function StudyChat() {
         <div className="mx-auto max-w-3xl space-y-4">
           {messages.length === 0 && (
             <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center text-sm text-gray-600 dark:text-gray-400">
-              Ask anything about {subject}. For example: definitions, examples, or
-              “explain step by step”.
+              {t("studyChat.emptyStateHint", { subject })}
             </div>
           )}
 
@@ -327,15 +345,14 @@ export default function StudyChat() {
                               <AnswerMarkdown markdown={m.answer} />
                             ) : (
                               <p className="text-sm text-gray-800 dark:text-gray-200">
-                                No written answer was returned. See textbook excerpts
-                                below if any.
+                                {t("studyChat.noAnswerReturned")}
                               </p>
                             )}
                           </div>
                           {m.sources?.length > 0 && (
                             <div className="space-y-2">
                               <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                                Textbook sources
+                                {t("studyChat.textbookSources")}
                               </p>
                               <div className="space-y-3">
                                 {m.sources.map((item, j) => (
@@ -350,7 +367,7 @@ export default function StudyChat() {
                           )}
                           {!m.answer?.trim() && !m.sources?.length && (
                             <p className="rounded-2xl rounded-bl-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
-                              Nothing came back. Try rephrasing your question.
+                              {t("studyChat.tryRephrase")}
                             </p>
                           )}
                         </>
@@ -366,7 +383,7 @@ export default function StudyChat() {
             <div className="flex justify-start">
               <div className="flex items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-gray-500">
                 <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary-500" />
-                Preparing your answer…
+                {t("studyChat.preparingAnswer")}
               </div>
             </div>
           )}
@@ -387,7 +404,7 @@ export default function StudyChat() {
                 handleSend();
               }
             }}
-            placeholder="Ask a question…"
+            placeholder={t("studyChat.placeholderAsk")}
             className="min-h-[44px] max-h-32 flex-1 resize-y rounded-xl border border-[var(--color-border)] bg-[rgb(var(--color-surface))] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-600))]"
             disabled={sending}
           />
@@ -397,10 +414,10 @@ export default function StudyChat() {
             loading={sending}
             disabled={sending || !input.trim()}
             onClick={handleSend}
-            aria-label="Send"
+            aria-label={t("studyChat.sendAria")}
           >
             <SendHorizontal className="h-5 w-5 md:hidden" />
-            <span className="hidden md:inline">Send</span>
+            <span className="hidden md:inline">{t("studyChat.send")}</span>
           </Button>
         </div>
       </div>

@@ -68,7 +68,7 @@ export default function ChatThread({ conversationId, backTo }) {
   const { auth } = useAuth();
   const currentUserId = String(auth?.userId ?? "").trim();
 
-  const [title, setTitle] = useState("Chat");
+  const [title, setTitle] = useState(() => t("chat.defaultThreadTitle"));
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
@@ -103,6 +103,7 @@ export default function ChatThread({ conversationId, backTo }) {
 
   const loadInitial = useCallback(async () => {
     if (!conversationId) return;
+    setTitle(t("chat.defaultThreadTitle"));
     setLoading(true);
     setError(null);
     isInitialScrollRef.current = true;
@@ -121,12 +122,12 @@ export default function ChatThread({ conversationId, backTo }) {
       await markConversationRead(conversationId).catch(() => {});
     } catch (e) {
       const msg =
-        e?.response?.data?.message || e?.message || "Could not load messages.";
-      setError(typeof msg === "string" ? msg : "Could not load messages.");
+        e?.response?.data?.message || e?.message || t("chat.couldNotLoadMessages");
+      setError(typeof msg === "string" ? msg : t("chat.couldNotLoadMessages"));
     } finally {
       setLoading(false);
     }
-  }, [conversationId, currentUserId]);
+  }, [conversationId, currentUserId, t]);
 
   useEffect(() => {
     loadInitial();
@@ -212,8 +213,8 @@ export default function ChatThread({ conversationId, backTo }) {
       await markConversationRead(conversationId).catch(() => {});
     } catch (err) {
       const msg =
-        err?.response?.data?.message || err?.message || "Failed to send.";
-      setError(typeof msg === "string" ? msg : "Failed to send.");
+        err?.response?.data?.message || err?.message || t("chat.failedToSend");
+      setError(typeof msg === "string" ? msg : t("chat.failedToSend"));
     } finally {
       setSending(false);
     }
@@ -246,7 +247,7 @@ export default function ChatThread({ conversationId, backTo }) {
           <Link
             to={backTo}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 md:hidden"
-            aria-label="Back to conversations"
+            aria-label={t("chat.backToConversations")}
           >
             <ChevronLeft size={20} />
           </Link>
@@ -344,7 +345,7 @@ export default function ChatThread({ conversationId, backTo }) {
               scrollToBottom();
             }}
             className="absolute bottom-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-500 shadow-md hover:shadow-lg"
-            aria-label="Scroll to latest"
+            aria-label={t("chat.scrollToLatest")}
           >
             <ChevronsDown size={16} />
           </button>
@@ -359,7 +360,7 @@ export default function ChatThread({ conversationId, backTo }) {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={t("chat.writeMessage")}
-            title="Enter to send · Shift+Enter for new line"
+            title={t("chatUi.composerHint")}
             rows={1}
             className="min-h-[40px] flex-1 resize-none rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-gray-800 outline-none placeholder:text-gray-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
             disabled={sending || loading}

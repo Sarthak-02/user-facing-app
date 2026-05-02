@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, Button } from "../../ui-components";
 import DesktopListing from "../../components/staff-broadcast/DesktopListing";
 import MobileListing from "../../components/staff-broadcast/MobileListing";
@@ -8,6 +9,7 @@ import { useAuth } from "../../store/auth.store";
 import { ANNOUNCEMENT_CATEGORY_OPTIONS } from "../../constants/announcementCategories";
 
 export default function BroadcastPage() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,8 +28,8 @@ export default function BroadcastPage() {
   const [loadError, setLoadError] = useState(null);
 
   const categoryTabs = [
-    { value: "", label: "All" },
-    ...ANNOUNCEMENT_CATEGORY_OPTIONS,
+    { value: "", labelKey: "studentAnnouncements.categoryAll" },
+    ...ANNOUNCEMENT_CATEGORY_OPTIONS.map((o) => ({ value: o.value, labelKey: o.labelKey })),
   ];
 
   const filteredBroadcasts = useMemo(() => {
@@ -118,7 +120,7 @@ export default function BroadcastPage() {
               body: file,
               headers: { "Content-Type": file.type },
             });
-            if (!uploadRes.ok) throw new Error(`Failed to upload ${file.name}`);
+            if (!uploadRes.ok) throw new Error(t("broadcast.uploadFileFailed", { fileName: file.name }));
             return {
               fileName: file.name,
               fileType: file.type,
@@ -149,7 +151,7 @@ export default function BroadcastPage() {
       handleCloseModal();
     } catch (error) {
       console.error("Error sending broadcast:", error);
-      setSubmitError(error.message || 'Failed to send broadcast. Please try again.');
+      setSubmitError(error.message || t("broadcast.sendFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -176,7 +178,7 @@ export default function BroadcastPage() {
       setBroadcastList(broadcastArray);
     } catch (error) {
       console.error("Error fetching broadcasts:", error);
-      setLoadError(error.message || "Failed to load broadcasts. Please try again.");
+      setLoadError(error.message || t("broadcast.loadListFailed"));
       setBroadcastList([]);
     } finally {
       setIsLoading(false);
@@ -195,7 +197,7 @@ export default function BroadcastPage() {
         <div className="space-y-4">
           {/* Title and Create Button Row */}
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">My Broadcasts</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("broadcast.myBroadcasts")}</h1>
 
             <Button onClick={handleCreateBroadcast}>
               <svg
@@ -212,7 +214,7 @@ export default function BroadcastPage() {
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              Create Broadcast
+              {t("broadcast.createBroadcast")}
             </Button>
           </div>
 
@@ -228,7 +230,7 @@ export default function BroadcastPage() {
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </button>
             ))}
           </div>
@@ -249,7 +251,7 @@ export default function BroadcastPage() {
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </button>
             ))}
           </div>
@@ -261,7 +263,7 @@ export default function BroadcastPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-gray-600">Loading broadcasts...</p>
+            <p className="mt-4 text-gray-600">{t("broadcast.loadingList")}</p>
           </div>
         </div>
       )}
@@ -288,11 +290,11 @@ export default function BroadcastPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Error Loading Broadcasts</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t("broadcast.errorLoadingTitle")}</h3>
                 <p className="text-gray-600 mt-2">{loadError}</p>
               </div>
               <Button onClick={fetchBroadcasts}>
-                Try Again
+                {t("common.tryAgain")}
               </Button>
             </div>
           </Card>
@@ -324,7 +326,7 @@ export default function BroadcastPage() {
       <button
         onClick={handleCreateBroadcast}
         className="md:hidden fixed bottom-20 right-6 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 active:bg-blue-700 transition-all duration-200 flex items-center justify-center z-40 hover:scale-110 active:scale-95"
-        aria-label="Create new broadcast"
+        aria-label={t("ui.createNewBroadcast")}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

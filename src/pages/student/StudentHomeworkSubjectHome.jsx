@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
 import { fetchStudentProfile } from "../../api/auth.api";
@@ -90,6 +91,7 @@ function getSubjectConfig(name) {
 }
 
 export default function StudentHomeworkSubjectHome() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { auth } = useAuth();
   const [subjects, setSubjects] = useState([]);
@@ -186,10 +188,9 @@ export default function StudentHomeworkSubjectHome() {
   if (subjects.length === 0) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-        <h1 className="text-xl font-bold text-gray-900">Homework</h1>
+        <h1 className="text-xl font-bold text-gray-900">{t("nav.homework")}</h1>
         <p className="mt-3 text-sm text-gray-600">
-          No subjects were found. Subjects appear here when they are on your profile or when
-          teachers assign homework.
+          {t("studentHomeworkSubjectHome.noSubjectsBody")}
         </p>
       </div>
     );
@@ -197,8 +198,8 @@ export default function StudentHomeworkSubjectHome() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-      <h1 className="text-xl font-bold text-gray-900">Homework</h1>
-      <p className="mt-1 text-sm text-gray-500">Choose a subject to view your assignments.</p>
+      <h1 className="text-xl font-bold text-gray-900">{t("nav.homework")}</h1>
+      <p className="mt-1 text-sm text-gray-500">{t("studentHomeworkSubjectHome.pickerSubtitle")}</p>
       <div className="mt-5 space-y-2">
         {subjects.map((s) => {
           const { Icon, iconBg, iconColor, border } = getSubjectConfig(s.subject_name);

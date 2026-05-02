@@ -1,5 +1,6 @@
 import { Badge, Card } from "../../ui-components";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 function formatDate(date) {
   if (!date) return "";
@@ -12,14 +13,15 @@ function formatDate(date) {
 }
 
 function StatusBadges({ status, dueDate }) {
+  const { t } = useTranslation();
   const isPast = dueDate && new Date(dueDate) < new Date();
   const dueBadge = (status === "CLOSED" || isPast)
-    ? <Badge variant="default">Closed</Badge>
-    : <Badge variant="success">Active</Badge>;
+    ? <Badge variant="default">{t("exams.dateBadge.closed")}</Badge>
+    : <Badge variant="success">{t("exams.dateBadge.active")}</Badge>;
 
   const pubBadge = status === "DRAFT"
-    ? <Badge variant="warning">Draft</Badge>
-    : <Badge variant="info">Published</Badge>;
+    ? <Badge variant="warning">{t("exams.status.draft")}</Badge>
+    : <Badge variant="info">{t("exams.status.published")}</Badge>;
 
   return (
     <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -54,6 +56,7 @@ function AttachmentIndicator({ count }) {
 }
 
 export default function MobileListing({ homeworkList, onEdit, onPublish, listFromPath, className }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (homeworkId) => {
@@ -77,7 +80,7 @@ export default function MobileListing({ homeworkList, onEdit, onPublish, listFro
       {homeworkList.length === 0 ? (
         <Card>
           <div className="text-center py-8 text-gray-500">
-            No homework assignments found.
+            {t("staffHomework.listingEmptyMobile")}
           </div>
         </Card>
       ) : (
@@ -134,7 +137,7 @@ export default function MobileListing({ homeworkList, onEdit, onPublish, listFro
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <span>Due: {formatDate(homework.dueDate)}</span>
+                <span>{t("common.due", { date: formatDate(homework.dueDate) })}</span>
               </div>
 
               {homework.assignedDate && (
@@ -153,7 +156,9 @@ export default function MobileListing({ homeworkList, onEdit, onPublish, listFro
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span>Assigned: {formatDate(homework.assignedDate)}</span>
+                  <span>
+                    {t("common.assigned", { date: formatDate(homework.assignedDate) })}
+                  </span>
                 </div>
               )}
 
@@ -168,13 +173,13 @@ export default function MobileListing({ homeworkList, onEdit, onPublish, listFro
                   onClick={(e) => handleEditClick(e, homework)}
                   className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                 >
-                  Edit
+                  {t("common.edit")}
                 </button>
                 <button
                   onClick={(e) => handlePublishClick(e, homework)}
                   className="flex-1 px-3 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
                 >
-                  Publish
+                  {t("common.publish")}
                 </button>
               </div>
             )}

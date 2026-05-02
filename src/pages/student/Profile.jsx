@@ -106,7 +106,7 @@ export default function StudentProfile() {
                 {studentData?.photo_url && !imgError ? (
                   <img
                     src={studentData.photo_url}
-                    alt={t("profile.studentName")}
+                    alt={t("profile.photoAlt")}
                     onError={() => setImgError(true)}
                     className="h-24 w-24 md:h-28 md:w-28 rounded-2xl object-cover border-4 border-white shadow-lg"
                   />

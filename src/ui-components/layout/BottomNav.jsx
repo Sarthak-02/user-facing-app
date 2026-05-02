@@ -27,8 +27,8 @@ export default function BottomNav({ navItems, setActiveNav }) {
     setMoreOpen(false);
   }, [location.pathname]);
 
-  const handleNavClick = (label, path) => {
-    setActiveNav(label);
+  const handleNavClick = (labelKey, path) => {
+    setActiveNav(labelKey);
     navigate(path);
   };
 
@@ -51,7 +51,7 @@ export default function BottomNav({ navItems, setActiveNav }) {
       {moreOpen && (
         <button
           type="button"
-          aria-label="Close menu"
+          aria-label={t("ui.closeMenu")}
           className="fixed inset-0 z-[40] bg-black/25 md:hidden"
           onClick={() => setMoreOpen(false)}
         />
@@ -66,12 +66,13 @@ export default function BottomNav({ navItems, setActiveNav }) {
           "
           role="menu"
         >
-          {overflowItems.map(({ label, icon: IconComponent, path }) => {
+          {overflowItems.map(({ labelKey, label, icon: IconComponent, path }) => {
             const Icon = IconComponent;
+            const text = labelKey ? t(labelKey) : label;
             const active = isActive(path);
             return (
               <button
-                key={label}
+                key={path}
                 type="button"
                 role="menuitem"
                 className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm ${
@@ -79,13 +80,13 @@ export default function BottomNav({ navItems, setActiveNav }) {
                     ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
                     : "text-[var(--color-text)]"
                 }`}
-                onClick={() => handleNavClick(label, path)}
+                onClick={() => handleNavClick(labelKey ?? label, path)}
               >
                 <Icon
                   size={20}
                   color={active ? "var(--color-primary-600)" : "black"}
                 />
-                <span>{label}</span>
+                <span>{text}</span>
               </button>
             );
           })}
@@ -100,21 +101,22 @@ export default function BottomNav({ navItems, setActiveNav }) {
         "
       >
         <div className="flex h-14 items-center justify-around">
-          {barItems.map(({ label, icon: IconComponent, path }) => {
+          {barItems.map(({ labelKey, label, icon: IconComponent, path }) => {
             const Icon = IconComponent;
+            const text = labelKey ? t(labelKey) : label;
             const active = isActive(path);
             return (
               <button
-                key={label}
+                key={path}
                 type="button"
                 className={navButtonClass(active)}
-                onClick={() => handleNavClick(label, path)}
+                onClick={() => handleNavClick(labelKey ?? label, path)}
               >
                 <Icon
                   size={20}
                   color={active ? "var(--color-primary-600)" : "black"}
                 />
-                <span className="truncate max-w-full">{label}</span>
+                <span className="truncate max-w-full">{text}</span>
               </button>
             );
           })}

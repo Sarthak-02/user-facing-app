@@ -1,24 +1,18 @@
 import { Badge, Card } from "../../ui-components";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { examListDateRangeLabel } from "./examListDates";
 
-function getExamTypeLabel(type) {
-  const labels = {
-    UNIT_TEST: "Unit Test",
-    MID_TERM: "Mid Term",
-    FINAL: "Final Exam",
-    QUARTERLY: "Quarterly",
-    HALF_YEARLY: "Half Yearly",
-    ANNUAL: "Annual",
-    OTHER: "Other",
-  };
-  return labels[type] || type;
+function getExamTypeLabel(type, t) {
+  if (!type) return "";
+  const key = `studentExams.examTypes.${type}`;
+  return t(key, { defaultValue: type });
 }
 
 const STATUS_CONFIG = {
   PUBLISHED: {
     badge: "info",
-    label: "Upcoming",
+    labelKey: "studentExams.upcoming",
     borderColor: "border-l-blue-400",
     bgAccent: "bg-blue-50",
     iconColor: "text-blue-500",
@@ -27,7 +21,7 @@ const STATUS_CONFIG = {
   },
   COMPLETED: {
     badge: "success",
-    label: "Completed",
+    labelKey: "studentExams.completed",
     borderColor: "border-l-emerald-400",
     bgAccent: "bg-emerald-50",
     iconColor: "text-emerald-500",
@@ -36,7 +30,7 @@ const STATUS_CONFIG = {
   },
   DRAFT: {
     badge: "default",
-    label: "Draft",
+    labelKey: "studentExams.draft",
     borderColor: "border-l-gray-300",
     bgAccent: "bg-gray-50",
     iconColor: "text-gray-400",
@@ -46,10 +40,11 @@ const STATUS_CONFIG = {
 };
 
 function ExamCard({ exam, onClick }) {
+  const { t } = useTranslation();
   const config = STATUS_CONFIG[exam.status] || STATUS_CONFIG.DRAFT;
   const dateLabel = examListDateRangeLabel(exam);
   const subjectCount = exam.subjects?.length || 0;
-  const examName = exam.customExamType || getExamTypeLabel(exam.examType);
+  const examName = exam.customExamType || getExamTypeLabel(exam.examType, t);
 
   return (
     <div
@@ -60,9 +55,9 @@ function ExamCard({ exam, onClick }) {
       <div className="p-5 pb-4 flex-1">
         <div className="flex items-start justify-between gap-3 mb-3">
           <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full ${config.typeColor}`}>
-            {getExamTypeLabel(exam.examType)}
+            {getExamTypeLabel(exam.examType, t)}
           </span>
-          <Badge variant={config.badge}>{config.label}</Badge>
+          <Badge variant={config.badge}>{t(config.labelKey)}</Badge>
         </div>
 
         <h3 className="text-base font-bold text-gray-900 leading-snug mb-4 group-hover:text-primary-700 transition-colors">
@@ -87,7 +82,7 @@ function ExamCard({ exam, onClick }) {
                 />
               </svg>
               <span className="font-medium text-gray-700">
-                Class {exam.class}
+                {t("studentExams.classPrefix")} {exam.class}
                 {exam.section && ` · ${exam.section}`}
               </span>
             </div>
@@ -109,7 +104,7 @@ function ExamCard({ exam, onClick }) {
               />
             </svg>
             <span>
-              {subjectCount} {subjectCount === 1 ? "subject" : "subjects"}
+              {t("studentExams.subjectCount", { count: subjectCount })}
             </span>
           </div>
         </div>
@@ -133,7 +128,7 @@ function ExamCard({ exam, onClick }) {
             />
           </svg>
           <span className="text-xs font-semibold text-gray-600">
-            {dateLabel || "Date TBD"}
+            {dateLabel || t("studentExams.dateTbd")}
           </span>
         </div>
         <svg
@@ -151,6 +146,7 @@ function ExamCard({ exam, onClick }) {
 }
 
 export default function DesktopListing({ examList }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (examId) => {
@@ -177,8 +173,8 @@ export default function DesktopListing({ examList }) {
               />
             </svg>
           </div>
-          <p className="text-base font-semibold text-gray-700 mb-1">No exams found</p>
-          <p className="text-sm text-gray-400">Try adjusting your filters or check back later.</p>
+          <p className="text-base font-semibold text-gray-700 mb-1">{t("studentExams.noExamsFound")}</p>
+          <p className="text-sm text-gray-400">{t("studentExams.listEmptyHint")}</p>
         </div>
       </Card>
     );

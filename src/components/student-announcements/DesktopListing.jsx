@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 function formatDate(date) {
   if (!date) return "";
@@ -15,6 +16,7 @@ function senderInitial(item) {
 }
 
 export default function DesktopListing({ announcements }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (item) => {
@@ -41,8 +43,8 @@ export default function DesktopListing({ announcements }) {
               />
             </svg>
           </div>
-          <p className="text-base font-semibold text-gray-700 mb-1">No announcements</p>
-          <p className="text-sm text-gray-400">You have no school announcements yet.</p>
+          <p className="text-base font-semibold text-gray-700 mb-1">{t("studentAnnouncements.noAnnouncements")}</p>
+          <p className="text-sm text-gray-400">{t("studentAnnouncements.noAnnouncementsDescription")}</p>
         </div>
       </div>
     );
@@ -54,7 +56,7 @@ export default function DesktopListing({ announcements }) {
         {announcements.map((item) => {
           const attachCount = item.attachmentCount ?? item.attachments?.length ?? 0;
           const dateStr = formatDate(item.submittedAt || item.submitted_at || item.createdAt);
-          const sender = item.senderName || item.createdBy || "School";
+          const sender = item.senderName || item.createdBy || t("studentAnnouncements.senderFallback");
 
           return (
             <div

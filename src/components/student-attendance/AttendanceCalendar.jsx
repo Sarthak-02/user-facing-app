@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge, Button, Card, Modal } from "../../ui-components";
 import { getFormattedDate } from "../../utils/common-functions";
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
 function normalizeStatus(status) {
   return String(status ?? "").toUpperCase();
@@ -45,27 +46,31 @@ const RATIO_PILL_BY_CATEGORY = {
 };
 
 function StatusBadge({ status }) {
+  const { t } = useTranslation();
   if (status === "PRESENT") {
-    return <Badge variant="success">Present</Badge>;
+    return <Badge variant="success">{t("studentAttendance.present")}</Badge>;
   }
   if (status === "ABSENT") {
-    return <Badge variant="error">Absent</Badge>;
+    return <Badge variant="error">{t("studentAttendance.absent")}</Badge>;
   }
   if (status === "LATE") {
-    return <Badge variant="warning">Late</Badge>;
+    return <Badge variant="warning">{t("studentAttendance.late")}</Badge>;
   }
   if (status === "ON_LEAVE" || status === "EXCUSED") {
     return (
-      <Badge variant="info">{status === "EXCUSED" ? "Excused" : "On Leave"}</Badge>
+      <Badge variant="info">
+        {status === "EXCUSED" ? t("attendanceCalendar.statusExcused") : t("attendanceCalendar.statusOnLeave")}
+      </Badge>
     );
   }
   return <Badge variant="default">{status}</Badge>;
 }
 
-function formatPeriodLabel(period) {
-  if (period === "OVERALL") return "Overall";
+function formatPeriodLabel(period, t) {
+  if (period === "OVERALL") return t("studentAttendance.periodOverall");
   if (period?.startsWith("PERIOD_")) {
-    return `Period ${period.split("_")[1]}`;
+    const num = period.split("_")[1];
+    return t("studentAttendance.periodNumber", { number: num });
   }
   return period;
 }
@@ -77,6 +82,7 @@ function formatHeaderDate(dateKey) {
 }
 
 export default function AttendanceCalendar({ attendanceRecords }) {
+  const { t } = useTranslation();
   const [cursor, setCursor] = useState(() => dayjs().startOf("month"));
   const [selectedDateKey, setSelectedDateKey] = useState(null);
 
@@ -89,13 +95,13 @@ export default function AttendanceCalendar({ attendanceRecords }) {
     }
     for (const [, list] of map) {
       list.sort((a, b) => {
-        const pa = formatPeriodLabel(a.period);
-        const pb = formatPeriodLabel(b.period);
+        const pa = formatPeriodLabel(a.period, t);
+        const pb = formatPeriodLabel(b.period, t);
         return pa.localeCompare(pb, undefined, { numeric: true });
       });
     }
     return map;
-  }, [attendanceRecords]);
+  }, [attendanceRecords, t]);
 
   const monthGrid = useMemo(() => {
     const start = cursor.startOf("month");
@@ -138,7 +144,7 @@ export default function AttendanceCalendar({ attendanceRecords }) {
               variant="secondary"
               className="shrink-0 px-2 py-2"
               onClick={goPrev}
-              aria-label="Previous month"
+              aria-label={t("attendanceCalendar.prevMonth")}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -150,13 +156,13 @@ export default function AttendanceCalendar({ attendanceRecords }) {
               variant="secondary"
               className="shrink-0 px-2 py-2"
               onClick={goNext}
-              aria-label="Next month"
+              aria-label={t("attendanceCalendar.nextMonth")}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
           <Button type="button" variant="secondary" className="text-sm" onClick={goToday}>
-            This month
+            {t("attendanceCalendar.thisMonth")}
           </Button>
         </div>
 
@@ -170,27 +176,27 @@ export default function AttendanceCalendar({ attendanceRecords }) {
           <div className="flex flex-wrap gap-x-3 gap-y-1.5">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-success-600" />
-              All present
+              {t("attendanceCalendar.legendAllPresent")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-error-600" />
-              All absent
+              {t("attendanceCalendar.legendAllAbsent")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-amber-500" />
-              Partial present
+              {t("attendanceCalendar.legendPartial")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-gray-400" />
-              Other (e.g. leave, no attendance)
+              {t("attendanceCalendar.legendOther")}
             </span>
           </div>
         </div>
 
         <div className="grid grid-cols-7 gap-px rounded-lg border border-border bg-border text-center text-xs font-medium text-gray-500">
-          {WEEKDAYS.map((wd) => (
+          {WEEKDAY_KEYS.map((wd) => (
             <div key={wd} className="bg-surface py-2">
-              {wd}
+              {t(`home.weekdayShort.${wd}`)}
             </div>
           ))}
         </div>
@@ -246,13 +252,13 @@ export default function AttendanceCalendar({ attendanceRecords }) {
                         "rounded-md px-1 py-0.5 text-center tabular-nums text-xs font-semibold sm:text-sm",
                         ratioPillClass,
                       ].join(" ")}
-                      title="Present marks / total marks for this day"
+                      title={t("attendanceCalendar.presentMarksTitle")}
                     >
                       {presentMarks}/{totalMarks}
                     </div>
                     {totalMarks > 1 && (
                       <div className="text-center text-[9px] leading-tight text-gray-500 sm:text-[10px]">
-                        More details
+                        {t("attendanceCalendar.moreDetails")}
                       </div>
                     )}
                   </div>
@@ -282,7 +288,7 @@ export default function AttendanceCalendar({ attendanceRecords }) {
               >
                 {selectedPresent}/{selectedTotal}
               </span>{" "}
-              <span className="text-gray-500">present marks</span>
+              <span className="text-gray-500">{t("attendanceCalendar.presentMarksLabel")}</span>
             </p>
             <ul className="mt-4 space-y-3">
               {selectedRecords.map((rec, i) => (
@@ -292,13 +298,13 @@ export default function AttendanceCalendar({ attendanceRecords }) {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-medium text-gray-900">
-                      {formatPeriodLabel(rec.period)}
+                      {formatPeriodLabel(rec.period, t)}
                     </span>
                     <StatusBadge status={rec.status} />
                   </div>
-                  <div className="mt-2 text-xs text-gray-500">Marked by</div>
+                  <div className="mt-2 text-xs text-gray-500">{t("attendanceCalendar.markedBy")}</div>
                   <div className="text-sm text-gray-800">
-                    {rec.markedBy || "N/A"}
+                    {rec.markedBy?.trim() ? rec.markedBy : t("common.na")}
                   </div>
                 </li>
               ))}

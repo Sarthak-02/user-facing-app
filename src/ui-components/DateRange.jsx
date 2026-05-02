@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import dayjs from 'dayjs';
-import Modal from './Modal';
+import React, { useState } from "react";
+import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 
 const DateRange = ({
   startDate: externalStartDate,
@@ -9,28 +9,30 @@ const DateRange = ({
   onEndDateChange,
   minDate,
   maxDate,
-  label = 'Date Range',
-  className = '',
-  error = '',
+  label,
+  className = "",
+  error = "",
   disabled = false,
 }) => {
-  
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t("ui.dateRange.label");
+
   // Format date to YYYY-MM-DD for input value
   const formatDate = (date) => {
-    if (!date) return '';
-    return dayjs(date).format('YYYY-MM-DD');
+    if (!date) return "";
+    return dayjs(date).format("YYYY-MM-DD");
   };
 
-  const [validationError, setValidationError] = useState('');
+  const [validationError, setValidationError] = useState("");
 
   // Use controlled props if provided, otherwise show blank
-  const startDate = externalStartDate ? formatDate(externalStartDate) : '';
-  const endDate = externalEndDate ? formatDate(externalEndDate) : '';
+  const startDate = externalStartDate ? formatDate(externalStartDate) : "";
+  const endDate = externalEndDate ? formatDate(externalEndDate) : "";
 
   // Validate dates
   const validateDates = (start, end) => {
     if (!start || !end) {
-      setValidationError('');
+      setValidationError("");
       return true;
     }
 
@@ -38,21 +40,29 @@ const DateRange = ({
     const endDay = dayjs(end);
 
     if (startDay.isAfter(endDay)) {
-      setValidationError('Start date must be before or equal to end date');
+      setValidationError(t("ui.dateRange.errorOrder"));
       return false;
     }
 
     if (minDate && startDay.isBefore(dayjs(minDate))) {
-      setValidationError(`Start date cannot be before ${dayjs(minDate).format('MMM DD, YYYY')}`);
+      setValidationError(
+        t("ui.dateRange.errorStartBeforeMin", {
+          date: dayjs(minDate).format("MMM DD, YYYY"),
+        }),
+      );
       return false;
     }
 
     if (maxDate && endDay.isAfter(dayjs(maxDate))) {
-      setValidationError(`End date cannot be after ${dayjs(maxDate).format('MMM DD, YYYY')}`);
+      setValidationError(
+        t("ui.dateRange.errorEndAfterMax", {
+          date: dayjs(maxDate).format("MMM DD, YYYY"),
+        }),
+      );
       return false;
     }
 
-    setValidationError('');
+    setValidationError("");
     return true;
   };
 
@@ -81,19 +91,21 @@ const DateRange = ({
   return (
     <div className={`w-full ${className}`}>
       {/* Main Label */}
-      {label && (
+      {resolvedLabel && (
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
+          {resolvedLabel}
         </label>
       )}
-      
+
       {/* Bordered Container */}
-      <div className={`border rounded-md p-4 ${validationError || error ? 'border-red-500' : 'border-gray-300'}`}>
+      <div
+        className={`border rounded-md p-4 ${validationError || error ? "border-red-500" : "border-gray-300"}`}
+      >
         <div className="flex flex-row gap-2 items-end w-full">
           {/* Start Date Input */}
           <div className="flex-1 min-w-0">
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Start Date
+              {t("ui.dateRange.startDate")}
             </label>
             <input
               type="date"
@@ -127,7 +139,7 @@ const DateRange = ({
           {/* End Date Input */}
           <div className="flex-1 min-w-0">
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              End Date
+              {t("ui.dateRange.endDate")}
             </label>
             <input
               type="date"
@@ -143,9 +155,7 @@ const DateRange = ({
 
         {/* Error Message */}
         {(validationError || error) && (
-          <p className="mt-2 text-sm text-red-600">
-            {validationError || error}
-          </p>
+          <p className="mt-2 text-sm text-red-600">{validationError || error}</p>
         )}
       </div>
     </div>

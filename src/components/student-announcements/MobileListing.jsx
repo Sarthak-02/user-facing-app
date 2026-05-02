@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 function formatDate(date) {
   if (!date) return "";
@@ -15,6 +16,7 @@ function senderInitial(item) {
 }
 
 export default function MobileListing({ announcements, className }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (item) => {
@@ -32,7 +34,8 @@ export default function MobileListing({ announcements, className }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
             </svg>
           </div>
-          <p className="text-sm font-semibold text-gray-700">No announcements yet</p>
+          <p className="text-sm font-semibold text-gray-700">{t("studentAnnouncements.noAnnouncements")}</p>
+          <p className="text-xs text-gray-400 mt-1 px-2">{t("studentAnnouncements.noAnnouncementsDescription")}</p>
         </div>
       </div>
     );
@@ -43,7 +46,7 @@ export default function MobileListing({ announcements, className }) {
       {announcements.map((item) => {
         const attachCount = attachmentCount(item);
         const dateStr = formatDate(item.submittedAt || item.submitted_at || item.createdAt);
-        const sender = item.senderName || item.createdBy || "School";
+        const sender = item.senderName || item.createdBy || t("studentAnnouncements.senderFallback");
 
         return (
           <div

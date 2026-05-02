@@ -71,10 +71,11 @@ export default function Sidebar({ collapsed, setCollapsed, navItems }) {
 
       {/* Nav Items */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-        {navItems.map(({ label, icon: Icon, path }) => {
+        {navItems.map(({ labelKey, label, icon: Icon, path }) => {
+          const text = labelKey ? t(labelKey) : label;
           const active = isActive(path);
           return (
-            <div key={label} className="relative group">
+            <div key={path} className="relative group">
               <button
                 onClick={() => navigate(path)}
                 className={`
@@ -96,7 +97,7 @@ export default function Sidebar({ collapsed, setCollapsed, navItems }) {
                   }`}
                 />
                 {!collapsed && (
-                  <span className="text-sm truncate">{label}</span>
+                  <span className="text-sm truncate">{text}</span>
                 )}
                 {active && !collapsed && (
                   <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-600 flex-shrink-0" />
@@ -107,7 +108,7 @@ export default function Sidebar({ collapsed, setCollapsed, navItems }) {
               {collapsed && (
                 <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                   <div className="relative bg-gray-900 text-white text-xs font-medium px-2.5 py-1.5 rounded-md shadow-lg whitespace-nowrap">
-                    {label}
+                    {text}
                     <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
                   </div>
                 </div>

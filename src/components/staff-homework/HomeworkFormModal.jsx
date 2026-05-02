@@ -1,13 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, Dropdown } from "../../ui-components";
 import { usePermissions } from "../../store/permissions.store";
 import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
-
-const TARGET_OPTIONS = [
-  { value: "SECTION", label: "Section" },
-  { value: "STUDENT", label: "Student" },
-];
 
 export default function HomeworkFormModal({
   isOpen,
@@ -20,7 +16,16 @@ export default function HomeworkFormModal({
   defaultSubjectKey,
   defaultStudentId,
 }) {
+  const { t } = useTranslation();
   const { permissions } = usePermissions();
+
+  const TARGET_OPTIONS = useMemo(
+    () => [
+      { value: "SECTION", label: t("homeworkForm.section") },
+      { value: "STUDENT", label: t("homeworkForm.student") },
+    ],
+    [t]
+  );
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -32,7 +37,7 @@ export default function HomeworkFormModal({
     subject: "",
     description: "",
     dueDate: "",
-    targetType: { value: "SECTION", label: "Section" },
+    targetType: { value: "SECTION", label: t("homeworkForm.section") },
     sectionId: null,
     studentId: [],
     classId: null,
@@ -100,7 +105,7 @@ export default function HomeworkFormModal({
     prevHomeworkIdRef.current = currentHomeworkId;
 
     if (homework) {
-      let targetType = { value: "SECTION", label: "Section" };
+      let targetType = { value: "SECTION", label: t("homeworkForm.section") };
       let sectionId = null;
       let studentId = [];
       let classId = null;
@@ -110,7 +115,7 @@ export default function HomeworkFormModal({
         const tt = firstTarget.target_type || firstTarget.targetType;
 
         if (tt === "SECTION") {
-          targetType = { value: "SECTION", label: "Section" };
+          targetType = { value: "SECTION", label: t("homeworkForm.section") };
           const targetId = firstTarget.target_id || firstTarget.targetId || firstTarget.section_id || "";
           const section = permissions.sections.find((s) => s.section_id === targetId);
           if (section) {
@@ -119,7 +124,7 @@ export default function HomeworkFormModal({
             if (classObj) classId = { value: classObj.class_id, label: classObj.class_name };
           }
         } else if (tt === "STUDENT") {
-          targetType = { value: "STUDENT", label: "Student" };
+          targetType = { value: "STUDENT", label: t("homeworkForm.student") };
           const studentIds = homework.targets.map((t) => t.target_id || t.targetId || t.student_id).filter(Boolean);
           studentId = studentIds.map((sid) => {
             const student = permissions.students.find((s) => s.student_id === sid);
@@ -133,7 +138,7 @@ export default function HomeworkFormModal({
             if (classObj) classId = { value: classObj.class_id, label: classObj.class_name };
           }
         } else if (tt === "CLASS") {
-          targetType = { value: "CLASS", label: "Class" };
+          targetType = { value: "CLASS", label: t("homeworkForm.class") };
           const targetId = firstTarget.target_id || firstTarget.targetId || firstTarget.class_id || "";
           const classObj = permissions.classes.find((c) => c.class_id === targetId);
           if (classObj) classId = { value: classObj.class_id, label: classObj.class_name };
@@ -152,7 +157,7 @@ export default function HomeworkFormModal({
       const attachments = homework?.attachments?.length > 0
         ? homework.attachments.map((a) => ({
             ...a,
-            name: a.name || a.fileName || a.filename || "Unnamed file",
+            name: a.name || a.fileName || a.filename || t("homeworkForm.unnamedFile"),
             type: a.type || a.fileType || a.mimeType || a.mime_type || "",
             size: a.size || a.fileSize || a.file_size || 0,
             fileUrl: a.fileUrl || a.url || a.file_url || "",
@@ -187,7 +192,7 @@ export default function HomeworkFormModal({
           subject: subjectOption,
           description: "",
           dueDate: "",
-          targetType: { value: "STUDENT", label: "Student" },
+          targetType: { value: "STUDENT", label: t("homeworkForm.student") },
           sectionId: { value: sec.section_id, label: sec.section_name },
           studentId: [{ value: studentRow.student_id, label: studentRow.student_name || studentRow.student_id }],
           classId: cls ? { value: cls.class_id, label: cls.class_name } : null,
@@ -200,7 +205,7 @@ export default function HomeworkFormModal({
           subject: subjectOption,
           description: "",
           dueDate: "",
-          targetType: { value: "SECTION", label: "Section" },
+          targetType: { value: "SECTION", label: t("homeworkForm.section") },
           sectionId: sec ? { value: sec.section_id, label: sec.section_name } : null,
           studentId: [],
           classId: cls ? { value: cls.class_id, label: cls.class_name } : null,
@@ -209,7 +214,7 @@ export default function HomeworkFormModal({
         });
       }
     }
-  }, [homework, isOpen, permissions, defaultSectionId, defaultSubjectKey, defaultStudentId]);
+  }, [homework, isOpen, permissions, defaultSectionId, defaultSubjectKey, defaultStudentId, t]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -229,12 +234,12 @@ export default function HomeworkFormModal({
   const processFiles = (files) => {
     setAttachmentError("");
     if (formData.attachments.length + files.length > 3) {
-      setAttachmentError("Maximum 3 attachments allowed");
+      setAttachmentError(t("broadcast.errorMaxAttachments"));
       return;
     }
     const oversized = files.filter((f) => f.size > 10 * 1024 * 1024);
     if (oversized.length > 0) {
-      setAttachmentError("Each file must be less than 10MB");
+      setAttachmentError(t("broadcast.errorFileSize"));
       return;
     }
     const newEntries = files.map((file) => ({ _file: file, name: file.name, type: file.type, size: file.size }));
@@ -307,10 +312,10 @@ export default function HomeworkFormModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
-              {isEditing ? "Edit Homework" : "New Homework"}
+              {isEditing ? t("homeworkForm.editTitle") : t("homeworkForm.newTitle")}
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              {isEditing ? "Update the homework details below" : "Assign homework to a section or student"}
+              {isEditing ? t("homeworkForm.subtitleEdit") : t("homeworkForm.subtitleNew")}
             </p>
           </div>
           <button
@@ -329,7 +334,7 @@ export default function HomeworkFormModal({
           {/* Assign To */}
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">
-              Assign To <span className="text-red-500">*</span>
+              {t("homeworkForm.assignTo")} <span className="text-red-500">*</span>
             </p>
             <div className="space-y-3">
               {/* Target type pills */}
@@ -363,13 +368,13 @@ export default function HomeworkFormModal({
           {/* Subject */}
           <div>
             <label className="text-sm font-medium text-gray-700 mb-2 block">
-              Subject <span className="text-red-500">*</span>
+              {t("homeworkForm.subjectLabel")} <span className="text-red-500">*</span>
             </label>
             <Dropdown
               selected={formData.subject}
               onChange={(option) => setFormData((prev) => ({ ...prev, subject: option }))}
               options={subjects}
-              placeholder={formData.sectionId ? "Select subject" : "Select a section first"}
+              placeholder={formData.sectionId ? t("homeworkForm.selectSubject") : t("homeworkForm.selectSectionFirst")}
             />
           </div>
 
@@ -378,7 +383,7 @@ export default function HomeworkFormModal({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label htmlFor="title" className="text-sm font-medium text-gray-700">
-                  Title <span className="text-red-500">*</span>
+                  {t("homeworkForm.titleLabel")} <span className="text-red-500">*</span>
                 </label>
                 <span className="text-xs text-gray-400">{formData.title.length}/100</span>
               </div>
@@ -390,13 +395,13 @@ export default function HomeworkFormModal({
                 value={formData.title}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="e.g. Chapter 5 exercises"
+                placeholder={t("homeworkForm.titleExamplePlaceholder")}
                 required
               />
             </div>
             <div>
               <label htmlFor="dueDate" className="text-sm font-medium text-gray-700 mb-2 block">
-                Due Date <span className="text-red-500">*</span>
+                {t("homeworkForm.dueDateLabel")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -414,9 +419,9 @@ export default function HomeworkFormModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label htmlFor="description" className="text-sm font-medium text-gray-700">
-                Description <span className="text-red-500">*</span>
+                {t("homeworkForm.descriptionLabel")} <span className="text-red-500">*</span>
               </label>
-              <span className="text-xs text-gray-400">{formData.description.length} chars</span>
+              <span className="text-xs text-gray-400">{t("homeworkForm.charsCount", { count: formData.description.length })}</span>
             </div>
             <textarea
               id="description"
@@ -425,7 +430,7 @@ export default function HomeworkFormModal({
               onChange={handleChange}
               rows={5}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
-              placeholder="Write the homework instructions and details here..."
+              placeholder={t("homeworkForm.instructionsPlaceholder")}
               required
             />
           </div>
@@ -433,7 +438,7 @@ export default function HomeworkFormModal({
           {/* Attachments */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-gray-700">Attachments</p>
+              <p className="text-sm font-medium text-gray-700">{t("homeworkForm.attachmentsLabel")}</p>
               <span className="text-xs text-gray-400">{formData.attachments.length}/3</span>
             </div>
 
@@ -453,9 +458,10 @@ export default function HomeworkFormModal({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
                 <p className="text-sm text-gray-500">
-                  <span className="font-medium text-blue-500">Click to upload</span> or drag & drop
+                  <span className="font-medium text-blue-500">{t("broadcast.clickToUpload")}</span>{" "}
+                  {t("broadcast.orDragDrop")}
                 </p>
-                <p className="text-xs text-gray-400">Max 3 files · 10MB each</p>
+                <p className="text-xs text-gray-400">{t("broadcast.maxFiles")}</p>
                 <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
               </div>
             )}
@@ -479,7 +485,7 @@ export default function HomeworkFormModal({
                       disabled={!file.fileUrl}
                       className="flex-1 min-w-0 text-left disabled:cursor-default"
                     >
-                      <p className="text-sm text-gray-700 truncate font-medium">{file.name || "Unnamed file"}</p>
+                      <p className="text-sm text-gray-700 truncate font-medium">{file.name || t("homeworkForm.unnamedFile")}</p>
                       <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
                     </button>
                     {file.fileUrl && (
@@ -516,7 +522,7 @@ export default function HomeworkFormModal({
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="button"
@@ -524,14 +530,18 @@ export default function HomeworkFormModal({
             disabled={!canSubmit || isSubmitting}
             onClick={(e) => handleSubmit(e, "DRAFT")}
           >
-            {isSubmitting ? "Saving..." : "Save as Draft"}
+            {isSubmitting ? t("homeworkForm.saving") : t("common.saveAsDraft")}
           </Button>
           <Button
             type="button"
             disabled={!canSubmit || isSubmitting}
             onClick={(e) => handleSubmit(e, "PUBLISHED")}
           >
-            {isSubmitting ? "Publishing..." : isEditing ? "Update" : "Publish"}
+            {isSubmitting
+              ? t("homeworkForm.publishing")
+              : isEditing
+                ? t("homeworkForm.update")
+                : t("homeworkForm.publish")}
           </Button>
         </div>
       </div>

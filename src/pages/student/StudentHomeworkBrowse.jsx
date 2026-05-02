@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Card, Button } from "../../ui-components";
 import DesktopListing from "../../components/homework/DesktopListing";
@@ -9,6 +10,7 @@ import Loader from "../../ui-components/Loader";
 import { ArrowLeft } from "lucide-react";
 
 export default function StudentHomeworkBrowse() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const { subjectId: subjectIdParam } = useParams();
   const navigate = useNavigate();
@@ -40,14 +42,14 @@ export default function StudentHomeworkBrowse() {
         setHomeworkData(response.data || response || []);
       } catch (err) {
         console.error("Error fetching homework:", err);
-        setError(err.message || "Failed to fetch homework");
+        setError(err.message || t("studentHomeworkBrowse.fetchFailed"));
       } finally {
         setLoading(false);
       }
     };
 
     fetchHomework();
-  }, [auth.userId, statusFilter]);
+  }, [auth.userId, statusFilter, t]);
 
   const subjectHomework = useMemo(
     () => homeworkData.filter((hw) => (hw.subject || "") === subjectKey),
@@ -85,9 +87,9 @@ export default function StudentHomeworkBrowse() {
   if (!subjectKey) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-        <p className="text-sm text-gray-600">Invalid homework route.</p>
+        <p className="text-sm text-gray-600">{t("studentHomeworkBrowse.invalidRoute")}</p>
         <Button variant="secondary" className="mt-4 w-fit" onClick={goBack}>
-          Back
+          {t("common.back")}
         </Button>
       </div>
     );
@@ -106,7 +108,7 @@ export default function StudentHomeworkBrowse() {
       <div className="h-screen flex items-center justify-center">
         <Card className="p-6 text-center">
           <div className="mb-4 text-red-500">
-            <h2 className="text-xl font-semibold">Error Loading Homework</h2>
+            <h2 className="text-xl font-semibold">{t("studentHomeworkBrowse.errorLoadingTitle")}</h2>
           </div>
           <p className="mb-4 text-gray-600">{error}</p>
           <button
@@ -114,7 +116,7 @@ export default function StudentHomeworkBrowse() {
             onClick={() => window.location.reload()}
             className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
           >
-            Retry
+            {t("common.tryAgain")}
           </button>
         </Card>
       </div>
@@ -139,7 +141,7 @@ export default function StudentHomeworkBrowse() {
             <div>
               <h1 className="text-xl font-bold text-gray-900">{headerTitle}</h1>
               <p className="text-sm text-gray-500 mt-0.5">
-                {filteredHomework.length} {filteredHomework.length === 1 ? "assignment" : "assignments"}
+                {t("studentHomeworkBrowse.assignmentCount", { count: filteredHomework.length })}
               </p>
             </div>
             {hasActiveFilters && (
@@ -151,14 +153,14 @@ export default function StudentHomeworkBrowse() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                Clear filters
+                {t("studentHomeworkBrowse.clearFilters")}
               </button>
             )}
           </div>
           <div className="relative max-w-sm">
             <input
               type="text"
-              placeholder="Search homework..."
+              placeholder={t("studentHomeworkBrowse.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-2 pl-9 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
@@ -187,7 +189,7 @@ export default function StudentHomeworkBrowse() {
           <div className="relative">
             <input
               type="text"
-              placeholder="Search homework..."
+              placeholder={t("studentHomeworkBrowse.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-2.5 pl-9 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"

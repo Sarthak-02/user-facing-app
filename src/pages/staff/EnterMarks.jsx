@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Button, Table } from "../../ui-components";
 import { bulkSubmitExamMarks, getExamGradesAll } from "../../api/exam.api";
@@ -20,20 +21,14 @@ const MOCK_STUDENTS = [
 
 const LETTER_GRADES = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F"];
 
-function getExamTypeLabel(type) {
-  const labels = {
-    UNIT_TEST: "Unit Test",
-    MID_TERM: "Mid Term",
-    FINAL: "Final Exam",
-    QUARTERLY: "Quarterly",
-    HALF_YEARLY: "Half Yearly",
-    ANNUAL: "Annual",
-    OTHER: "Other",
-  };
-  return labels[type] || type;
+function getExamTypeLabel(type, t) {
+  const key = `exams.examTypes.${type}`;
+  const translated = t(key);
+  return translated === key ? type : translated;
 }
 
 export default function EnterMarks() {
+  const { t } = useTranslation();
   const { examId } = useParams();
   const navigate = useNavigate();
   const { examDetail } = useExamDetail();
@@ -69,7 +64,7 @@ export default function EnterMarks() {
 
         // Check if we have exam data in store
         if (!examData) {
-          setError("Exam details not found. Please go back and select the exam again.");
+          setError(t("enterMarks.examMissing"));
           setLoading(false);
           return;
         }
@@ -147,13 +142,13 @@ export default function EnterMarks() {
         setLoading(false);
       } catch (err) {
         console.error("Error loading data:", err);
-        setError("Failed to load exam details. Please try again.");
+        setError(t("enterMarks.loadFailed"));
         setLoading(false);
       }
     };
 
     loadData();
-  }, [examDetail, examId]);
+  }, [examDetail, examId, t]);
 
   const handleMarkChange = useCallback((studentId, subjectId, value) => {
     // For numeric grading types, prevent negative numbers
@@ -182,7 +177,7 @@ export default function EnterMarks() {
       const mark = marksData[student.id]?.[subjectId]?.value;
       
       if (mark === "" || mark === null || mark === undefined) {
-        errors.push(`${student.name}: Mark is required`);
+        errors.push(t("enterMarks.validationMarkRequired", { name: student.name }));
         return;
       }
 
@@ -191,33 +186,33 @@ export default function EnterMarks() {
         const numMark = Number(mark);
         if (isNaN(numMark) || numMark < 0 || numMark > Number(exam.maxValue)) {
           errors.push(
-            `${student.name}: Mark must be between 0 and ${exam.maxValue}`
+            t("enterMarks.validationPercentRange", { name: student.name, max: exam.maxValue })
           );
         }
       } else if (exam.gradingType === "GPA") {
         const numMark = Number(mark);
         if (isNaN(numMark) || numMark < 0 || numMark > Number(exam.maxValue)) {
           errors.push(
-            `${student.name}: GPA must be between 0 and ${exam.maxValue}`
+            t("enterMarks.validationGpaRange", { name: student.name, max: exam.maxValue })
           );
         }
       } else if (exam.gradingType === "LETTER_GRADE") {
         if (!LETTER_GRADES.includes(mark)) {
           errors.push(
-            `${student.name}: Invalid letter grade`
+            t("enterMarks.validationLetterGrade", { name: student.name })
           );
         }
       } else if (exam.gradingType === "PASS_FAIL") {
         if (!["PASS", "FAIL"].includes(mark)) {
           errors.push(
-            `${student.name}: Must be either PASS or FAIL`
+            t("enterMarks.validationPassFail", { name: student.name })
           );
         }
       }
     });
 
     return errors;
-  }, [students, marksData, exam]);
+  }, [students, marksData, exam, t]);
 
   const handleSubmitSubject = useCallback(async (subjectId) => {
     setSubmitError(null);
@@ -250,7 +245,7 @@ export default function EnterMarks() {
       
       // Mark subject as submitted
       setSubmittedSubjects(prev => new Set([...prev, subjectId]));
-      setSuccessMessage(`Marks for ${subject.subjectName} submitted successfully!`);
+      setSuccessMessage(t("enterMarks.successSubject", { subject: subject.subjectName }));
       
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -258,11 +253,11 @@ export default function EnterMarks() {
       }, 3000);
     } catch (err) {
       console.error("Error submitting marks:", err);
-      setSubmitError(`Failed to submit marks for ${subject.subjectName}. Please try again.`);
+      setSubmitError(t("enterMarks.submitFailedSubject", { subject: subject.subjectName }));
     } finally {
       setIsSubmitting(false);
     }
-  }, [exam, students, marksData, examId, permissions.teacher_id, validateSubjectMarks]);
+  }, [exam, students, marksData, examId, permissions.teacher_id, validateSubjectMarks, t]);
 
   const handleGoBack = () => {
     navigate(`/staff/exams/${examId}`);
@@ -304,14 +299,14 @@ export default function EnterMarks() {
     return [
       {
         key: "rollNumber",
-        label: "Roll No.",
+        label: t("enterMarks.rollNo"),
         render: (student) => (
           <span className="font-medium text-gray-900">{student.rollNumber}</span>
         ),
       },
       {
         key: "name",
-        label: "Student Name",
+        label: t("enterMarks.studentName"),
         render: (student) => (
           <span className="text-gray-900">{student.name}</span>
         ),
@@ -322,7 +317,7 @@ export default function EnterMarks() {
           <div className="flex flex-col gap-2 items-center">
             <div>
               <div className="flex items-center justify-center gap-2">
-                <span>Marks</span>
+                <span>{t("enterMarks.marks")}</span>
                 {submittedSubjects.has(subject.subjectId) && (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -341,7 +336,7 @@ export default function EnterMarks() {
                 )}
               </div>
               <div className="text-xs text-gray-400 normal-case mt-1">
-                {getSubjectCompletionPercentage(subject.subjectId)}% Complete
+                {t("enterMarks.percentComplete", { pct: getSubjectCompletionPercentage(subject.subjectId) })}
               </div>
             </div>
             <button
@@ -356,10 +351,10 @@ export default function EnterMarks() {
               }`}
             >
               {submittedSubjects.has(subject.subjectId)
-                ? "Submitted"
+                ? t("enterMarks.submitted")
                 : isSubmitting
-                ? "..."
-                : "Submit"}
+                ? t("enterMarks.submittingShort")
+                : t("enterMarks.submit")}
             </button>
           </div>
         ),
@@ -442,15 +437,15 @@ export default function EnterMarks() {
                 }`}
               >
                 <option value="">--</option>
-                <option value="PASS">Pass</option>
-                <option value="FAIL">Fail</option>
+                <option value="PASS">{t("studentExams.pass")}</option>
+                <option value="FAIL">{t("studentExams.fail")}</option>
               </select>
             )}
           </div>
         ),
       },
     ];
-  }, [exam, selectedSubject, marksData, submittedSubjects, isSubmitting, getSubjectCompletionPercentage, isSubjectComplete, handleSubmitSubject, handleMarkChange]);
+  }, [exam, selectedSubject, marksData, submittedSubjects, isSubmitting, getSubjectCompletionPercentage, isSubjectComplete, handleSubmitSubject, handleMarkChange, t]);
 
 
   if (loading) {
@@ -481,10 +476,10 @@ export default function EnterMarks() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <h3 className="text-lg font-semibold text-gray-900">Error</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t("exams.error")}</h3>
             </div>
-            <p className="text-gray-600 mb-4">{error || "Exam not found"}</p>
-            <Button onClick={handleGoBack}>Go Back</Button>
+            <p className="text-gray-600 mb-4">{error || t("staffExamDetail.examNotFound")}</p>
+            <Button onClick={handleGoBack}>{t("common.back")}</Button>
           </div>
         </Card>
       </div>
@@ -516,9 +511,9 @@ export default function EnterMarks() {
             </svg>
           </button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">Enter Marks</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("enterMarks.title")}</h1>
             <p className="text-sm text-gray-600 mt-1">
-              {getExamTypeLabel(exam.examType)} - {exam.class}
+              {getExamTypeLabel(exam.examType, t)} - {exam.class}
               {exam.section && ` - ${exam.section}`}
             </p>
           </div>
@@ -531,7 +526,7 @@ export default function EnterMarks() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search students..."
+                  placeholder={t("enterMarks.searchStudents")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -610,7 +605,7 @@ export default function EnterMarks() {
                 />
               </svg>
               <div className="flex-1">
-                <h4 className="text-sm font-semibold text-red-800">Error</h4>
+                <h4 className="text-sm font-semibold text-red-800">{t("exams.error")}</h4>
                 <p className="text-sm text-red-700 mt-1 whitespace-pre-line">{submitError}</p>
               </div>
             </div>
@@ -632,7 +627,7 @@ export default function EnterMarks() {
                 <div className="flex items-center justify-between pb-3 border-b border-gray-200">
                   <div>
                     <p className="font-semibold text-gray-900">{student.name}</p>
-                    <p className="text-sm text-gray-600">Roll No: {student.rollNumber}</p>
+                    <p className="text-sm text-gray-600">{t("enterMarks.mobileRollNo", { roll: student.rollNumber })}</p>
                   </div>
                 </div>
 
@@ -658,7 +653,7 @@ export default function EnterMarks() {
                                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                                 />
                               </svg>
-                              <span className="text-sm font-medium text-green-700">Already Submitted</span>
+                              <span className="text-sm font-medium text-green-700">{t("enterMarks.alreadySubmitted")}</span>
                             </>
                           )}
                         </div>
@@ -681,7 +676,7 @@ export default function EnterMarks() {
                           className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                             submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                           }`}
-                          placeholder={`Marks (out of ${exam.maxValue})`}
+                          placeholder={t("enterMarks.placeholderMarksOutOf", { max: exam.maxValue })}
                           min="0"
                           max={exam.maxValue}
                         />
@@ -704,7 +699,7 @@ export default function EnterMarks() {
                           className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                             submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                           }`}
-                          placeholder={`GPA (out of ${exam.maxValue})`}
+                          placeholder={t("enterMarks.placeholderGpaOutOf", { max: exam.maxValue })}
                           min="0"
                           max={exam.maxValue}
                         />
@@ -721,7 +716,7 @@ export default function EnterMarks() {
                             submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                           }`}
                         >
-                          <option value="">Select Grade</option>
+                          <option value="">{t("enterMarks.selectGrade")}</option>
                           {LETTER_GRADES.map((grade) => (
                             <option key={grade} value={grade}>
                               {grade}
@@ -741,9 +736,9 @@ export default function EnterMarks() {
                             submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                           }`}
                         >
-                          <option value="">Select Result</option>
-                          <option value="PASS">Pass</option>
-                          <option value="FAIL">Fail</option>
+                          <option value="">{t("enterMarks.selectResult")}</option>
+                          <option value="PASS">{t("studentExams.pass")}</option>
+                          <option value="FAIL">{t("studentExams.fail")}</option>
                         </select>
                       )}
                     </div>
@@ -761,10 +756,14 @@ export default function EnterMarks() {
         <div className="mb-4 max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-500">
-              Progress - {exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || 'Subject'}
+              {t("enterMarks.progressFor", { subject: exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || t("reporting.subject") })}
             </span>
             <span className="text-sm font-medium text-gray-700">
-              {getSubjectCompletionPercentage(selectedSubject)}% Complete ({students.filter(s => marksData[s.id]?.[selectedSubject]?.value).length} / {students.length} students)
+              {t("enterMarks.studentsProgress", {
+                pct: getSubjectCompletionPercentage(selectedSubject),
+                filled: students.filter(s => marksData[s.id]?.[selectedSubject]?.value).length,
+                total: students.length,
+              })}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -784,11 +783,13 @@ export default function EnterMarks() {
             disabled={!isSubjectComplete(selectedSubject) || isSubmitting}
             className="w-full max-w-md"
           >
-            {submittedSubjects.has(selectedSubject) 
-              ? "Submitted ✓" 
-              : isSubmitting 
-              ? "Submitting..." 
-              : `Submit ${exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || 'Marks'}`}
+            {submittedSubjects.has(selectedSubject)
+              ? t("enterMarks.submittedCheck")
+              : isSubmitting
+              ? t("enterMarks.submitting")
+              : t("enterMarks.submitMarksFor", {
+                  subject: exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || t("enterMarks.marksFallback"),
+                })}
           </Button>
         </div>
       </div>
@@ -799,10 +800,14 @@ export default function EnterMarks() {
         <div className="mb-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs sm:text-sm text-gray-500">
-              {exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || 'Subject'}
+              {exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || t("reporting.subject")}
             </span>
             <span className="text-xs sm:text-sm font-medium text-gray-700">
-              {getSubjectCompletionPercentage(selectedSubject)}% ({students.filter(s => marksData[s.id]?.[selectedSubject]?.value).length}/{students.length})
+              {t("enterMarks.studentsProgressShort", {
+                pct: getSubjectCompletionPercentage(selectedSubject),
+                filled: students.filter(s => marksData[s.id]?.[selectedSubject]?.value).length,
+                total: students.length,
+              })}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -821,11 +826,13 @@ export default function EnterMarks() {
           disabled={!isSubjectComplete(selectedSubject) || isSubmitting}
           className="w-full max-w-md"
         >
-          {submittedSubjects.has(selectedSubject) 
-            ? "Submitted ✓" 
-            : isSubmitting 
-            ? "Submitting..." 
-            : `Submit ${exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || 'Marks'}`}
+          {submittedSubjects.has(selectedSubject)
+            ? t("enterMarks.submittedCheck")
+            : isSubmitting
+            ? t("enterMarks.submitting")
+            : t("enterMarks.submitMarksFor", {
+                subject: exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || t("enterMarks.marksFallback"),
+              })}
         </Button>
       </div>
     </div>

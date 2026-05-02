@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Loader, Button } from "../../ui-components";
 import {
@@ -82,17 +83,18 @@ const subjectColor = (name) => hashColor(name, SUBJECT_COLORS);
 // ─── small UI primitives ─────────────────────────────────────────────────────
 
 function PassBadge({ passes }) {
+  const { t } = useTranslation();
   if (passes === null)
     return <span className="text-xs font-semibold text-gray-400">—</span>;
   return passes ? (
     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/20">
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-      Pass
+      {t("studentExams.pass")}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-red-600/20">
       <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-      Below target
+      {t("reporting.belowTarget")}
     </span>
   );
 }
@@ -126,6 +128,7 @@ function StatCard({ icon: Icon, label, value, hint, accent, children }) {
 }
 
 function PassRateBar({ passed, total }) {
+  const { t } = useTranslation();
   const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
   return (
     <div className="mt-3">
@@ -135,7 +138,7 @@ function PassRateBar({ passed, total }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="mt-1 text-xs font-semibold text-emerald-700">{pct}% pass rate</p>
+      <p className="mt-1 text-xs font-semibold text-emerald-700">{t("reporting.passRatePercent", { pct })}</p>
     </div>
   );
 }
@@ -261,6 +264,7 @@ function ExamLineChart({ title, description, points }) {
 // ─── Student Detail Panel ─────────────────────────────────────────────────────
 
 function StudentDetailPanel({ student, onClose }) {
+  const { t } = useTranslation();
   const { name, rows } = student;
 
   const examGroups = useMemo(() => {
@@ -294,7 +298,7 @@ function StudentDetailPanel({ student, onClose }) {
             </div>
             <div>
               <h2 className="font-semibold text-gray-900">{name}</h2>
-              <p className="text-xs text-gray-500">Student report</p>
+              <p className="text-xs text-gray-500">{t("reporting.studentReport")}</p>
             </div>
           </div>
           <button
@@ -309,27 +313,27 @@ function StudentDetailPanel({ student, onClose }) {
         <div className="grid grid-cols-3 gap-3 border-b border-border p-4">
           <div className="rounded-xl bg-gray-50 p-3 text-center">
             <p className="text-lg font-bold text-gray-900">{examGroups.length}</p>
-            <p className="text-xs text-gray-500">Exams</p>
+            <p className="text-xs text-gray-500">{t("reporting.exams")}</p>
           </div>
           <div className="rounded-xl bg-emerald-50 p-3 text-center">
             <p className="text-lg font-bold text-emerald-700">
               {totalGraded > 0 ? `${Math.round((totalPassed / totalGraded) * 100)}%` : "—"}
             </p>
-            <p className="text-xs text-gray-500">Pass rate</p>
+            <p className="text-xs text-gray-500">{t("reporting.passRate")}</p>
           </div>
           <div className="rounded-xl bg-primary-50 p-3 text-center">
             <p className="text-lg font-bold text-primary-700">
               {pctAvgAll != null ? `${pctAvgAll.toFixed(1)}%` : "—"}
             </p>
-            <p className="text-xs text-gray-500">Avg score</p>
+            <p className="text-xs text-gray-500">{t("reporting.avgScoreShort")}</p>
           </div>
         </div>
 
         {/* Exam breakdown */}
         <div className="flex-1 overflow-y-auto p-4 pb-8">
-          <h3 className="mb-3 text-sm font-semibold text-gray-700">Grade breakdown</h3>
+          <h3 className="mb-3 text-sm font-semibold text-gray-700">{t("reporting.gradeBreakdown")}</h3>
           {examGroups.length === 0 ? (
-            <div className="py-12 text-center text-sm text-gray-400">No grades recorded</div>
+            <div className="py-12 text-center text-sm text-gray-400">{t("reporting.noGradesRecorded")}</div>
           ) : (
             <div className="space-y-4">
               {examGroups.map((g) => (
@@ -338,7 +342,7 @@ function StudentDetailPanel({ student, onClose }) {
                     <span className="text-sm font-semibold text-gray-900">{g.exam_name}</span>
                     {g.pctAvg != null && (
                       <span className="rounded-lg bg-primary-50 px-2 py-0.5 text-xs font-semibold text-primary-800 ring-1 ring-primary-200">
-                        Avg {g.pctAvg.toFixed(1)}%
+                        {t("reporting.avgGradePercent", { value: g.pctAvg.toFixed(1) })}
                       </span>
                     )}
                   </div>
@@ -347,11 +351,11 @@ function StudentDetailPanel({ student, onClose }) {
                       <ExamPassBar passCount={g.passCount} belowCount={g.belowCount} total={g.gradedCount} />
                       <div className="mt-1.5 flex gap-4 text-xs text-gray-500">
                         <span className="flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500" />{g.passCount} passed
+                          <span className="h-2 w-2 rounded-full bg-emerald-500" />{t("reporting.passedCount", { count: g.passCount })}
                         </span>
                         {g.belowCount > 0 && (
                           <span className="flex items-center gap-1">
-                            <span className="h-2 w-2 rounded-full bg-red-400" />{g.belowCount} below
+                            <span className="h-2 w-2 rounded-full bg-red-400" />{t("reporting.belowCount", { count: g.belowCount })}
                           </span>
                         )}
                       </div>
@@ -360,9 +364,9 @@ function StudentDetailPanel({ student, onClose }) {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-white text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        <th className="px-4 py-2 text-left">Subject</th>
-                        <th className="px-4 py-2 text-left">Score</th>
-                        <th className="px-4 py-2 text-left">Result</th>
+                        <th className="px-4 py-2 text-left">{t("reporting.subject")}</th>
+                        <th className="px-4 py-2 text-left">{t("reporting.score")}</th>
+                        <th className="px-4 py-2 text-left">{t("reporting.result")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -377,7 +381,7 @@ function StudentDetailPanel({ student, onClose }) {
                             </div>
                           </td>
                           <td className="px-4 py-2.5">
-                            {row.is_graded ? <ScorePill>{formatGrade(row)}</ScorePill> : <ScorePill muted>Pending</ScorePill>}
+                            {row.is_graded ? <ScorePill>{formatGrade(row)}</ScorePill> : <ScorePill muted>{t("reporting.pending")}</ScorePill>}
                           </td>
                           <td className="px-4 py-2.5">
                             <PassBadge passes={row.is_graded ? gradePasses(row) : null} />
@@ -399,6 +403,7 @@ function StudentDetailPanel({ student, onClose }) {
 // ─── Exam Detail Panel ────────────────────────────────────────────────────────
 
 function ExamDetailPanel({ exam, studentGroups, onViewStudent, onClose }) {
+  const { t } = useTranslation();
   const { exam_name, rows, gradedCount, passCount, belowCount, pctAvg, gpaAvg, studentCount } = exam;
 
   return (
@@ -410,7 +415,7 @@ function ExamDetailPanel({ exam, studentGroups, onViewStudent, onClose }) {
           <div>
             <h2 className="font-semibold text-gray-900">{exam_name}</h2>
             <p className="text-xs text-gray-500">
-              {studentCount} student{studentCount !== 1 ? "s" : ""} · {gradedCount} graded
+              {t("reporting.studentCount", { count: studentCount })} · {t("reporting.gradedHintCount", { count: gradedCount })}
             </p>
           </div>
           <button
@@ -425,17 +430,17 @@ function ExamDetailPanel({ exam, studentGroups, onViewStudent, onClose }) {
         <div className="grid grid-cols-3 gap-3 border-b border-border p-4">
           <div className="rounded-xl bg-gray-50 p-3 text-center">
             <p className="text-lg font-bold text-gray-900">{passCount}</p>
-            <p className="text-xs text-gray-500">Passed</p>
+            <p className="text-xs text-gray-500">{t("reporting.passed")}</p>
           </div>
           <div className="rounded-xl bg-red-50 p-3 text-center">
             <p className="text-lg font-bold text-red-600">{belowCount}</p>
-            <p className="text-xs text-gray-500">Below target</p>
+            <p className="text-xs text-gray-500">{t("reporting.belowTarget")}</p>
           </div>
           <div className="rounded-xl bg-primary-50 p-3 text-center">
             <p className="text-lg font-bold text-primary-700">
               {pctAvg != null ? `${pctAvg.toFixed(1)}%` : gpaAvg != null ? `${gpaAvg.toFixed(2)}` : "—"}
             </p>
-            <p className="text-xs text-gray-500">{pctAvg != null ? "Class avg" : "Avg GPA"}</p>
+            <p className="text-xs text-gray-500">{pctAvg != null ? t("reporting.classAvg") : t("reporting.avgGpaLabel")}</p>
           </div>
         </div>
 
@@ -444,10 +449,10 @@ function ExamDetailPanel({ exam, studentGroups, onViewStudent, onClose }) {
           <table className="w-full text-sm">
             <thead className="sticky top-0">
               <tr className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                <th className="px-5 py-3 text-left">Student</th>
-                <th className="px-5 py-3 text-left">Subject</th>
-                <th className="px-5 py-3 text-left">Score</th>
-                <th className="px-5 py-3 text-left">Result</th>
+                <th className="px-5 py-3 text-left">{t("reporting.student")}</th>
+                <th className="px-5 py-3 text-left">{t("reporting.subject")}</th>
+                <th className="px-5 py-3 text-left">{t("reporting.score")}</th>
+                <th className="px-5 py-3 text-left">{t("reporting.result")}</th>
               </tr>
             </thead>
             <tbody>
@@ -468,7 +473,7 @@ function ExamDetailPanel({ exam, studentGroups, onViewStudent, onClose }) {
                   </td>
                   <td className="px-5 py-3 text-gray-600">{row.subject_name ?? "—"}</td>
                   <td className="px-5 py-3">
-                    {row.is_graded ? <ScorePill>{formatGrade(row)}</ScorePill> : <ScorePill muted>Pending</ScorePill>}
+                    {row.is_graded ? <ScorePill>{formatGrade(row)}</ScorePill> : <ScorePill muted>{t("reporting.pending")}</ScorePill>}
                   </td>
                   <td className="px-5 py-3">
                     <PassBadge passes={row.is_graded ? gradePasses(row) : null} />
@@ -486,6 +491,7 @@ function ExamDetailPanel({ exam, studentGroups, onViewStudent, onClose }) {
 // ─── main page ───────────────────────────────────────────────────────────────
 
 export default function TeacherReporting() {
+  const { t } = useTranslation();
   const { sectionId } = useParams();
   const navigate = useNavigate();
   const { auth } = useAuth();
@@ -523,13 +529,13 @@ export default function TeacherReporting() {
       const raw = gradesRes?.data?.items ?? gradesRes?.items ?? [];
       setGrades(Array.isArray(raw) ? raw : []);
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Could not load section data.");
+      setError(err?.response?.data?.message || err?.message || t("reporting.loadSectionError"));
       setGrades([]);
       setSummary(null);
     } finally {
       setLoading(false);
     }
-  }, [teacherId, sectionId, filters]);
+  }, [teacherId, sectionId, filters, t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -642,10 +648,10 @@ export default function TeacherReporting() {
     return (
       <div className="flex h-screen items-center justify-center p-4">
         <Card className="max-w-md p-6 text-center">
-          <h2 className="text-lg font-semibold text-red-600">Could not load data</h2>
+          <h2 className="text-lg font-semibold text-red-600">{t("reporting.couldNotLoadData")}</h2>
           <p className="mt-2 text-sm text-gray-600">{error}</p>
           <Button variant="primary" className="mt-5 w-full" onClick={fetchData}>
-            Try again
+            {t("reporting.tryAgain")}
           </Button>
         </Card>
       </div>
@@ -665,9 +671,9 @@ export default function TeacherReporting() {
               <ChevronLeft size={20} />
             </button>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Section Report</h1>
+              <h1 className="text-xl font-bold text-gray-900">{t("reporting.sectionReport")}</h1>
               <p className="mt-0.5 text-sm text-gray-500">
-                Grade performance for this section
+                {t("reporting.sectionReportSubtitle")}
               </p>
             </div>
           </div>
@@ -676,7 +682,7 @@ export default function TeacherReporting() {
             className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 active:bg-gray-100"
           >
             <RefreshCw size={14} strokeWidth={2} />
-            Refresh
+            {t("reporting.refresh")}
           </button>
         </div>
 
@@ -691,7 +697,7 @@ export default function TeacherReporting() {
             }`}
           >
             <SlidersHorizontal size={14} strokeWidth={2} />
-            Filters
+            {t("reporting.filters")}
             {hasActiveFilters && (
               <span className="ml-1 rounded-full bg-primary-600 px-1.5 py-0.5 text-xs text-white">
                 {[filters.startDate, filters.endDate, filters.status !== "all"].filter(Boolean).length}
@@ -704,7 +710,7 @@ export default function TeacherReporting() {
               className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500"
             >
               <X size={12} />
-              Clear
+              {t("reporting.clear")}
             </button>
           )}
         </div>
@@ -713,7 +719,7 @@ export default function TeacherReporting() {
         {showFilters && (
           <Card className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="flex-1">
-              <label className="mb-1.5 block text-xs font-medium text-gray-600">From date</label>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600">{t("reporting.fromDate")}</label>
               <input
                 type="date"
                 value={pendingFilters.startDate}
@@ -722,7 +728,7 @@ export default function TeacherReporting() {
               />
             </div>
             <div className="flex-1">
-              <label className="mb-1.5 block text-xs font-medium text-gray-600">To date</label>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600">{t("reporting.toDate")}</label>
               <input
                 type="date"
                 value={pendingFilters.endDate}
@@ -731,40 +737,40 @@ export default function TeacherReporting() {
               />
             </div>
             <div className="flex-1">
-              <label className="mb-1.5 block text-xs font-medium text-gray-600">Status</label>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600">{t("reporting.statusFilter")}</label>
               <select
                 value={pendingFilters.status}
                 onChange={(e) => setPendingFilters((f) => ({ ...f, status: e.target.value }))}
                 className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
               >
-                <option value="all">All</option>
-                <option value="graded">Graded</option>
-                <option value="pending">Pending</option>
+                <option value="all">{t("reporting.statusAll")}</option>
+                <option value="graded">{t("reporting.statusGraded")}</option>
+                <option value="pending">{t("reporting.statusPendingFilter")}</option>
               </select>
             </div>
             <div className="flex gap-2">
-              <Button variant="primary" onClick={applyFilters}>Apply</Button>
-              <Button variant="secondary" onClick={() => setShowFilters(false)}>Cancel</Button>
+              <Button variant="primary" onClick={applyFilters}>{t("studentAttendance.apply")}</Button>
+              <Button variant="secondary" onClick={() => setShowFilters(false)}>{t("common.cancel")}</Button>
             </div>
           </Card>
         )}
 
         {/* ── Stat cards ── */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard icon={Users} label="Students" value={overview.totalStudents} accent="bg-blue-50 text-blue-600" />
-          <StatCard icon={BookMarked} label="Exams" value={overview.totalExams} accent="bg-purple-50 text-purple-600" />
+          <StatCard icon={Users} label={t("reporting.students")} value={overview.totalStudents} accent="bg-blue-50 text-blue-600" />
+          <StatCard icon={BookMarked} label={t("reporting.exams")} value={overview.totalExams} accent="bg-purple-50 text-purple-600" />
           <StatCard
             icon={BarChart3}
-            label="Avg score"
+            label={t("reporting.avgScoreShort")}
             value={overview.avgScore != null ? `${overview.avgScore.toFixed(1)}%` : "—"}
-            hint={`${overview.gradedCount} graded`}
+            hint={t("reporting.gradedHintCount", { count: overview.gradedCount })}
             accent="bg-amber-50 text-amber-600"
           />
           <StatCard
             icon={CheckCircle2}
-            label="Pass rate"
+            label={t("reporting.passRate")}
             value={overview.passRate != null ? `${overview.passRate}%` : "—"}
-            hint={`${overview.pendingCount} pending`}
+            hint={t("reporting.pendingHintCount", { count: overview.pendingCount })}
             accent="bg-emerald-50 text-emerald-600"
           >
             {overview.passRate != null && (
@@ -782,9 +788,9 @@ export default function TeacherReporting() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
                 <TrendingUp size={28} strokeWidth={1.5} />
               </div>
-              <h3 className="text-base font-semibold text-gray-900">No grade data</h3>
+              <h3 className="text-base font-semibold text-gray-900">{t("reporting.noGradeData")}</h3>
               <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">
-                No grades have been recorded for this section yet.
+                {t("reporting.noGradeDataSection")}
               </p>
             </div>
           </Card>
@@ -794,10 +800,10 @@ export default function TeacherReporting() {
             <div className="border-b border-border">
               <div className="flex gap-1">
                 <TabButton active={activeTab === "exam"} onClick={() => setActiveTab("exam")}>
-                  By Exam
+                  {t("reporting.byExam")}
                 </TabButton>
                 <TabButton active={activeTab === "student"} onClick={() => setActiveTab("student")}>
-                  By Student
+                  {t("reporting.byStudent")}
                 </TabButton>
               </div>
             </div>
@@ -807,8 +813,8 @@ export default function TeacherReporting() {
               <section className="space-y-4">
                 {examLineData.length > 1 && (
                   <ExamLineChart
-                    title="Exam comparison"
-                    description="Class average percentage score per exam"
+                    title={t("reporting.examComparison")}
+                    description={t("reporting.examComparisonDescription")}
                     points={examLineData}
                   />
                 )}
@@ -831,16 +837,16 @@ export default function TeacherReporting() {
 
                       <div className="flex flex-wrap gap-2">
                         <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
-                          {g.studentCount} student{g.studentCount !== 1 ? "s" : ""}
+                          {t("reporting.studentCount", { count: g.studentCount })}
                         </span>
                         {g.pctAvg != null && (
                           <span className="rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-semibold text-primary-700 ring-1 ring-primary-200">
-                            avg {g.pctAvg.toFixed(1)}%
+                            {t("reporting.avgPercentChip", { value: g.pctAvg.toFixed(1) })}
                           </span>
                         )}
                         {g.gpaAvg != null && (
                           <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700 ring-1 ring-purple-200">
-                            avg {g.gpaAvg.toFixed(2)} GPA
+                            {t("reporting.avgGpaChip", { value: g.gpaAvg.toFixed(2) })}
                           </span>
                         )}
                       </div>
@@ -848,18 +854,18 @@ export default function TeacherReporting() {
                       <div className="flex gap-3 text-xs text-gray-500">
                         <span className="flex items-center gap-1">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          {g.passCount} passed
+                          {t("reporting.passedCount", { count: g.passCount })}
                         </span>
                         {g.belowCount > 0 && (
                           <span className="flex items-center gap-1">
                             <span className="h-2 w-2 rounded-full bg-red-400" />
-                            {g.belowCount} below
+                            {t("reporting.belowCount", { count: g.belowCount })}
                           </span>
                         )}
                         {g.gradedCount < g.rows.length && (
                           <span className="flex items-center gap-1">
                             <span className="h-2 w-2 rounded-full bg-gray-300" />
-                            {g.rows.length - g.gradedCount} pending
+                            {t("reporting.pendingCountLabel", { count: g.rows.length - g.gradedCount })}
                           </span>
                         )}
                       </div>
@@ -874,8 +880,8 @@ export default function TeacherReporting() {
               <section className="space-y-4">
                 {studentBarData.length > 0 && (
                   <HorizBarChart
-                    title="Student performance"
-                    description="Average percentage score per student"
+                    title={t("reporting.studentPerformance")}
+                    description={t("reporting.studentPerformanceDescription")}
                     bars={studentBarData}
                   />
                 )}
@@ -894,17 +900,17 @@ export default function TeacherReporting() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-semibold text-gray-900">{s.name}</p>
                           <p className="text-xs text-gray-500">
-                            {s.rows.length} grade {s.rows.length === 1 ? "entry" : "entries"}
+                            {t("reporting.gradeEntry", { count: s.rows.length })}
                           </p>
                           <div className="mt-1.5 flex flex-wrap gap-1.5">
                             {s.pctAvg != null && (
                               <span className="rounded-lg bg-primary-50 px-2 py-0.5 text-xs font-semibold text-primary-800 ring-1 ring-primary-200">
-                                {s.pctAvg.toFixed(1)}% avg
+                                {t("reporting.studentAvgChip", { value: s.pctAvg.toFixed(1) })}
                               </span>
                             )}
                             {passRate != null && (
                               <span className={`rounded-lg px-2 py-0.5 text-xs font-semibold ring-1 ${passRate >= 60 ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-red-50 text-red-700 ring-red-200"}`}>
-                                {passRate}% pass rate
+                                {t("reporting.passRateChip", { pct: passRate })}
                               </span>
                             )}
                           </div>

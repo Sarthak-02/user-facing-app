@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useTranslation } from "react-i18next";
 
 export default function Button({
   variant = "primary",
@@ -8,7 +9,8 @@ export default function Button({
   children,
   ...props
 }) {
-  
+  const { t } = useTranslation();
+
   return (
     <button
       disabled={disabled || loading}
@@ -37,7 +39,7 @@ export default function Button({
       )}
       {...props}
     >
-      {loading ? "Loading..." : children}
+      {loading ? t("common.loading") : children}
     </button>
   );
 }

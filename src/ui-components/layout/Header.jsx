@@ -13,6 +13,7 @@ const PAGE_TITLE_KEYS = {
   "/student/announcements": "nav.announcements",
   "/student/exams": "nav.exams",
   "/student/chat": "nav.messages",
+  "/student/pickup": "nav.pickup",
   "/student/reporting": "nav.reporting",
   "/student/study": "nav.study",
   "/student/profile": "nav.myProfile",
@@ -21,6 +22,7 @@ const PAGE_TITLE_KEYS = {
   "/staff/lesson-plans": "nav.lessonPlans",
   "/staff/exams": "nav.exams",
   "/staff/chat": "nav.messages",
+  "/staff/pickup": "nav.pickup",
   "/staff/profile": "nav.myProfile",
   "/broadcast": "nav.broadcast",
   "/scholarships": "nav.scholarships",
@@ -103,7 +105,7 @@ export default function Header() {
           <button
             className="h-9 w-9 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-semibold hover:bg-primary-700 transition-colors ring-2 ring-primary-200 hover:ring-primary-300"
             onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-            aria-label="Open profile menu"
+            aria-label={t("header.openProfileMenu")}
           >
             {userInitial}
           </button>

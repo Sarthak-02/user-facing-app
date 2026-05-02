@@ -1,4 +1,5 @@
 import api from "./axios";
+import i18n from "../i18n";
 
 /**
  * Normalize GET /receiver/summary body: supports `{ success, data }` or a direct summary object.
@@ -7,12 +8,12 @@ import api from "./axios";
  */
 export function unwrapReceiverSummaryResponse(res) {
   if (!res || typeof res !== "object") {
-    return { payload: null, message: "Could not load summary." };
+    return { payload: null, message: i18n.t("errors.summaryCouldNotLoad") };
   }
   if (res.success === false) {
     return {
       payload: null,
-      message: typeof res.message === "string" ? res.message : "Could not load summary.",
+      message: typeof res.message === "string" ? res.message : i18n.t("errors.summaryCouldNotLoad"),
     };
   }
 
@@ -46,7 +47,7 @@ export function unwrapReceiverSummaryResponse(res) {
 
   return {
     payload: null,
-    message: typeof res.message === "string" ? res.message : "Could not load summary.",
+    message: typeof res.message === "string" ? res.message : i18n.t("errors.summaryCouldNotLoad"),
   };
 }
 

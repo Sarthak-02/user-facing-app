@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { getClassPlanById } from "../../api/lessonPlans.api";
 import {
@@ -11,7 +12,6 @@ import {
   ClipboardList,
   FileText,
   BookmarkCheck,
-  Timer,
   StickyNote,
 } from "lucide-react";
 import Loader from "../../ui-components/Loader";
@@ -23,7 +23,7 @@ function formatDate(d) {
   return x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function topicStatusConfig(status) {
+function topicStatusConfig(status, t) {
   switch (status) {
     case "COMPLETED":
       return {
@@ -31,7 +31,7 @@ function topicStatusConfig(status) {
         iconColor: "text-green-500",
         badge: "bg-green-100 text-green-700",
         headerGradient: "from-green-500 to-emerald-600",
-        label: "Completed",
+        label: t("staffTopicDetail.topicStatusCompleted"),
       };
     case "IN_PROGRESS":
       return {
@@ -39,7 +39,7 @@ function topicStatusConfig(status) {
         iconColor: "text-blue-500",
         badge: "bg-blue-100 text-blue-700",
         headerGradient: "from-blue-500 to-indigo-600",
-        label: "In Progress",
+        label: t("staffTopicDetail.topicStatusInProgress"),
       };
     case "SKIPPED":
       return {
@@ -47,7 +47,7 @@ function topicStatusConfig(status) {
         iconColor: "text-gray-400",
         badge: "bg-gray-100 text-gray-500",
         headerGradient: "from-gray-400 to-gray-500",
-        label: "Skipped",
+        label: t("staffTopicDetail.topicStatusSkipped"),
       };
     default:
       return {
@@ -55,12 +55,13 @@ function topicStatusConfig(status) {
         iconColor: "text-amber-400",
         badge: "bg-amber-100 text-amber-700",
         headerGradient: "from-indigo-500 to-violet-600",
-        label: "Upcoming",
+        label: t("staffTopicDetail.topicStatusUpcoming"),
       };
   }
 }
 
 export default function StudentTopicDetail() {
+  const { t } = useTranslation();
   const { subjectId, topicId } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -73,7 +74,7 @@ export default function StudentTopicDetail() {
     const classPlanId = state?.classPlanId;
     if (!classPlanId || !topicId) {
       if (!state?.topic) {
-        setError("Topic data not available. Please go back and try again.");
+        setError(t("studentTopicDetail.topicDataUnavailable"));
       }
       setLoading(false);
       return;
@@ -87,16 +88,16 @@ export default function StudentTopicDetail() {
         );
         if (!cancelled) {
           if (found) setTopic(found);
-          else if (!state?.topic) setError("Topic not found.");
+          else if (!state?.topic) setError(t("studentTopicDetail.topicNotFound"));
         }
       } catch (e) {
-        if (!cancelled && !state?.topic) setError(e?.message || "Failed to load topic.");
+        if (!cancelled && !state?.topic) setError(e?.message || t("studentTopicDetail.failedLoadTopic"));
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [topicId, state?.classPlanId]);
+  }, [topicId, state?.classPlanId, t]);
 
   const goBack = () => navigate(`/student/lesson-plans/subject/${subjectId}`);
 
@@ -115,7 +116,7 @@ export default function StudentTopicDetail() {
           <button onClick={goBack} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </button>
-          <h1 className="text-base font-bold text-gray-900">Topic</h1>
+          <h1 className="text-base font-bold text-gray-900">{t("studentTopicDetail.fallbackTitle")}</h1>
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
@@ -124,9 +125,9 @@ export default function StudentTopicDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-sm text-gray-500 mb-4">{error || "Topic not found."}</p>
+            <p className="text-sm text-gray-500 mb-4">{error || t("studentTopicDetail.topicNotFound")}</p>
             <button onClick={goBack} className="px-4 py-2 text-sm bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
-              Go Back
+              {t("studentTopicDetail.goBack")}
             </button>
           </div>
         </div>
@@ -134,7 +135,7 @@ export default function StudentTopicDetail() {
     );
   }
 
-  const sc = topicStatusConfig(topic.status);
+  const sc = topicStatusConfig(topic.status, t);
   const { Icon } = sc;
   const assignments = (topic.assignments ?? []).filter(
     (a) => !a.status || a.status === "PUBLISHED" || a.status === "CLOSED"
@@ -159,7 +160,7 @@ export default function StudentTopicDetail() {
           <h1 className="text-base font-bold text-gray-900 truncate">{topic.title}</h1>
           {chapterTitle && (
             <p className="text-xs text-gray-500 truncate">
-              {chapterNumber != null ? `Chapter ${chapterNumber}: ` : ""}{chapterTitle}
+              {chapterNumber != null ? t("staffTopicDetail.chapterPrefix", { number: chapterNumber }) : ""}{chapterTitle}
             </p>
           )}
         </div>
@@ -181,7 +182,7 @@ export default function StudentTopicDetail() {
               <div className="flex-1 min-w-0">
                 {chapterTitle && (
                   <p className="text-xs font-semibold uppercase tracking-widest opacity-75 mb-1">
-                    {chapterNumber != null ? `Chapter ${chapterNumber} · ` : ""}{chapterTitle}
+                    {chapterNumber != null ? t("staffTopicDetail.chapterDotTitle", { number: chapterNumber }) : ""}{chapterTitle}
                   </p>
                 )}
                 <h2 className="text-lg font-bold leading-snug">{topic.title}</h2>
@@ -192,20 +193,20 @@ export default function StudentTopicDetail() {
             <div className="grid grid-cols-2 gap-2 mt-4">
               {topic.scheduled_date && (
                 <div className="bg-white/15 rounded-xl p-2.5">
-                  <p className="text-xs opacity-70 mb-0.5">Scheduled</p>
+                  <p className="text-xs opacity-70 mb-0.5">{t("staffTopicDetail.scheduledLabel")}</p>
                   <p className="text-sm font-semibold">{formatDate(topic.scheduled_date)}</p>
                 </div>
               )}
               {topic.completed_on && (
                 <div className="bg-white/15 rounded-xl p-2.5">
-                  <p className="text-xs opacity-70 mb-0.5">Completed</p>
+                  <p className="text-xs opacity-70 mb-0.5">{t("staffTopicDetail.completedLabel")}</p>
                   <p className="text-sm font-semibold">{formatDate(topic.completed_on)}</p>
                 </div>
               )}
               {topic.actual_duration_mins != null && (
                 <div className="bg-white/15 rounded-xl p-2.5">
-                  <p className="text-xs opacity-70 mb-0.5">Duration</p>
-                  <p className="text-sm font-semibold">{topic.actual_duration_mins} min</p>
+                  <p className="text-xs opacity-70 mb-0.5">{t("studentTopicDetail.durationLabel")}</p>
+                  <p className="text-sm font-semibold">{t("studentTopicDetail.durationMinutes", { count: topic.actual_duration_mins })}</p>
                 </div>
               )}
             </div>
@@ -215,17 +216,17 @@ export default function StudentTopicDetail() {
               <div className="flex flex-wrap gap-2 mt-4">
                 {assignments.length > 0 && (
                   <span className="text-xs bg-white/20 rounded-full px-3 py-1 font-medium">
-                    {assignments.length} assignment{assignments.length !== 1 ? "s" : ""}
+                    {t("studentTopicDetail.assignmentCount", { count: assignments.length })}
                   </span>
                 )}
                 {quizzes.length > 0 && (
                   <span className="text-xs bg-white/20 rounded-full px-3 py-1 font-medium">
-                    {quizzes.length} quiz{quizzes.length !== 1 ? "zes" : ""}
+                    {t("studentTopicDetail.quizCount", { count: quizzes.length })}
                   </span>
                 )}
                 {materials.length > 0 && (
                   <span className="text-xs bg-white/20 rounded-full px-3 py-1 font-medium">
-                    {materials.length} material{materials.length !== 1 ? "s" : ""}
+                    {t("studentTopicDetail.materialCount", { count: materials.length })}
                   </span>
                 )}
               </div>
@@ -239,7 +240,7 @@ export default function StudentTopicDetail() {
                 <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
                   <StickyNote className="h-3.5 w-3.5 text-amber-600" />
                 </div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Teacher Notes</h3>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t("studentTopicDetail.teacherNotes")}</h3>
               </div>
               <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{topic.teacher_notes}</p>
             </div>
@@ -253,7 +254,7 @@ export default function StudentTopicDetail() {
                   <ClipboardList className="h-3.5 w-3.5 text-amber-600" />
                 </div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Assignments
+                  {t("staffTopicDetail.assignments")}
                 </h3>
               </div>
               <div className="space-y-2">
@@ -270,11 +271,11 @@ export default function StudentTopicDetail() {
                       <ClipboardList className="h-4 w-4 text-amber-700" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{a.title || `Assignment ${i + 1}`}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{a.title || t("studentTopicDetail.assignmentFallback", { index: i + 1 })}</p>
                       {a.due_date && (
                         <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                           <Calendar className="h-3 w-3" />
-                          Due {formatDate(a.due_date)}
+                          {t("staffTopicDetail.duePrefix")} {formatDate(a.due_date)}
                         </p>
                       )}
                     </div>
@@ -297,7 +298,7 @@ export default function StudentTopicDetail() {
                   <Zap className="h-3.5 w-3.5 text-violet-600" />
                 </div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Quizzes
+                  {t("staffTopicDetail.quizzes")}
                 </h3>
               </div>
               <div className="space-y-2">
@@ -314,9 +315,9 @@ export default function StudentTopicDetail() {
                       <Zap className="h-4 w-4 text-violet-700" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{q.title || `Quiz ${i + 1}`}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{q.title || t("studentTopicDetail.quizFallback", { index: i + 1 })}</p>
                       {q.generated_by_ai && (
-                        <p className="text-xs text-violet-500 mt-0.5">AI Generated</p>
+                        <p className="text-xs text-violet-500 mt-0.5">{t("studentTopicDetail.aiGenerated")}</p>
                       )}
                     </div>
                     {q.file_url && (
@@ -338,7 +339,7 @@ export default function StudentTopicDetail() {
                   <FileText className="h-3.5 w-3.5 text-teal-600" />
                 </div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Study Materials
+                  {t("staffTopicDetail.studyMaterials")}
                 </h3>
               </div>
               <div className="space-y-2">
@@ -355,7 +356,7 @@ export default function StudentTopicDetail() {
                       <FileText className="h-4 w-4 text-teal-700" />
                     </div>
                     <p className="flex-1 text-sm font-medium text-gray-900 truncate min-w-0">
-                      {m.file_name || `Material ${i + 1}`}
+                      {m.file_name || t("studentTopicDetail.materialFallback", { index: i + 1 })}
                     </p>
                     {m.file_url && (
                       <svg className="h-4 w-4 text-teal-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -374,7 +375,7 @@ export default function StudentTopicDetail() {
               <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <BookmarkCheck className="h-6 w-6 text-gray-300" />
               </div>
-              <p className="text-sm text-gray-500">No additional resources for this topic yet.</p>
+              <p className="text-sm text-gray-500">{t("studentTopicDetail.emptyResources")}</p>
             </div>
           )}
 

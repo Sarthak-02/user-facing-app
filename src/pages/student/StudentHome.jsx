@@ -33,26 +33,37 @@ const JS_DAY_TO_API_DAY_ID = {
   6: "day-6",
 };
 
-const DAY_SHORT = {
-  Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed",
-  Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun",
+const TIMETABLE_LABEL_TO_WEEKDAY_KEY = {
+  Monday: "mon",
+  Tuesday: "tue",
+  Wednesday: "wed",
+  Thursday: "thu",
+  Friday: "fri",
+  Saturday: "sat",
+  Sunday: "sun",
 };
 
-const FALLBACK_DAY_TABS = [
-  { id: "day-1", label: "Mon" },
-  { id: "day-2", label: "Tue" },
-  { id: "day-3", label: "Wed" },
-  { id: "day-4", label: "Thu" },
-  { id: "day-5", label: "Fri" },
-];
+const FALLBACK_DAY_TAB_IDS = ["day-1", "day-2", "day-3", "day-4", "day-5"];
+const FALLBACK_DAY_TAB_KEYS = ["mon", "tue", "wed", "thu", "fri"];
 
-function buildDayTabs(timetable) {
+function buildDayTabs(timetable, t) {
   const days = timetable?.days;
-  if (!Array.isArray(days) || !days.length) return FALLBACK_DAY_TABS;
+  if (!Array.isArray(days) || !days.length) {
+    return FALLBACK_DAY_TAB_IDS.map((id, i) => ({
+      id,
+      label: t(`home.weekdayShort.${FALLBACK_DAY_TAB_KEYS[i]}`),
+    }));
+  }
   return days
     .filter((d) => d.isActive)
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-    .map((d) => ({ id: d.id, label: DAY_SHORT[d.label] ?? d.label }));
+    .map((d) => {
+      const key = TIMETABLE_LABEL_TO_WEEKDAY_KEY[d.label];
+      return {
+        id: d.id,
+        label: key ? t(`home.weekdayShort.${key}`) : d.label,
+      };
+    });
 }
 
 const EVENT_TYPE_STYLE = {
@@ -315,19 +326,21 @@ export default function StudentHome() {
         setSummaryPayload(payload);
       } else {
         setSummaryPayload(null);
-        setError(message || "Could not load summary.");
+        setError(message || t("home.student.errorCouldNotLoadSummary"));
       }
     } catch (e) {
       setSummaryPayload(null);
       const msg =
         e?.response?.data?.message ||
         e?.message ||
-        "Failed to load summary.";
-      setError(typeof msg === "string" ? msg : "Failed to load summary.");
+        t("home.student.errorFailedToLoadSummary");
+      setError(
+        typeof msg === "string" ? msg : t("home.student.errorFailedToLoadSummary"),
+      );
     } finally {
       setLoading(false);
     }
-  }, [receiverId, sectionId, campusId]);
+  }, [receiverId, sectionId, campusId, t]);
 
   useEffect(() => {
     loadSummary();
@@ -346,8 +359,8 @@ export default function StudentHome() {
   }, [summaryPayload, todayDayId, t]);
 
   const dayTabs = useMemo(
-    () => buildDayTabs(summaryPayload?.timetable),
-    [summaryPayload]
+    () => buildDayTabs(summaryPayload?.timetable, t),
+    [summaryPayload, t],
   );
 
   // Current period index only meaningful when viewing today

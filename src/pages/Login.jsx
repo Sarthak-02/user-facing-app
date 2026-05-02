@@ -9,10 +9,9 @@ import { useNavigate } from "react-router-dom";
 import logo_vectorized from "../assets/logo_vectorized.svg";
 import { useTranslation } from "react-i18next";
 
-const APP_NAME = "Digi School";
-
 export default function LoginPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const activeLng = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
   const [userid, setUserid] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +36,7 @@ export default function LoginPage() {
       const { data } = response || {};
 
       if (!data) {
-        throw new Error("Invalid response from server");
+        throw new Error(t("login.errorInvalidResponse"));
       }
 
       const authData = {
@@ -63,7 +62,7 @@ export default function LoginPage() {
           }
         } catch (permissionsErr) {
           console.error("Failed to fetch teacher permissions:", permissionsErr);
-          setPermissionsError(permissionsErr?.message || "Failed to fetch permissions");
+          setPermissionsError(permissionsErr?.message || t("login.permissionsFetchFailed"));
         } finally {
           setLoading(false);
         }
@@ -104,7 +103,7 @@ export default function LoginPage() {
             <div className="mb-5 flex w-full justify-center px-1">
               <img
                 src={logo_vectorized}
-                alt={`${APP_NAME} logo`}
+                alt={t("app.logoAlt", { name: t("app.name") })}
                 width={2008}
                 height={1832}
                 className="h-auto max-h-36 w-auto max-w-[min(100%,280px)] object-contain sm:max-h-40 sm:max-w-[min(100%,320px)]"
@@ -174,6 +173,54 @@ export default function LoginPage() {
               {isSubmitting ? t("login.signingIn") : t("login.signIn")}
             </Button>
           </form>
+
+          <div
+            className="mt-8 flex flex-col items-center gap-3 border-t border-[var(--color-border)] pt-6"
+            role="group"
+            aria-label={t("login.language")}
+          >
+            <span className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              {t("login.language")}
+            </span>
+            <div className="flex flex-wrap justify-center gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1 dark:bg-black/20">
+              <button
+                type="button"
+                onClick={() => i18n.changeLanguage("en")}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition sm:px-4 ${
+                  activeLng === "en"
+                    ? "bg-[var(--color-surface)] text-primary-700 shadow-sm dark:text-primary-300"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                }`}
+                aria-pressed={activeLng === "en"}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => i18n.changeLanguage("hi")}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition sm:px-4 ${
+                  activeLng === "hi"
+                    ? "bg-[var(--color-surface)] text-primary-700 shadow-sm dark:text-primary-300"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                }`}
+                aria-pressed={activeLng === "hi"}
+              >
+                हिन्दी
+              </button>
+              <button
+                type="button"
+                onClick={() => i18n.changeLanguage("kn")}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition sm:px-4 ${
+                  activeLng === "kn"
+                    ? "bg-[var(--color-surface)] text-primary-700 shadow-sm dark:text-primary-300"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                }`}
+                aria-pressed={activeLng === "kn"}
+              >
+                ಕನ್ನಡ
+              </button>
+            </div>
+          </div>
 
         </div>
       </div>

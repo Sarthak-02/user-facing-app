@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useTranslation } from "react-i18next";
 
 export default function Table({
   columns = [],
@@ -6,6 +7,7 @@ export default function Table({
   className = "",
   maxHeight = "70vh", // 👈 configurable
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className={clsx(
@@ -35,7 +37,7 @@ export default function Table({
                 colSpan={columns.length}
                 className="px-3 py-6 text-center text-sm text-gray-500"
               >
-                No data available
+                {t("common.noData")}
               </td>
             </tr>
           )}

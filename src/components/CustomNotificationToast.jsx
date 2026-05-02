@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import i18n from "../i18n";
 
 export function NotificationContent({ title, body, type, url }) {
   const { t } = useTranslation();
@@ -137,7 +138,10 @@ export function NotificationContent({ title, body, type, url }) {
 
 // Export helper to show custom notification
 export function showCustomNotification(toast, payload) {
-  const title = payload.notification?.title || payload.notification?.defaultTitle || "New Notification";
+  const title =
+    payload.notification?.title ||
+    payload.notification?.defaultTitle ||
+    i18n.t("notificationToast.newNotification");
   const body = payload.notification?.body || "";
   const type = payload.data?.type;
   const url = payload.data?.url;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
 import { fetchStudentProfile } from "../../api/auth.api";
@@ -90,6 +91,7 @@ function getSubjectConfig(name) {
 }
 
 export default function StudentLessonPlansHome() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { auth } = useAuth();
   const [subjects, setSubjects] = useState([]);
@@ -185,16 +187,16 @@ export default function StudentLessonPlansHome() {
   if (subjects.length === 0) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-        <h1 className="text-xl font-bold text-gray-900">Lesson Plans</h1>
+        <h1 className="text-xl font-bold text-gray-900">{t("nav.lessonPlans")}</h1>
         <div className="mt-8 text-center">
           <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
             </svg>
           </div>
-          <p className="text-sm font-medium text-gray-700 mb-1">No subjects found</p>
+          <p className="text-sm font-medium text-gray-700 mb-1">{t("studentLessonPlansHome.noSubjectsTitle")}</p>
           <p className="text-xs text-gray-400 max-w-xs mx-auto">
-            {error || "Subjects appear here when teachers publish lesson plans for your class."}
+            {error || t("studentLessonPlansHome.noSubjectsHint")}
           </p>
         </div>
       </div>
@@ -203,8 +205,8 @@ export default function StudentLessonPlansHome() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
-      <h1 className="text-xl font-bold text-gray-900">Lesson Plans</h1>
-      <p className="mt-1 text-sm text-gray-500">Choose a subject to see planned lessons.</p>
+      <h1 className="text-xl font-bold text-gray-900">{t("nav.lessonPlans")}</h1>
+      <p className="mt-1 text-sm text-gray-500">{t("studentLessonPlansHome.pickerSubtitle")}</p>
       <div className="mt-5 space-y-2">
         {subjects.map((s) => {
           const { Icon, iconBg, iconColor, border } = getSubjectConfig(s.subject_name);

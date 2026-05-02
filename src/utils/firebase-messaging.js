@@ -1,3 +1,4 @@
+import i18n from "../i18n";
 import { initializeApp } from "firebase/app";
 import {
   DEFAULT_NOTIFICATION_BADGE_URL,
@@ -85,7 +86,7 @@ export const onMessageListener = (callback) => {
 
   return onMessage(messaging, (payload) => {
     if (payload.notification && !document.hasFocus()) {
-      const notificationTitle = payload.notification.title || "Digi School";
+      const notificationTitle = payload.notification.title || i18n.t("app.name");
       const notificationOptions = {
         body: payload.notification.body || "",
         icon: payload.notification.icon || DEFAULT_NOTIFICATION_ICON_URL,

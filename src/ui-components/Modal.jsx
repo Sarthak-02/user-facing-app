@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function Modal({
   open,
@@ -7,6 +8,7 @@ export default function Modal({
   children,
   className = "",
 }) {
+  const { t } = useTranslation();
   if (!open) return null;
 
   return (
@@ -29,7 +31,7 @@ export default function Modal({
             type="button"
             onClick={onClose}
             className="absolute right-2 top-2 z-10 rounded-lg border border-gray-200 bg-white p-1.5 text-gray-600 shadow-sm transition hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2"
-            aria-label="Close"
+            aria-label={t("ui.close")}
           >
             <X className="h-5 w-5" strokeWidth={2} />
           </button>

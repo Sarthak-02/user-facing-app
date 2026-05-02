@@ -51,6 +51,7 @@ function buildGradingExtras(examData) {
 }
 
 export default function Exams() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const { permissions } = usePermissions();
   const navigate = useNavigate();
@@ -77,26 +78,29 @@ export default function Exams() {
 
   // Get EXAM_TYPES from auth store and build examTypeOptions
   const examTypeOptions = useMemo(() => {
-    const options = [{ value: "", label: "All Types" }];
-    
+    const options = [{ value: "", label: t("staffExamsPage.allTypes") }];
+
     if (auth?.campus?.campus_exam_types && Array.isArray(auth.campus.campus_exam_types)) {
       auth.campus.campus_exam_types.forEach((examType) => {
         options.push({
           value: examType,
-          label: examType
+          label: examType,
         });
       });
     }
-    
-    return options;
-  }, [auth?.campus?.campus_exam_types]);
 
-  const statusOptions = [
-    { value: "", label: "All Status" },
-    { value: "DRAFT", label: "Draft" },
-    { value: "PUBLISHED", label: "Published" },
-    { value: "COMPLETED", label: "Completed" },
-  ];
+    return options;
+  }, [auth?.campus?.campus_exam_types, t]);
+
+  const statusOptions = useMemo(
+    () => [
+      { value: "", label: t("staffExamsPage.allStatus") },
+      { value: "DRAFT", label: t("exams.status.draft") },
+      { value: "PUBLISHED", label: t("exams.status.published") },
+      { value: "COMPLETED", label: t("exams.status.completed") },
+    ],
+    [t]
+  );
 
   const filteredExams = useMemo(() => {
     let filtered = [...examList];
@@ -209,7 +213,10 @@ export default function Exams() {
       handleCloseModal();
     } catch (error) {
       console.error("Error submitting exam:", error);
-      setSubmitError(error.message || `Failed to ${editingExam ? 'update' : 'create'} exam. Please try again.`);
+      setSubmitError(
+        error.message ||
+          (editingExam ? t("staffExamsPage.submitFailedUpdate") : t("staffExamsPage.submitFailedCreate"))
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -230,7 +237,7 @@ export default function Exams() {
       setExamToPublish(null);
     } catch (error) {
       console.error("Error publishing exam:", error);
-      setPublishError(error.message || "Failed to publish exam. Please try again.");
+      setPublishError(error.message || t("staffExamsPage.publishFailed"));
     } finally {
       setIsPublishing(false);
     }
@@ -263,7 +270,7 @@ export default function Exams() {
       setExamList(data);
     } catch (error) {
       console.error("Error fetching exams:", error);
-      setLoadError(error.message || "Failed to load exams. Please try again.");
+      setLoadError(error.message || t("staffExamsPage.loadFailed"));
       setExamList([]);
     } finally {
       setIsLoading(false);
@@ -282,7 +289,7 @@ export default function Exams() {
         <div className="space-y-4">
           {/* Title and Create Button Row */}
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Exams</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("staffExamsPage.title")}</h1>
 
             <Button onClick={handleCreateExam}>
               <svg
@@ -299,7 +306,7 @@ export default function Exams() {
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              Create Exam
+              {t("staffExamsPage.createExam")}
             </Button>
           </div>
 
@@ -310,7 +317,7 @@ export default function Exams() {
                 selected={selectedExamTypeOption}
                 onChange={(opt) => setExamTypeFilter(opt?.value ?? "")}
                 options={examTypeOptions}
-                placeholder="Exam Type"
+                placeholder={t("staffExamsPage.examTypePlaceholder")}
               />
             </div>
             <div className="w-40">
@@ -318,7 +325,7 @@ export default function Exams() {
                 selected={selectedStatusOption}
                 onChange={(opt) => setStatusFilterDropdown(opt?.value ?? "")}
                 options={statusOptions}
-                placeholder="Status"
+                placeholder={t("staffExamsPage.statusPlaceholder")}
               />
             </div>
           </div>
@@ -333,13 +340,13 @@ export default function Exams() {
               selected={selectedExamTypeOption}
               onChange={(opt) => setExamTypeFilter(opt?.value ?? "")}
               options={examTypeOptions}
-              placeholder="Exam Type"
+              placeholder={t("staffExamsPage.examTypePlaceholder")}
             />
             <Dropdown
               selected={selectedStatusOption}
               onChange={(opt) => setStatusFilterDropdown(opt?.value ?? "")}
               options={statusOptions}
-              placeholder="Status"
+              placeholder={t("staffExamsPage.statusPlaceholder")}
             />
           </div>
         </Card>
@@ -379,10 +386,10 @@ export default function Exams() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Error Loading Exams</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t("staffExamsPage.errorLoadingTitle")}</h3>
                 <p className="text-gray-600 mt-2">{loadError}</p>
               </div>
-              <Button onClick={fetchExams}>Try Again</Button>
+              <Button onClick={fetchExams}>{t("staffExamsPage.tryAgain")}</Button>
             </div>
           </Card>
         </div>
@@ -417,7 +424,7 @@ export default function Exams() {
       <button
         onClick={handleCreateExam}
         className="md:hidden fixed bottom-20 right-6 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 active:bg-blue-700 transition-all duration-200 flex items-center justify-center z-40 hover:scale-110 active:scale-95"
-        aria-label="Create new exam"
+        aria-label={t("ui.createNewExam")}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -451,13 +458,13 @@ export default function Exams() {
           <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold text-gray-900">Publish Exam?</h3>
+              <h3 className="text-xl font-semibold text-gray-900">{t("staffExamsPage.publishExamTitle")}</h3>
             </div>
 
             {/* Modal Content */}
             <div className="p-6 space-y-4">
               <p className="text-gray-700">
-                Are you sure you want to publish this exam? Students will be able to see it.
+                {t("staffExamsPage.publishConfirm")}
               </p>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900">
@@ -471,7 +478,7 @@ export default function Exams() {
                   {examToPublish.section && ` - ${examToPublish.section}`}
                 </p>
                 <p className="text-sm text-gray-600 mt-2">
-                  {examToPublish.subjects?.length || 0} subject(s)
+                  {t("staffExamsPage.subjectsCount", { count: examToPublish.subjects?.length || 0 })}
                 </p>
               </div>
               {publishError && (
@@ -487,10 +494,10 @@ export default function Exams() {
             {/* Modal Footer */}
             <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
               <Button variant="secondary" onClick={cancelPublish} disabled={isPublishing}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button onClick={confirmPublish} disabled={isPublishing}>
-                {isPublishing ? "Publishing..." : "Publish"}
+                {isPublishing ? t("exams.publishing") : t("exams.publishExam")}
               </Button>
             </div>
           </div>

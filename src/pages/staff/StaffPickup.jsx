@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ShieldCheck,
   ClipboardCheck,
@@ -46,20 +47,21 @@ function formatDate(dateStr) {
     : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function sourceBadge(source) {
+function sourceBadge(source, t) {
   switch (source) {
     case "AUTHORIZED_PERSON":
-      return { label: "Pre-Authorized", variant: "success" };
+      return { label: t("staffPickup.sourcePreAuthorized"), variant: "success" };
     case "ONE_TIME_REQUEST":
-      return { label: "One-Time", variant: "info" };
+      return { label: t("staffPickup.sourceOneTime"), variant: "info" };
     default:
-      return { label: "Manual", variant: "info" };
+      return { label: t("staffPickup.sourceManual"), variant: "info" };
   }
 }
 
 // ─── Confirm Pickup Modal ─────────────────────────────────────────────────────
 
 function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
+  const { t } = useTranslation();
   const [entityId] = useState(() => crypto.randomUUID());
   const [photoUrl, setPhotoUrl] = useState("");
   const [photoPreview, setPhotoPreview] = useState("");
@@ -71,7 +73,7 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
     try {
       await onConfirm({ photo_url: photoUrl, notes: notes.trim() });
     } catch (err) {
-      setError(err?.message || err?.error || "Confirmation failed. Please try again.");
+      setError(err?.message || err?.error || t("staffPickup.confirmationFailed"));
     }
   }
 
@@ -79,15 +81,15 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
 
   return (
     <Modal open={open} onClose={confirming ? undefined : onClose} className="max-w-md">
-      <h2 className="text-base font-bold text-gray-900 mb-1 pr-8">Confirm Pickup</h2>
+      <h2 className="text-base font-bold text-gray-900 mb-1 pr-8">{t("staffPickup.confirmPickupTitle")}</h2>
       <p className="text-xs text-gray-500 mb-4">
-        Confirm that{" "}
+        {t("staffPickup.confirmIntroBefore")}{" "}
         <strong className="text-gray-800">{target.person_name}</strong> (
-        {target.person_relationship}) is picking up{" "}
+        {target.person_relationship}) {t("staffPickup.confirmIntroMiddle")}{" "}
         {target.student_name ? (
           <strong className="text-gray-800">{target.student_name}</strong>
         ) : (
-          "the student"
+          t("staffPickup.theStudent")
         )}
         .
       </p>
@@ -111,9 +113,9 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
         </div>
         <div className="ml-auto">
           {target.type === "AUTHORIZED_PERSON" ? (
-            <Badge variant="success">Pre-Authorized</Badge>
+            <Badge variant="success">{t("staffPickup.sourcePreAuthorized")}</Badge>
           ) : (
-            <Badge variant="info">One-Time</Badge>
+            <Badge variant="info">{t("staffPickup.sourceOneTime")}</Badge>
           )}
         </div>
       </div>
@@ -121,8 +123,8 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
       {/* Photo */}
       <div className="mb-4">
         <p className="text-xs font-semibold text-gray-600 mb-2">
-          Pickup Photo{" "}
-          <span className="text-gray-400 font-normal">(optional)</span>
+          {t("staffPickup.pickupPhoto")}{" "}
+          <span className="text-gray-400 font-normal">{t("staffPickup.optionalShort")}</span>
         </p>
         <PhotoPicker
           entity="pickup_log"
@@ -136,13 +138,13 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
       {/* Notes */}
       <div className="mb-4">
         <label className="block text-xs font-semibold text-gray-600 mb-1">
-          Notes{" "}
-          <span className="text-gray-400 font-normal">(optional)</span>
+          {t("staffPickup.notes")}{" "}
+          <span className="text-gray-400 font-normal">{t("staffPickup.optionalShort")}</span>
         </label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Any observations or additional notes…"
+          placeholder={t("staffPickup.notesPlaceholder")}
           rows={2}
           className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-300 focus:border-violet-400 outline-none bg-gray-50 resize-none"
         />
@@ -157,7 +159,7 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
 
       <div className="flex gap-2">
         <Button variant="secondary" className="flex-1" onClick={onClose} disabled={confirming}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <button
           type="button"
@@ -166,7 +168,7 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
           className="flex-1 py-2.5 px-4 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
         >
           <Check className="h-4 w-4" />
-          {confirming ? "Confirming…" : "Confirm Pickup"}
+          {confirming ? t("staffPickup.confirmingPickup") : t("staffPickup.confirmPickupTitle")}
         </button>
       </div>
     </Modal>
@@ -176,24 +178,25 @@ function ConfirmPickupModal({ open, onClose, onConfirm, target, confirming }) {
 // ─── Reject Request Modal ─────────────────────────────────────────────────────
 
 function RejectModal({ open, onClose, onReject, request, rejecting }) {
+  const { t } = useTranslation();
   const [note, setNote] = useState("");
 
   return (
     <Modal open={open} onClose={rejecting ? undefined : onClose} className="max-w-sm">
-      <h2 className="text-base font-bold text-gray-900 mb-1 pr-8">Reject Request</h2>
+      <h2 className="text-base font-bold text-gray-900 mb-1 pr-8">{t("staffPickup.rejectRequestTitle")}</h2>
       <p className="text-xs text-gray-500 mb-3">
-        Rejecting pickup request for{" "}
+        {t("staffPickup.rejectIntro")}{" "}
         <strong className="text-gray-800">{request?.name}</strong>.
       </p>
       <div className="mb-4">
         <label className="block text-xs font-semibold text-gray-600 mb-1">
-          Reason{" "}
-          <span className="text-gray-400 font-normal">(optional)</span>
+          {t("staffPickup.reason")}{" "}
+          <span className="text-gray-400 font-normal">{t("staffPickup.optionalShort")}</span>
         </label>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Reason for rejection…"
+          placeholder={t("staffPickup.rejectReasonPlaceholder")}
           rows={3}
           className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-300 outline-none bg-gray-50 resize-none"
         />
@@ -205,7 +208,7 @@ function RejectModal({ open, onClose, onReject, request, rejecting }) {
           onClick={onClose}
           disabled={rejecting}
         >
-          Cancel
+          {t("common.cancel")}
         </Button>
         <button
           type="button"
@@ -213,7 +216,7 @@ function RejectModal({ open, onClose, onReject, request, rejecting }) {
           disabled={rejecting}
           className="flex-1 py-2.5 px-4 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
         >
-          {rejecting ? "Rejecting…" : "Reject"}
+          {rejecting ? t("staffPickup.rejecting") : t("staffPickup.reject")}
         </button>
       </div>
     </Modal>
@@ -223,6 +226,7 @@ function RejectModal({ open, onClose, onReject, request, rejecting }) {
 // ─── Request Detail Modal ─────────────────────────────────────────────────────
 
 function RequestDetailModal({ request, open, onClose, onApprove, onReject, approvingId, rejectingId }) {
+  const { t } = useTranslation();
   if (!request) return null;
   const photoUrl = request.photoUrl || request.photo_url;
   const validDate = request.validDate || request.valid_date;
@@ -238,7 +242,7 @@ function RequestDetailModal({ request, open, onClose, onApprove, onReject, appro
 
   return (
     <Modal open={open} onClose={busy ? undefined : onClose} className="max-w-md">
-      <h2 className="text-base font-bold text-gray-900 mb-4 pr-8">Pickup Request</h2>
+      <h2 className="text-base font-bold text-gray-900 mb-4 pr-8">{t("staffPickup.pickupRequestTitle")}</h2>
 
       {/* Photo + name */}
       <div className="flex flex-col items-center gap-2 mb-5">
@@ -261,12 +265,12 @@ function RequestDetailModal({ request, open, onClose, onApprove, onReject, appro
 
       {/* Details grid */}
       <div className="bg-gray-50 rounded-xl divide-y divide-gray-100 mb-4">
-        <DetailRow label="Relationship" value={request.relationship} />
-        <DetailRow label="Valid Date" value={formatDate(validDate)} />
-        {studentName && <DetailRow label="Student" value={studentName} />}
-        {request.remarks && <DetailRow label="Remarks" value={request.remarks} />}
+        <DetailRow label={t("staffPickup.relationship")} value={request.relationship} />
+        <DetailRow label={t("staffPickup.validDate")} value={formatDate(validDate)} />
+        {studentName && <DetailRow label={t("staffPickup.student")} value={studentName} />}
+        {request.remarks && <DetailRow label={t("staffPickup.remarks")} value={request.remarks} />}
         <DetailRow
-          label="Submitted"
+          label={t("staffPickup.submitted")}
           value={request.createdAt ? formatDate(request.createdAt) : "—"}
         />
       </div>
@@ -281,7 +285,7 @@ function RequestDetailModal({ request, open, onClose, onApprove, onReject, appro
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
           >
             <Check className="h-4 w-4" />
-            {approvingId === request.id ? "Approving…" : "Approve"}
+            {approvingId === request.id ? t("staffPickup.approving") : t("staffPickup.approve")}
           </button>
           <button
             type="button"
@@ -290,7 +294,7 @@ function RequestDetailModal({ request, open, onClose, onApprove, onReject, appro
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors disabled:opacity-50"
           >
             <X className="h-4 w-4" />
-            Reject
+            {t("staffPickup.reject")}
           </button>
         </div>
       )}
@@ -310,6 +314,7 @@ function DetailRow({ label, value }) {
 // ─── Pending Request Card ─────────────────────────────────────────────────────
 
 function PendingRequestCard({ request, onApprove, onReject, onView, approvingId, rejectingId }) {
+  const { t } = useTranslation();
   const busy = approvingId === request.id || rejectingId === request.id;
   const photoUrl = request.photoUrl || request.photo_url;
   const validDate = request.validDate || request.valid_date;
@@ -339,7 +344,7 @@ function PendingRequestCard({ request, onApprove, onReject, onView, approvingId,
           <p className="text-xs text-gray-500">{request.relationship}</p>
           {studentName && (
             <p className="text-xs text-gray-400 mt-0.5">
-              Student: <span className="font-medium text-gray-600">{studentName}</span>
+              {t("staffPickup.studentLabelPrefix")} <span className="font-medium text-gray-600">{studentName}</span>
             </p>
           )}
         </div>
@@ -364,7 +369,7 @@ function PendingRequestCard({ request, onApprove, onReject, onView, approvingId,
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-green-50 text-green-700 border border-green-100 rounded-xl text-sm font-medium hover:bg-green-100 transition-colors disabled:opacity-50"
         >
           <Check className="h-4 w-4" />
-          {approvingId === request.id ? "Approving…" : "Approve"}
+          {approvingId === request.id ? t("staffPickup.approving") : t("staffPickup.approve")}
         </button>
         <button
           type="button"
@@ -373,7 +378,7 @@ function PendingRequestCard({ request, onApprove, onReject, onView, approvingId,
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 border border-red-100 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
         >
           <X className="h-4 w-4" />
-          {rejectingId === request.id ? "Rejecting…" : "Reject"}
+          {rejectingId === request.id ? t("staffPickup.rejecting") : t("staffPickup.reject")}
         </button>
       </div>
     </div>
@@ -385,6 +390,7 @@ function PendingRequestCard({ request, onApprove, onReject, onView, approvingId,
 // ─── Person Profile Modal ─────────────────────────────────────────────────────
 
 function PersonProfileModal({ person, onClose }) {
+  const { t } = useTranslation();
   if (!person) return null;
   const isActive = person.is_active !== false;
   return (
@@ -405,19 +411,19 @@ function PersonProfileModal({ person, onClose }) {
         <p className="text-sm text-gray-500 mt-0.5">{person.relationship}</p>
         <div className="mt-2">
           <Badge variant={isActive ? "success" : "error"}>
-            {isActive ? "Active" : "Inactive"}
+            {isActive ? t("staffPickup.active") : t("staffPickup.inactive")}
           </Badge>
         </div>
       </div>
 
       <div className="space-y-2.5 bg-gray-50 rounded-xl px-4 py-3 mb-4">
-        <DetailRow label="Relationship" value={person.relationship} />
-        {person.remarks && <DetailRow label="Remarks" value={person.remarks} />}
-        {person.phone && <DetailRow label="Phone" value={person.phone} />}
+        <DetailRow label={t("staffPickup.relationship")} value={person.relationship} />
+        {person.remarks && <DetailRow label={t("staffPickup.remarks")} value={person.remarks} />}
+        {person.phone && <DetailRow label={t("staffPickup.phone")} value={person.phone} />}
       </div>
 
       <Button variant="secondary" className="w-full" onClick={onClose}>
-        Close
+        {t("common.close")}
       </Button>
     </Modal>
   );
@@ -426,6 +432,7 @@ function PersonProfileModal({ person, onClose }) {
 // ─── Student Pickup Panel ─────────────────────────────────────────────────────
 
 function StudentPickupPanel({ student, onConfirm }) {
+  const { t } = useTranslation();
   const [authorizedPersons, setAuthorizedPersons] = useState([]);
   const [approvedRequests, setApprovedRequests] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
@@ -462,7 +469,7 @@ function StudentPickupPanel({ student, onConfirm }) {
         }
       } catch (err) {
         if (!cancelled)
-          setError(err?.message || err?.error || "Failed to load pickup data");
+          setError(err?.message || err?.error || t("staffPickup.loadPickupDataFailed"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -470,7 +477,7 @@ function StudentPickupPanel({ student, onConfirm }) {
 
     load();
     return () => { cancelled = true; };
-  }, [student?.student_id]);
+  }, [student?.student_id, t]);
 
   if (loading) {
     return (
@@ -495,9 +502,9 @@ function StudentPickupPanel({ student, onConfirm }) {
     return (
       <div className="text-center py-8 bg-gray-50 rounded-2xl">
         <ShieldCheck className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-        <p className="text-sm font-semibold text-gray-600">No pickup authorization found</p>
+        <p className="text-sm font-semibold text-gray-600">{t("staffPickup.noPickupAuth")}</p>
         <p className="text-xs text-gray-400 mt-1">
-          No pre-authorized persons or approved requests for today.
+          {t("staffPickup.noPickupAuthDetail")}
         </p>
       </div>
     );
@@ -514,7 +521,7 @@ function StudentPickupPanel({ student, onConfirm }) {
         <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <ShieldCheck className="h-4 w-4 text-green-600 flex-shrink-0" />
-            <p className="text-sm font-bold text-green-800">Already Picked Up Today</p>
+            <p className="text-sm font-bold text-green-800">{t("staffPickup.alreadyPickedUpTitle")}</p>
           </div>
           <div className="space-y-1 text-xs text-green-700">
             <p>
@@ -524,11 +531,11 @@ function StudentPickupPanel({ student, onConfirm }) {
               )}
             </p>
             <p>
-              Time: <span className="font-semibold">{formatTime(todayPickup.pickedUpAt)}</span>
+              {t("staffPickup.timeLabel")} <span className="font-semibold">{formatTime(todayPickup.pickedUpAt)}</span>
             </p>
             {teacherName && (
               <p>
-                Confirmed by: <span className="font-semibold">{teacherName}</span>
+                {t("staffPickup.confirmedByLabel")} <span className="font-semibold">{teacherName}</span>
               </p>
             )}
           </div>
@@ -539,7 +546,7 @@ function StudentPickupPanel({ student, onConfirm }) {
       {authorizedPersons.length > 0 && (
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
-            Pre-Authorized Persons
+            {t("staffPickup.preAuthorizedPersons")}
           </p>
           <div className="space-y-2">
             {authorizedPersons.map((person) => {
@@ -570,7 +577,7 @@ function StudentPickupPanel({ student, onConfirm }) {
                       onClick={() => setViewPerson({ ...person, photo_url: photoUrl })}
                       className="px-2.5 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors"
                     >
-                      View
+                      {t("staffPickup.view")}
                     </button>
                     {!alreadyPickedUp && (
                       <button
@@ -588,7 +595,7 @@ function StudentPickupPanel({ student, onConfirm }) {
                         }
                         className="px-2.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
                       >
-                        Confirm
+                        {t("staffPickup.confirm")}
                       </button>
                     )}
                   </div>
@@ -603,7 +610,7 @@ function StudentPickupPanel({ student, onConfirm }) {
       {!alreadyPickedUp && approvedRequests.length > 0 && (
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
-            Today's Approved Requests
+            {t("staffPickup.todaysApprovedRequests")}
           </p>
           <div className="space-y-2">
             {approvedRequests.map((req) => (
@@ -625,7 +632,7 @@ function StudentPickupPanel({ student, onConfirm }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900">{req.name}</p>
                   <p className="text-xs text-gray-500">{req.relationship}</p>
-                  <Badge variant="info" className="mt-1">One-time</Badge>
+                  <Badge variant="info" className="mt-1">{t("staffPickup.oneTimeBadge")}</Badge>
                 </div>
                 <button
                   type="button"
@@ -642,7 +649,7 @@ function StudentPickupPanel({ student, onConfirm }) {
                   }
                   className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
                 >
-                  Confirm
+                  {t("staffPickup.confirm")}
                 </button>
               </div>
             ))}
@@ -654,7 +661,7 @@ function StudentPickupPanel({ student, onConfirm }) {
       {pendingRequests.length > 0 && (
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
-            Today's Pending Requests
+            {t("staffPickup.todaysPendingRequests")}
           </p>
           <div className="space-y-2">
             {pendingRequests.map((req) => (
@@ -676,7 +683,7 @@ function StudentPickupPanel({ student, onConfirm }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900">{req.name}</p>
                   <p className="text-xs text-gray-500">{req.relationship}</p>
-                  <Badge variant="warning" className="mt-1">Pending Approval</Badge>
+                  <Badge variant="warning" className="mt-1">{t("staffPickup.pendingApprovalBadge")}</Badge>
                 </div>
               </div>
             ))}
@@ -692,7 +699,8 @@ function StudentPickupPanel({ student, onConfirm }) {
 // ─── Pickup Log Card ──────────────────────────────────────────────────────────
 
 function PickupLogCard({ log }) {
-  const { label, variant } = sourceBadge(log.source);
+  const { t } = useTranslation();
+  const { label, variant } = sourceBadge(log.source, t);
 
   // Handle camelCase (API) with snake_case fallbacks
   const personName = log.personName || log.person_name;
@@ -725,7 +733,7 @@ function PickupLogCard({ log }) {
           <p className="text-xs text-gray-500 mt-0.5">{personRelationship}</p>
           {studentName && (
             <p className="text-xs text-gray-400 mt-1">
-              Student:{" "}
+              {t("staffPickup.studentLabelPrefix")}{" "}
               <span className="font-medium text-gray-600">{studentName}</span>
               {log.student?.student_admission_no && (
                 <span className="text-gray-400"> · #{log.student.student_admission_no}</span>
@@ -739,7 +747,7 @@ function PickupLogCard({ log }) {
             </div>
             {teacherName && (
               <span className="text-xs text-gray-400">
-                Confirmed by{" "}
+                {t("staffPickup.confirmedByShort")}{" "}
                 <span className="font-medium text-gray-600">{teacherName}</span>
               </span>
             )}
@@ -751,7 +759,7 @@ function PickupLogCard({ log }) {
         {photoUrl && (
           <img
             src={photoUrl}
-            alt="Pickup"
+            alt={t("staffPickup.pickupPhotoAlt")}
             className="w-16 h-16 object-cover rounded-xl border border-gray-200 flex-shrink-0"
           />
         )}
@@ -763,6 +771,7 @@ function PickupLogCard({ log }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function StaffPickup() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const { permissions } = usePermissions();
   const teacherId = auth?.userId;
@@ -802,11 +811,11 @@ export default function StaffPickup() {
       const data = await listPendingPickupRequests(campusId, todayStr);
       setPendingRequests(Array.isArray(data) ? data : []);
     } catch (err) {
-      setPendingError(err?.message || err?.error || "Failed to load pending requests");
+      setPendingError(err?.message || err?.error || t("staffPickup.failedPending"));
     } finally {
       setPendingLoading(false);
     }
-  }, [campusId]);
+  }, [campusId, t]);
 
   const loadTodayLogs = useCallback(async () => {
     if (!campusId) return;
@@ -816,11 +825,11 @@ export default function StaffPickup() {
       const data = await listTodayPickups(campusId, todayStr);
       setTodayLogs(Array.isArray(data) ? data : []);
     } catch (err) {
-      setLogsError(err?.message || err?.error || "Failed to load today's pickups");
+      setLogsError(err?.message || err?.error || t("staffPickup.failedLogs"));
     } finally {
       setLogsLoading(false);
     }
-  }, [campusId]);
+  }, [campusId, t]);
 
   useEffect(() => {
     loadPending();
@@ -922,11 +931,14 @@ export default function StaffPickup() {
     month: "long",
   });
 
-  const tabs = [
-    { id: "pending", label: "Pending Requests", icon: ClipboardCheck },
-    { id: "confirm", label: "Confirm Pickup", icon: ShieldCheck },
-    { id: "log", label: "Today's Log", icon: Clock },
-  ];
+  const tabs = useMemo(
+    () => [
+      { id: "pending", label: t("staffPickup.tabPending"), icon: ClipboardCheck },
+      { id: "confirm", label: t("staffPickup.tabConfirm"), icon: ShieldCheck },
+      { id: "log", label: t("staffPickup.tabLog"), icon: Clock },
+    ],
+    [t]
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pb-16 md:pb-6">
@@ -937,12 +949,12 @@ export default function StaffPickup() {
             <ShieldCheck className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Student Pickup</h1>
+            <h1 className="text-xl font-bold text-white">{t("staffPickup.pageTitle")}</h1>
             <p className="text-violet-200 text-xs mt-0.5">{todayFormatted}</p>
           </div>
           {pendingRequests.length > 0 && (
             <div className="ml-auto flex-shrink-0 bg-orange-400 text-white text-xs font-bold rounded-full px-3 py-1">
-              {pendingRequests.length} pending
+              {t("staffPickup.pendingBadge", { count: pendingRequests.length })}
             </div>
           )}
         </div>
@@ -957,7 +969,7 @@ export default function StaffPickup() {
           className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} strokeWidth={2} />
-          Refresh
+          {t("staffPickup.refresh")}
         </button>
       </div>
 
@@ -994,7 +1006,7 @@ export default function StaffPickup() {
                 <AlertCircle className="h-8 w-8 text-red-300 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 mb-3">{pendingError}</p>
                 <Button variant="secondary" onClick={loadPending}>
-                  Retry
+                  {t("staffPickup.retry")}
                 </Button>
               </div>
             ) : pendingRequests.length === 0 ? (
@@ -1002,16 +1014,15 @@ export default function StaffPickup() {
                 <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <ClipboardCheck className="h-7 w-7 text-green-300" />
                 </div>
-                <p className="text-sm font-semibold text-gray-700">All clear!</p>
+                <p className="text-sm font-semibold text-gray-700">{t("staffPickup.allClear")}</p>
                 <p className="text-xs text-gray-400 mt-1">
-                  No one-time pickup requests pending for today.
+                  {t("staffPickup.noPendingOneTime")}
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
                 <p className="text-xs text-gray-400 px-1">
-                  {pendingRequests.length} request
-                  {pendingRequests.length !== 1 ? "s" : ""} awaiting review
+                  {t("staffPickup.requestsAwaiting", { count: pendingRequests.length })}
                 </p>
                 <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-0.5 pb-36">
                   {pendingRequests.map((req) => (
@@ -1078,7 +1089,7 @@ export default function StaffPickup() {
                       type="text"
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
-                      placeholder="Search by name or roll no…"
+                      placeholder={t("staffPickup.searchPlaceholder")}
                       className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-300 focus:border-violet-400 outline-none bg-gray-50"
                     />
                     {studentSearch && (
@@ -1097,15 +1108,15 @@ export default function StaffPickup() {
                 {filteredStudents.length === 0 ? (
                   <div className="text-center py-10 bg-gray-50 rounded-2xl">
                     <User className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-                    <p className="text-sm font-semibold text-gray-600">No students found</p>
+                    <p className="text-sm font-semibold text-gray-600">{t("staffPickup.noStudentsFound")}</p>
                     {studentSearch && (
-                      <p className="text-xs text-gray-400 mt-1">Try a different name or roll number.</p>
+                      <p className="text-xs text-gray-400 mt-1">{t("staffPickup.tryDifferentSearch")}</p>
                     )}
                   </div>
                 ) : (
                   <>
                     <p className="text-xs text-gray-400 px-1 mb-2">
-                      {filteredStudents.length} student{filteredStudents.length !== 1 ? "s" : ""}
+                      {t("staffPickup.studentCount", { count: filteredStudents.length })}
                     </p>
                     <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-0.5 pb-[18rem] md:pb-[10rem]">
                       {filteredStudents.map((s) => (
@@ -1151,7 +1162,7 @@ export default function StaffPickup() {
                 <AlertCircle className="h-8 w-8 text-red-300 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 mb-3">{logsError}</p>
                 <Button variant="secondary" onClick={loadTodayLogs}>
-                  Retry
+                  {t("staffPickup.retry")}
                 </Button>
               </div>
             ) : todayLogs.length === 0 ? (
@@ -1159,15 +1170,15 @@ export default function StaffPickup() {
                 <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <Clock className="h-7 w-7 text-gray-200" />
                 </div>
-                <p className="text-sm font-semibold text-gray-700">No pickups yet today</p>
+                <p className="text-sm font-semibold text-gray-700">{t("staffPickup.noPickupsToday")}</p>
                 <p className="text-xs text-gray-400 mt-1">
-                  Confirmed pickups will appear here.
+                  {t("staffPickup.pickupsAppearHere")}
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
                 <p className="text-xs text-gray-400 px-1">
-                  {todayLogs.length} pickup{todayLogs.length !== 1 ? "s" : ""} confirmed today
+                  {t("staffPickup.pickupsToday", { count: todayLogs.length })}
                 </p>
                 <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-0.5 pb-36">
                   {todayLogs.map((log, i) => (

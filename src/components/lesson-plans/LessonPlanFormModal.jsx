@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Input, Textarea, Modal, Dropdown } from "../../ui-components";
 import {
   createLessonPlan,
@@ -17,6 +17,18 @@ function toDateInputValue(iso) {
   return d.toISOString().slice(0, 10);
 }
 
+const LESSON_PLAN_STATUS_ORDER = [
+  "PLANNED",
+  "PARTIALLY_COMPLETED",
+  "COMPLETED",
+  "SKIPPED",
+];
+
+function lessonPlanStatusLabelKey(value) {
+  if (value === "PARTIALLY_COMPLETED") return "status_partiallyCompleted";
+  return `status_${value.toLowerCase()}`;
+}
+
 /**
  * @param {{
  *   open: boolean,
@@ -31,6 +43,15 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
   const isEdit = !!plan;
   const planId = plan?.lesson_plan_id || plan?.id;
 
+  const lessonPlanStatusOptions = useMemo(
+    () =>
+      LESSON_PLAN_STATUS_ORDER.map((value) => ({
+        value,
+        label: t(`lessonPlans.lessonPlanForm.${lessonPlanStatusLabelKey(value)}`),
+      })),
+    [t],
+  );
+
   const [lessonDate, setLessonDate] = useState("");
   const [chapterTopic, setChapterTopic] = useState("");
   const [description, setDescription] = useState("");
@@ -39,9 +60,16 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
     { type: "lecture", description: "", duration_minutes: "" },
   ]);
   const [homework, setHomework] = useState("");
-  const [status, setStatus] = useState(STATUS_OPTIONS[0]);
+  const [lessonPlanStatus, setLessonPlanStatus] = useState("PLANNED");
   const [pendingFiles, setPendingFiles] = useState([]);
   const [existingAttachments, setExistingAttachments] = useState([]);
+
+  const selectedLessonPlanStatus = useMemo(() => {
+    return (
+      lessonPlanStatusOptions.find((o) => o.value === lessonPlanStatus) ??
+      lessonPlanStatusOptions[0]
+    );
+  }, [lessonPlanStatusOptions, lessonPlanStatus]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -72,7 +100,9 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
       );
       setHomework(plan.homework ?? "");
       const st = plan.status || "PLANNED";
-      setStatus(STATUS_OPTIONS.find((o) => o.value === st) || STATUS_OPTIONS[0]);
+      setLessonPlanStatus(
+        LESSON_PLAN_STATUS_ORDER.includes(st) ? st : "PLANNED",
+      );
       const att = plan.attachments || plan.lesson_plan_attachments;
       setExistingAttachments(Array.isArray(att) ? [...att] : []);
       setPendingFiles([]);
@@ -83,7 +113,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
       setObjectives([""]);
       setActivities([{ type: "lecture", description: "", duration_minutes: "" }]);
       setHomework("");
-      setStatus(STATUS_OPTIONS[0]);
+      setLessonPlanStatus("PLANNED");
       setExistingAttachments([]);
       setPendingFiles([]);
     }
@@ -178,7 +208,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           learning_objectives,
           activities: activitiesPayload,
           homework: homework.trim() || null,
-          status: status.value,
+          status: lessonPlanStatus,
           subject_id: context.subjectId,
           class_id: context.classId,
           section_id: context.sectionId || null,
@@ -194,7 +224,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           learning_objectives,
           activities: activitiesPayload,
           homework: homework.trim() || undefined,
-          status: status.value,
+          status: lessonPlanStatus,
           subject: context.subjectId,
           class_id: context.classId,
           section_id: context.sectionId || undefined,
@@ -252,10 +282,10 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.status")}</label>
           <Dropdown
-            options={STATUS_OPTIONS}
-            selected={status}
-            onChange={setStatus}
-            placeholder="Status"
+            options={lessonPlanStatusOptions}
+            selected={selectedLessonPlanStatus}
+            onChange={(opt) => setLessonPlanStatus(opt.value)}
+            placeholder={t("lessonPlans.lessonPlanForm.status")}
           />
         </div>
 
@@ -263,7 +293,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           <div className="mb-2 flex w-full items-center justify-between gap-2">
             <span className="text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.learningObjectives")}</span>
             <Button type="button" variant="ghost" className="py-1 text-sm" onClick={addObjective}>
-              <Plus className="h-4 w-4" /> Add
+              <Plus className="h-4 w-4" /> {t("common.add")}
             </Button>
           </div>
           <div className="w-full space-y-2">
@@ -294,7 +324,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.activities")}</span>
             <Button type="button" variant="ghost" className="py-1 text-sm" onClick={addActivity}>
-              <Plus className="h-4 w-4" /> Add
+              <Plus className="h-4 w-4" /> {t("common.add")}
             </Button>
           </div>
           <div className="space-y-3">
@@ -339,15 +369,17 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           </div>
         </div>
 
-        {/* <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Homework (optional)</label>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            {t("lessonPlans.lessonPlanForm.homeworkOptionalLabel")}
+          </label>
           <Textarea
             value={homework}
             onChange={(e) => setHomework(e.target.value)}
             rows={3}
-            placeholder="Instructions for students"
+            placeholder={t("lessonPlans.lessonPlanForm.homeworkInstructionsPlaceholder")}
           />
-        </div> */}
+        </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">{t("lessonPlans.lessonPlanForm.attachments")}</label>
@@ -358,7 +390,7 @@ export default function LessonPlanFormModal({ open, onClose, onSaved, plan, cont
           </label>
           <ul className="mt-2 space-y-1 text-sm">
             {existingAttachments.map((a, i) => {
-              const name = a.fileName || a.file_name || "File";
+              const name = a.fileName || a.file_name || t("lessonPlans.lessonPlanForm.unnamedAttachment");
               const key = a.attachment_id || a.id || `ex-${i}`;
               return (
                 <li key={key} className="flex items-center justify-between gap-2">

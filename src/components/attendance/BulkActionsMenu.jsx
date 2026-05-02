@@ -41,7 +41,7 @@ export default function BulkActionsMenu({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="md:hidden fixed bottom-36 right-0 z-30 bg-primary-600 text-white rounded-full p-3 shadow-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 transition-all"
-        aria-label="Bulk actions"
+        aria-label={t("ui.bulkActions")}
       >
         <MoreVertical size={24} />
       </button>

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNotification } from "../providers/NotificationProvider";
 
 export default function NotificationToast() {
+  const { t } = useTranslation();
   const { lastNotification, clearLastNotification } = useNotification();
   const [isVisible, setIsVisible] = useState(false);
 
@@ -111,7 +113,7 @@ export default function NotificationToast() {
               handleClose();
             }}
             className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            aria-label="Close notification"
+            aria-label={t("notificationToast.closeNotification")}
           >
             <svg
               className="w-5 h-5"

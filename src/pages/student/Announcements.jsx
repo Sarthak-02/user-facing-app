@@ -19,8 +19,8 @@ export default function Announcements() {
   const [categoryFilter, setCategoryFilter] = useState("");
 
   const categoryTabs = [
-    { value: "", label: t("studentAnnouncements.categoryAll") },
-    ...ANNOUNCEMENT_CATEGORY_OPTIONS,
+    { value: "", labelKey: "studentAnnouncements.categoryAll" },
+    ...ANNOUNCEMENT_CATEGORY_OPTIONS.map((o) => ({ value: o.value, labelKey: o.labelKey })),
   ];
 
   useEffect(() => {
@@ -35,14 +35,14 @@ export default function Announcements() {
         setItems(list);
       } catch (err) {
         console.error("Error fetching announcements:", err);
-        setError(err.message || "Failed to load announcements");
+        setError(err.message || t("studentAnnouncements.loadFailed"));
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, [auth.userId]);
+  }, [auth.userId, t]);
 
   const filtered = useMemo(() => {
     let list = [...items];
@@ -128,7 +128,7 @@ export default function Announcements() {
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           ))}
         </div>
@@ -155,7 +155,7 @@ export default function Announcements() {
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </button>
             ))}
           </div>

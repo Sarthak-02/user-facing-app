@@ -16,9 +16,11 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { X, Camera, RefreshCw, Loader2, AlertCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { compressImage } from "../utils/compressImage";
 
 export default function CameraCapture({ open, onCapture, onClose }) {
+  const { t } = useTranslation();
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [facingMode, setFacingMode] = useState("environment");
@@ -40,7 +42,7 @@ export default function CameraCapture({ open, onCapture, onClose }) {
     setReady(false);
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError("Camera API not supported in this browser.");
+      setError(t("ui.camera.apiNotSupported"));
       return;
     }
 
@@ -56,13 +58,13 @@ export default function CameraCapture({ open, onCapture, onClose }) {
     } catch (err) {
       const msg =
         err.name === "NotAllowedError"
-          ? "Camera access denied. Please allow camera permission and try again."
+          ? t("ui.camera.accessDenied")
           : err.name === "NotFoundError"
-          ? "No camera found on this device."
-          : "Could not open camera. Use the gallery option instead.";
+            ? t("ui.camera.noCameraFound")
+            : t("ui.camera.couldNotOpen");
       setError(msg);
     }
-  }, [facingMode, stopStream]);
+  }, [facingMode, stopStream, t]);
 
   // Start/restart stream when overlay opens or facing mode flips
   useEffect(() => {
@@ -105,7 +107,7 @@ export default function CameraCapture({ open, onCapture, onClose }) {
       stopStream();
       onCapture(compressed, previewUrl);
     } catch (err) {
-      setError("Failed to capture photo. Please try again.");
+      setError(t("ui.camera.captureFailed"));
     } finally {
       setCapturing(false);
     }
@@ -122,7 +124,7 @@ export default function CameraCapture({ open, onCapture, onClose }) {
           type="button"
           onClick={handleClose}
           className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-          aria-label="Close camera"
+          aria-label={t("ui.camera.closeCamera")}
         >
           <X className="h-5 w-5" />
         </button>
@@ -130,7 +132,7 @@ export default function CameraCapture({ open, onCapture, onClose }) {
           type="button"
           onClick={flipCamera}
           className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-          aria-label="Flip camera"
+          aria-label={t("ui.camera.flipCamera")}
         >
           <RefreshCw className="h-5 w-5" />
         </button>
@@ -148,7 +150,7 @@ export default function CameraCapture({ open, onCapture, onClose }) {
             onClick={handleClose}
             className="mt-2 px-5 py-2.5 bg-white text-gray-900 rounded-xl text-sm font-semibold hover:bg-gray-100 transition-colors"
           >
-            Use Gallery Instead
+            {t("ui.camera.useGalleryInstead")}
           </button>
         </div>
       ) : (
@@ -178,7 +180,7 @@ export default function CameraCapture({ open, onCapture, onClose }) {
               type="button"
               onClick={handleCapture}
               disabled={capturing}
-              aria-label="Take photo"
+              aria-label={t("ui.camera.takePhoto")}
               className="relative w-16 h-16 rounded-full border-4 border-white flex items-center justify-center transition-transform active:scale-95 disabled:opacity-60"
             >
               {/* Outer ring */}

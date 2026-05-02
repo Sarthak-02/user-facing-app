@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Badge, Button } from "../../ui-components";
 import { getExamDetail, getExamStudents, getExamGradesAll } from "../../api/exam.api";
@@ -22,40 +23,33 @@ function formatTime(time) {
 }
 
 function StatusBadge({ status }) {
+  const { t } = useTranslation();
   if (status === "DRAFT") {
-    return <Badge variant="warning">Draft</Badge>;
-  } else if (status === "COMPLETED") {
-    return <Badge variant="success">Completed</Badge>;
-  } else if (status === "PUBLISHED") {
-    return <Badge variant="info">Published</Badge>;
+    return <Badge variant="warning">{t("exams.status.draft")}</Badge>;
+  }
+  if (status === "COMPLETED") {
+    return <Badge variant="success">{t("exams.status.completed")}</Badge>;
+  }
+  if (status === "PUBLISHED") {
+    return <Badge variant="info">{t("exams.status.published")}</Badge>;
   }
   return <Badge variant="default">{status}</Badge>;
 }
 
-function getExamTypeLabel(type) {
-  const labels = {
-    UNIT_TEST: "Unit Test",
-    MID_TERM: "Mid Term",
-    FINAL: "Final Exam",
-    QUARTERLY: "Quarterly",
-    HALF_YEARLY: "Half Yearly",
-    ANNUAL: "Annual",
-    OTHER: "Other",
-  };
-  return labels[type] || type;
+function getExamTypeLabel(type, t) {
+  const key = `exams.examTypes.${type}`;
+  const translated = t(key);
+  return translated === key ? type : translated;
 }
 
-function getGradingTypeLabel(type) {
-  const labels = {
-    PERCENTAGE: "Percentage (0-100)",
-    GPA: "GPA (0-4.0)",
-    LETTER_GRADE: "Letter Grade (A-F)",
-    PASS_FAIL: "Pass/Fail",
-  };
-  return labels[type] || type;
+function getGradingTypeLabel(type, t) {
+  const key = `exams.gradingTypeLabels.${type}`;
+  const translated = t(key);
+  return translated === key ? type : translated;
 }
 
 export default function ExamDetail() {
+  const { t } = useTranslation();
   const { examId } = useParams();
   const navigate = useNavigate();
   const { permissions } = usePermissions();
@@ -94,7 +88,7 @@ export default function ExamDetail() {
         }
       } catch (err) {
         console.error("Error fetching exam detail:", err);
-        setError(err.message || "Failed to load exam details. Please try again.");
+        setError(err.message || t("staffExamDetail.loadFailed"));
       } finally {
         setLoading(false);
       }
@@ -103,7 +97,7 @@ export default function ExamDetail() {
     if (examId) {
       fetchExamDetail();
     }
-  }, [examId, permissions, setExamDetail]);
+  }, [examId, permissions, setExamDetail, t]);
 
   const handleGoBack = () => {
     navigate("/staff/exams");
@@ -126,7 +120,7 @@ export default function ExamDetail() {
       navigate(`/staff/exams/${examId}/enter-marks`);
     } catch (err) {
       console.error("Error fetching students for exam:", err);
-      alert("Failed to fetch students. Please try again.");
+      alert(t("staffExamDetail.fetchStudentsFailed"));
     } finally {
       setFetchingStudents(false);
     }
@@ -160,10 +154,10 @@ export default function ExamDetail() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <h3 className="text-lg font-semibold text-gray-900">Error</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t("exams.error")}</h3>
             </div>
-            <p className="text-gray-600 mb-4">{error || "Exam not found"}</p>
-            <Button onClick={handleGoBack}>Go Back</Button>
+            <p className="text-gray-600 mb-4">{error || t("staffExamDetail.examNotFound")}</p>
+            <Button onClick={handleGoBack}>{t("common.back")}</Button>
           </div>
         </Card>
       </div>
@@ -193,7 +187,7 @@ export default function ExamDetail() {
             />
           </svg>
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Exam Details</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("staffExamDetail.pageTitle")}</h1>
       </div>
 
       {/* Scrollable Content */}
@@ -204,7 +198,7 @@ export default function ExamDetail() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  {getExamTypeLabel(exam.examType)}
+                  {getExamTypeLabel(exam.examType, t)}
                 </h2>
                 {exam.customExamType && (
                   <p className="text-sm text-gray-600 mt-1">{exam.customExamType}</p>
@@ -215,7 +209,7 @@ export default function ExamDetail() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div className="bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Target</p>
+                <p className="text-sm text-gray-600 mb-1">{t("exams.columns.target")}</p>
                 <p className="text-base font-semibold text-gray-900">
                   {exam.class}
                   {exam.section && ` - ${exam.section}`}
@@ -223,18 +217,18 @@ export default function ExamDetail() {
               </div>
 
               <div className=" bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Subjects</p>
+                <p className="text-sm text-gray-600 mb-1">{t("exams.columns.subjects")}</p>
                 <p className="text-base font-semibold text-gray-900">
-                  {exam.subjects?.length || 0} subject(s)
+                  {t("exams.subjectsCount", { count: exam.subjects?.length || 0 })}
                 </p>
               </div>
 
               <div className="bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Date Range</p>
+                <p className="text-sm text-gray-600 mb-1">{t("exams.columns.dateRange")}</p>
                 <p className="text-base font-semibold text-gray-900">
                   {exam.startDate && exam.endDate
                     ? `${formatDate(exam.startDate)} - ${formatDate(exam.endDate)}`
-                    : "Not scheduled"}
+                    : t("exams.notScheduled")}
                 </p>
               </div>
             </div>
@@ -243,7 +237,7 @@ export default function ExamDetail() {
 
       {/* Subjects Schedule Card */}
       <Card>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Exam Schedule</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("staffExamDetail.examSchedule")}</h3>
         <div className="space-y-3">
           {exam.subjects && exam.subjects.length > 0 ? (
             exam.subjects.map((subject, index) => (
@@ -253,26 +247,26 @@ export default function ExamDetail() {
               >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
                   <div>
-                    <p className="text-xs text-gray-600 mb-1">Subject</p>
+                    <p className="text-xs text-gray-600 mb-1">{t("exams.subjectLabel")}</p>
                     <p className="text-sm font-semibold text-gray-900">
                       {subject.subjectName}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600 mb-1">Date</p>
+                    <p className="text-xs text-gray-600 mb-1">{t("exams.examDate")}</p>
                     <p className="text-sm font-medium text-gray-900">
                       {formatDate(subject.examDate)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600 mb-1">Time</p>
+                    <p className="text-xs text-gray-600 mb-1">{t("studentExams.time")}</p>
                     <p className="text-sm font-medium text-gray-900">
                       {formatTime(subject.startTime)} - {formatTime(subject.endTime)}
                     </p>
                   </div>
                   {subject.totalMarks && (
                     <div>
-                      <p className="text-xs text-gray-600 mb-1">Total Marks</p>
+                      <p className="text-xs text-gray-600 mb-1">{t("studentExamDetail.totalMarks")}</p>
                       <p className="text-sm font-medium text-gray-900">
                         {subject.totalMarks}
                       </p>
@@ -282,7 +276,7 @@ export default function ExamDetail() {
               </div>
             ))
           ) : (
-            <p className="text-gray-600 text-center py-4">No subjects scheduled</p>
+            <p className="text-gray-600 text-center py-4">{t("studentExamDetail.noSubjectsScheduled")}</p>
           )}
         </div>
       </Card>
@@ -290,30 +284,30 @@ export default function ExamDetail() {
       {/* Grading Configuration Card */}
       <Card>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Grading Configuration
+          {t("exams.gradingConfiguration")}
         </h3>
         <div className="space-y-2">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <div className="bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Grading Type</p>
+              <p className="text-sm text-gray-600 mb-1">{t("exams.gradingType")}</p>
               <p className="text-base font-semibold text-gray-900">
-                {getGradingTypeLabel(exam.gradingType)}
+                {getGradingTypeLabel(exam.gradingType, t)}
               </p>
             </div>
 
             {exam.gradingType !== "PASS_FAIL" && (
               <>
                 <div className="bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Maximum Marks</p>
+                  <p className="text-sm text-gray-600 mb-1">{t("exams.maximumMarks")}</p>
                   <p className="text-base font-semibold text-gray-900">
-                    {exam.maxMarks || "N/A"}
+                    {exam.maxMarks || t("common.na")}
                   </p>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Passing Marks</p>
+                  <p className="text-sm text-gray-600 mb-1">{t("exams.passingMarks")}</p>
                   <p className="text-base font-semibold text-gray-900">
-                    {exam.passingMarks || "N/A"}
+                    {exam.passingMarks || t("common.na")}
                   </p>
                 </div>
               </>
@@ -322,7 +316,7 @@ export default function ExamDetail() {
 
           {exam.includeGrades && exam.gradeRanges && exam.gradeRanges.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-3">Grade Ranges</p>
+              <p className="text-sm font-medium text-gray-700 mb-3">{t("staffExamDetail.gradeRanges")}</p>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 {exam.gradeRanges.map((range, index) => (
                   <div
@@ -370,7 +364,7 @@ export default function ExamDetail() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Loading Students...
+                  {t("staffExamDetail.loadingStudents")}
                 </>
               ) : allSubjectsGraded ? (
                 <>
@@ -388,7 +382,7 @@ export default function ExamDetail() {
                       d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                     />
                   </svg>
-                  View Results
+                  {t("staffExamDetail.viewResults")}
                 </>
               ) : (
                 <>
@@ -406,7 +400,7 @@ export default function ExamDetail() {
                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                     />
                   </svg>
-                  Enter Marks
+                  {t("staffExamDetail.enterMarks")}
                 </>
               )}
             </Button>

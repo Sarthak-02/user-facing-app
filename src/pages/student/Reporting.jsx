@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, Loader, Button } from "../../ui-components";
 import { getStudentGradesReport, getReportDashboardConfig } from "../../api/student.api";
 import { useAuth } from "../../store/auth.store";
@@ -115,16 +116,17 @@ function subjectColor(name = "") {
 // ─── UI primitives ───────────────────────────────────────────────────────────
 
 function PassBadge({ passes }) {
+  const { t } = useTranslation();
   if (passes === null) return <span className="text-xs font-semibold text-gray-400">—</span>;
   return passes ? (
     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/20">
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-      Pass
+      {t("studentExams.pass")}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-red-600/20">
       <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-      Below target
+      {t("reporting.belowTarget")}
     </span>
   );
 }
@@ -157,13 +159,14 @@ function StatCard({ icon: Icon, label, value, hint, accent, children }) {
 }
 
 function PassRateBar({ passed, total }) {
+  const { t } = useTranslation();
   const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
   return (
     <div className="mt-3">
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
         <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
-      <p className="mt-1 text-xs font-semibold text-emerald-700">{pct}% pass rate</p>
+      <p className="mt-1 text-xs font-semibold text-emerald-700">{t("reporting.passRatePercent", { pct })}</p>
     </div>
   );
 }
@@ -238,7 +241,8 @@ function EmojiRating({ value, emojiSet, labels }) {
 }
 
 function GradeDisplay({ item, ratingScale }) {
-  if (!item.is_graded) return <ScorePill muted>Pending</ScorePill>;
+  const { t } = useTranslation();
+  if (!item.is_graded) return <ScorePill muted>{t("reporting.pending")}</ScorePill>;
   const value = parseScore(item.grades_obtained);
   if (value == null) return <ScorePill muted>—</ScorePill>;
   if (ratingScale?.type === "stars") {
@@ -252,7 +256,14 @@ function GradeDisplay({ item, ratingScale }) {
 
 // ─── GroupBy toggle ───────────────────────────────────────────────────────────
 
+function translateChartGroupOption(opt, t) {
+  if (opt === "exams") return t("reporting.byExam");
+  if (opt === "subjects") return t("reporting.bySubject");
+  return opt;
+}
+
 function GroupByToggle({ options, value, onChange }) {
+  const { t } = useTranslation();
   if (!options || options.length <= 1) return null;
   return (
     <div className="flex shrink-0 gap-0.5 rounded-lg bg-gray-100 p-0.5">
@@ -264,7 +275,7 @@ function GroupByToggle({ options, value, onChange }) {
             value === opt ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
           }`}
         >
-          {opt}
+          {translateChartGroupOption(opt, t)}
         </button>
       ))}
     </div>
@@ -274,6 +285,7 @@ function GroupByToggle({ options, value, onChange }) {
 // ─── Vertical Bar Chart ───────────────────────────────────────────────────────
 
 function VerticalBarChart({ title, description, bars, groupByOptions, groupBy, onGroupByChange }) {
+  const { t } = useTranslation();
   if (!bars.length) {
     return (
       <Card>
@@ -284,7 +296,7 @@ function VerticalBarChart({ title, description, bars, groupByOptions, groupBy, o
           </div>
           <GroupByToggle options={groupByOptions} value={groupBy} onChange={onGroupByChange} />
         </div>
-        <p className="py-8 text-center text-sm text-gray-400">No data available</p>
+        <p className="py-8 text-center text-sm text-gray-400">{t("reporting.noDataAvailable")}</p>
       </Card>
     );
   }
@@ -321,6 +333,7 @@ function VerticalBarChart({ title, description, bars, groupByOptions, groupBy, o
 // ─── Config Pie Chart ─────────────────────────────────────────────────────────
 
 function ConfigPieChart({ title, description, slices, groupByOptions, groupBy, onGroupByChange }) {
+  const { t } = useTranslation();
   const total = slices.reduce((sum, s) => sum + s.count, 0);
   if (!slices.length || total === 0) return null;
 
@@ -367,7 +380,7 @@ function ConfigPieChart({ title, description, slices, groupByOptions, groupBy, o
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-gray-900">{total}</span>
-            <span className="text-xs text-gray-500">graded</span>
+            <span className="text-xs text-gray-500">{t("reporting.graded")}</span>
           </div>
         </div>
         <div className="flex-1 space-y-2">
@@ -379,7 +392,7 @@ function ConfigPieChart({ title, description, slices, groupByOptions, groupBy, o
             </div>
           ))}
           {segments.length > 6 && (
-            <p className="text-xs text-gray-400">+{segments.length - 6} more</p>
+            <p className="text-xs text-gray-400">{t("exams.moreSubjects", { count: segments.length - 6 })}</p>
           )}
         </div>
       </div>
@@ -390,6 +403,7 @@ function ConfigPieChart({ title, description, slices, groupByOptions, groupBy, o
 // ─── Radar Chart ─────────────────────────────────────────────────────────────
 
 function RadarChart({ title, description, data, groupByOptions, groupBy, onGroupByChange }) {
+  const { t } = useTranslation();
   const SIZE = 220;
   const cx = SIZE / 2;
   const cy = SIZE / 2;
@@ -406,8 +420,8 @@ function RadarChart({ title, description, data, groupByOptions, groupBy, onGroup
     </div>
   );
 
-  if (!n) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
-  if (n < 3) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">Need at least 3 items</p></Card>;
+  if (!n) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">{t("reporting.noDataAvailable")}</p></Card>;
+  if (n < 3) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">{t("reporting.needAtLeast3Items")}</p></Card>;
 
   const maxVal = Math.max(...data.map((d) => d.value), 1);
   const angles = data.map((_, i) => (2 * Math.PI * i) / n - Math.PI / 2);
@@ -446,6 +460,7 @@ function RadarChart({ title, description, data, groupByOptions, groupBy, onGroup
 // ─── Heatmap ─────────────────────────────────────────────────────────────────
 
 function Heatmap({ title, description, subjectList, examList, cellMap, groupByOptions, groupBy, onGroupByChange }) {
+  const { t } = useTranslation();
   const byExam = groupBy === "exams";
   const rows = byExam ? examList : subjectList.map((s) => ({ id: s, name: s }));
   const cols = byExam ? subjectList.map((s) => ({ id: s, name: s })) : examList;
@@ -468,7 +483,7 @@ function Heatmap({ title, description, subjectList, examList, cellMap, groupByOp
     </div>
   );
 
-  if (!rows.length || !cols.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+  if (!rows.length || !cols.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">{t("reporting.noDataAvailable")}</p></Card>;
 
   return (
     <Card>
@@ -522,6 +537,7 @@ function Heatmap({ title, description, subjectList, examList, cellMap, groupByOp
 // ─── Line Chart ───────────────────────────────────────────────────────────────
 
 function LineChart({ title, description, points, groupByOptions, groupBy, onGroupByChange }) {
+  const { t } = useTranslation();
   const W = 300;
   const H = 160;
   const PAD = { top: 12, right: 12, bottom: 32, left: 32 };
@@ -539,7 +555,7 @@ function LineChart({ title, description, points, groupByOptions, groupBy, onGrou
     </div>
   );
 
-  if (n < 2) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">Need at least 2 data points</p></Card>;
+  if (n < 2) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">{t("reporting.needAtLeast2DataPoints")}</p></Card>;
 
   const maxVal = Math.max(...points.map((p) => p.value), 1);
   const minVal = Math.min(...points.map((p) => p.value), 0);
@@ -590,6 +606,7 @@ function LineChart({ title, description, points, groupByOptions, groupBy, onGrou
 // ─── Progress Rings ───────────────────────────────────────────────────────────
 
 function ProgressRings({ title, description, rings, maxValue, groupByOptions, groupBy, onGroupByChange }) {
+  const { t } = useTranslation();
   const R = 22;
   const SW = 5;
   const circumference = 2 * Math.PI * R;
@@ -607,7 +624,7 @@ function ProgressRings({ title, description, rings, maxValue, groupByOptions, gr
     </div>
   );
 
-  if (!rings.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+  if (!rings.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">{t("reporting.noDataAvailable")}</p></Card>;
 
   return (
     <Card>
@@ -629,7 +646,7 @@ function ProgressRings({ title, description, rings, maxValue, groupByOptions, gr
             </div>
           );
         })}
-        {rings.length > 8 && <p className="self-end text-xs text-gray-400">+{rings.length - 8} more</p>}
+        {rings.length > 8 && <p className="self-end text-xs text-gray-400">{t("exams.moreSubjects", { count: rings.length - 8 })}</p>}
       </div>
     </Card>
   );
@@ -638,6 +655,7 @@ function ProgressRings({ title, description, rings, maxValue, groupByOptions, gr
 // ─── Table Chart ─────────────────────────────────────────────────────────────
 
 function TableChart({ title, description, rows, groupByOptions, groupBy, onGroupByChange }) {
+  const { t } = useTranslation();
   const byExam = groupBy === "exams";
 
   const header = (
@@ -650,7 +668,7 @@ function TableChart({ title, description, rows, groupByOptions, groupBy, onGroup
     </div>
   );
 
-  if (!rows.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+  if (!rows.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">{t("reporting.noDataAvailable")}</p></Card>;
 
   return (
     <Card className="overflow-hidden p-0">
@@ -659,9 +677,9 @@ function TableChart({ title, description, rows, groupByOptions, groupBy, onGroup
         <table className="w-full min-w-[280px] text-left text-sm">
           <thead>
             <tr className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              <th className="px-4 py-2.5">{byExam ? "Exam" : "Subject"}</th>
-              <th className="px-4 py-2.5">Avg Score</th>
-              <th className="px-4 py-2.5">Graded</th>
+              <th className="px-4 py-2.5">{byExam ? t("reporting.exam") : t("reporting.subject")}</th>
+              <th className="px-4 py-2.5">{t("reporting.avgScoreHeader")}</th>
+              <th className="px-4 py-2.5">{t("reporting.gradedHeader")}</th>
             </tr>
           </thead>
           <tbody>
@@ -682,6 +700,7 @@ function TableChart({ title, description, rows, groupByOptions, groupBy, onGroup
 // ─── Gauge ────────────────────────────────────────────────────────────────────
 
 function Gauge({ title, description, value, maxValue, displayValue, groupByOptions, groupBy, onGroupByChange }) {
+  const { t } = useTranslation();
   const W = 200;
   const H = 120;
   const cx = W / 2;
@@ -704,7 +723,7 @@ function Gauge({ title, description, value, maxValue, displayValue, groupByOptio
     </div>
   );
 
-  if (value == null) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+  if (value == null) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">{t("reporting.noDataAvailable")}</p></Card>;
 
   return (
     <Card>
@@ -714,7 +733,7 @@ function Gauge({ title, description, value, maxValue, displayValue, groupByOptio
           <circle cx={cx} cy={cy} r={R} fill="none" stroke="#f3f4f6" strokeWidth={SW} strokeDasharray={`${arc} ${arc}`} style={{ transform: rotate, transformOrigin: origin }} />
           <circle cx={cx} cy={cy} r={R} fill="none" stroke={color} strokeWidth={SW} strokeDasharray={`${fraction * arc} ${arc}`} strokeLinecap="round" style={{ transform: rotate, transformOrigin: origin }} />
           <text x={cx} y={cy - 10} textAnchor="middle" fontSize={22} fontWeight="bold" fill="#111827">{displayValue}</text>
-          <text x={cx} y={cy + 8} textAnchor="middle" fontSize={10} fill="#6b7280">Overall Avg</text>
+          <text x={cx} y={cy + 8} textAnchor="middle" fontSize={10} fill="#6b7280">{t("reporting.overallAvg")}</text>
         </svg>
       </div>
     </Card>
@@ -724,6 +743,7 @@ function Gauge({ title, description, value, maxValue, displayValue, groupByOptio
 // ─── Scatter Plot ─────────────────────────────────────────────────────────────
 
 function ScatterPlot({ title, description, points, xLabels, groupByOptions, groupBy, onGroupByChange }) {
+  const { t } = useTranslation();
   const W = 300;
   const H = 180;
   const PAD = { top: 12, right: 12, bottom: 36, left: 36 };
@@ -740,7 +760,7 @@ function ScatterPlot({ title, description, points, xLabels, groupByOptions, grou
     </div>
   );
 
-  if (!points.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+  if (!points.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">{t("reporting.noDataAvailable")}</p></Card>;
 
   const maxX = Math.max(...points.map((p) => p.x), 0);
   const maxY = Math.max(...points.map((p) => p.y), 1);
@@ -788,6 +808,7 @@ function ScatterPlot({ title, description, points, xLabels, groupByOptions, grou
 // ─── Histogram ────────────────────────────────────────────────────────────────
 
 function Histogram({ title, description, buckets, groupByOptions, groupBy, onGroupByChange }) {
+  const { t } = useTranslation();
   const header = (
     <div className="mb-4 flex items-start justify-between gap-3">
       <div>
@@ -798,7 +819,7 @@ function Histogram({ title, description, buckets, groupByOptions, groupBy, onGro
     </div>
   );
 
-  if (!buckets.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">No data available</p></Card>;
+  if (!buckets.length) return <Card>{header}<p className="py-8 text-center text-sm text-gray-400">{t("reporting.noDataAvailable")}</p></Card>;
 
   const max = Math.max(...buckets.map((b) => b.value), 1);
 
@@ -823,9 +844,11 @@ function Histogram({ title, description, buckets, groupByOptions, groupBy, onGro
 // ─── main page ───────────────────────────────────────────────────────────────
 
 export default function Reporting() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const campusId = auth.campus_id;
   const sectionId = auth.sections?.[0]?.value;
+  const unknownSubject = t("reporting.unknownSubject");
 
   const [dashboardConfig, setDashboardConfig] = useState(null);
   const [payload, setPayload] = useState(null);
@@ -868,18 +891,18 @@ export default function Reporting() {
         setPayload(res.data);
       } else {
         setPayload(null);
-        setError("Unexpected response from server.");
+        setError(t("reporting.unexpectedResponse"));
       }
     } catch (err) {
       if (fetchId !== fetchIdRef.current) return;
       console.error("Grades report:", err);
-      const msg = err?.response?.data?.message || err?.message || "Could not load grades.";
-      setError(typeof msg === "string" ? msg : "Could not load grades.");
+      const msg = err?.response?.data?.message || err?.message || t("reporting.couldNotLoadGrades");
+      setError(typeof msg === "string" ? msg : t("reporting.couldNotLoadGrades"));
       setPayload(null);
     } finally {
       if (fetchId === fetchIdRef.current) setLoading(false);
     }
-  }, [auth.userId, campusId, sectionId]);
+  }, [auth.userId, campusId, sectionId, t]);
 
   useEffect(() => {
     fetchReport();
@@ -918,19 +941,19 @@ export default function Reporting() {
   }, [items]);
 
   const subjectGroups = useMemo(() => {
-    const subjectNames = [...new Set(items.map((r) => r.subject_name || "Unknown"))];
+    const subjectNames = [...new Set(items.map((r) => r.subject_name || unknownSubject))];
     return subjectNames
       .sort((a, b) => a.localeCompare(b))
       .map((subject_name) => {
         const rows = items
-          .filter((r) => (r.subject_name || "Unknown") === subject_name)
+          .filter((r) => (r.subject_name || unknownSubject) === subject_name)
           .sort((a, b) => new Date(b.graded_at || 0) - new Date(a.graded_at || 0));
         const pctAvg = averageForType(rows, "PERCENTAGE");
         const gpaAvg = averageForType(rows, "GPA");
         const avgGrade = averageGrade(rows);
         return { subject_name, rows, pctAvg, gpaAvg, avgGrade };
       });
-  }, [items]);
+  }, [items, unknownSubject]);
 
   const overview = useMemo(() => {
     const examIds = new Set(items.map((i) => i.exam_id));
@@ -1007,7 +1030,7 @@ export default function Reporting() {
   );
 
   const heatmapBase = useMemo(() => {
-    const subjectList = [...new Set(items.map((r) => r.subject_name || "Unknown"))].sort();
+    const subjectList = [...new Set(items.map((r) => r.subject_name || unknownSubject))].sort();
     const examList = [...new Set(items.map((r) => r.exam_id))].map((id) => {
       const row = items.find((r) => r.exam_id === id);
       return { id, name: row?.exam_name ?? id };
@@ -1015,13 +1038,13 @@ export default function Reporting() {
     const cellMap = {};
     subjectList.forEach((subject) => {
       examList.forEach((exam) => {
-        const rows = items.filter((r) => (r.subject_name || "Unknown") === subject && r.exam_id === exam.id && r.is_graded);
+        const rows = items.filter((r) => (r.subject_name || unknownSubject) === subject && r.exam_id === exam.id && r.is_graded);
         const vals = rows.map((r) => parseScore(r.grades_obtained)).filter((n) => n != null);
         cellMap[`${subject}__${exam.id}`] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
       });
     });
     return { subjectList, examList, cellMap };
-  }, [items]);
+  }, [items, unknownSubject]);
 
   const lineDataByExam = useMemo(
     () => examGroups.filter((g) => g.avgGrade != null).map((g, i) => ({
@@ -1044,19 +1067,19 @@ export default function Reporting() {
   );
 
   const scatterData = useMemo(() => {
-    const subjectList = [...new Set(items.map((r) => r.subject_name || "Unknown"))].sort();
+    const subjectList = [...new Set(items.map((r) => r.subject_name || unknownSubject))].sort();
     const examIds = [...new Set(items.map((r) => r.exam_id))];
     return items
       .filter((r) => r.is_graded)
       .map((r) => {
         const score = parseScore(r.grades_obtained);
         if (score == null) return null;
-        const subjectIdx = subjectList.indexOf(r.subject_name || "Unknown");
+        const subjectIdx = subjectList.indexOf(r.subject_name || unknownSubject);
         const examIdx = examIds.indexOf(r.exam_id);
         return { id: r.grade_id, x: examIdx, y: score, color: CHART_COLORS[subjectIdx % CHART_COLORS.length] };
       })
       .filter(Boolean);
-  }, [items]);
+  }, [items, unknownSubject]);
 
   const scatterXLabels = useMemo(
     () => [...new Set(items.map((r) => r.exam_id))].map((id) => items.find((r) => r.exam_id === id)?.exam_name ?? id),
@@ -1090,9 +1113,9 @@ export default function Reporting() {
     return (
       <div className="flex h-screen items-center justify-center p-4">
         <Card className="max-w-md p-6 text-center">
-          <h2 className="text-lg font-semibold text-red-600">Could not load report</h2>
+          <h2 className="text-lg font-semibold text-red-600">{t("reporting.couldNotLoadReport")}</h2>
           <p className="mt-2 text-sm text-gray-600">{error}</p>
-          <Button variant="primary" className="mt-5 w-full" onClick={fetchReport}>Try again</Button>
+          <Button variant="primary" className="mt-5 w-full" onClick={fetchReport}>{t("reporting.tryAgain")}</Button>
         </Card>
       </div>
     );
@@ -1103,27 +1126,27 @@ export default function Reporting() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Grade Report</h1>
-          <p className="mt-0.5 text-sm text-gray-500">Your academic performance across all exams</p>
+          <h1 className="text-xl font-bold text-gray-900">{t("reporting.gradeReport")}</h1>
+          <p className="mt-0.5 text-sm text-gray-500">{t("reporting.gradeReportSubtitle")}</p>
         </div>
         <button
           onClick={fetchReport}
           className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 active:bg-gray-100"
         >
           <RefreshCw size={14} strokeWidth={2} />
-          Refresh
+          {t("reporting.refresh")}
         </button>
       </div>
 
       {/* Stat cards */}
       {useGrades && (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard icon={BookMarked} label="Grade entries" value={overview.totalRows} hint={`${overview.graded} graded`} accent="bg-blue-50 text-blue-600" />
-          <StatCard icon={BarChart3} label="Exams" value={overview.exams} accent="bg-purple-50 text-purple-600" />
-          <StatCard icon={Layers} label="Subjects" value={overview.subjects} accent="bg-amber-50 text-amber-600" />
+          <StatCard icon={BookMarked} label={t("reporting.gradeEntries")} value={overview.totalRows} hint={t("reporting.gradedHintCount", { count: overview.graded })} accent="bg-blue-50 text-blue-600" />
+          <StatCard icon={BarChart3} label={t("reporting.exams")} value={overview.exams} accent="bg-purple-50 text-purple-600" />
+          <StatCard icon={Layers} label={t("reporting.subjects")} value={overview.subjects} accent="bg-amber-50 text-amber-600" />
           <StatCard
             icon={CheckCircle2}
-            label="Passed"
+            label={t("reporting.passed")}
             value={overview.graded ? `${overview.passed} / ${overview.graded}` : "—"}
             accent="bg-emerald-50 text-emerald-600"
           >
@@ -1138,9 +1161,9 @@ export default function Reporting() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
               <TrendingUp size={28} strokeWidth={1.5} />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">No grades yet</h3>
+            <h3 className="text-base font-semibold text-gray-900">{t("reporting.noGradesYet")}</h3>
             <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">
-              When your teachers publish marks, they will appear here with summaries and breakdowns.
+              {t("reporting.noGradesStudentHint")}
             </p>
           </div>
         </Card>
@@ -1152,6 +1175,7 @@ export default function Reporting() {
               {displayCharts.map((chart, i) => {
                 const groupBy = chartGroupBys[i] ?? chart.group_by?.[0];
                 const byExam = groupBy === "exams";
+                const scopeWord = byExam ? t("reporting.scopeExam") : t("reporting.scopeSubject");
                 const setGroupBy = (v) => setChartGroupBys((prev) => ({ ...prev, [i]: v }));
                 const common = { key: i, groupByOptions: chart.group_by, groupBy, onGroupByChange: setGroupBy };
 
@@ -1160,8 +1184,8 @@ export default function Reporting() {
                     return (
                       <VerticalBarChart
                         {...common}
-                        title="Performance"
-                        description={`Average score by ${groupBy}`}
+                        title={t("reporting.performance")}
+                        description={t("reporting.descAvgScore", { scope: scopeWord })}
                         bars={byExam ? barDataByExam : barDataBySubject}
                       />
                     );
@@ -1169,8 +1193,8 @@ export default function Reporting() {
                     return (
                       <ConfigPieChart
                         {...common}
-                        title="Grade distribution"
-                        description={`Graded entries by ${groupBy}`}
+                        title={t("reporting.gradeDistribution")}
+                        description={t("reporting.descGradedEntries", { scope: scopeWord })}
                         slices={byExam ? pieDataByExam : pieDataBySubject}
                       />
                     );
@@ -1178,8 +1202,8 @@ export default function Reporting() {
                     return (
                       <RadarChart
                         {...common}
-                        title="Skill radar"
-                        description={`Scores by ${groupBy}`}
+                        title={t("reporting.skillRadar")}
+                        description={t("reporting.descScores", { scope: scopeWord })}
                         data={byExam ? radarDataByExam : radarDataBySubject}
                       />
                     );
@@ -1187,8 +1211,8 @@ export default function Reporting() {
                     return (
                       <Heatmap
                         {...common}
-                        title="Score heatmap"
-                        description="Average scores across subjects and exams"
+                        title={t("reporting.scoreHeatmap")}
+                        description={t("reporting.heatmapStudentDesc")}
                         subjectList={heatmapBase.subjectList}
                         examList={heatmapBase.examList}
                         cellMap={heatmapBase.cellMap}
@@ -1198,8 +1222,8 @@ export default function Reporting() {
                     return (
                       <LineChart
                         {...common}
-                        title="Trend"
-                        description={`Score trend by ${groupBy}`}
+                        title={t("reporting.trend")}
+                        description={t("reporting.descTrend", { scope: scopeWord })}
                         points={byExam ? lineDataByExam : lineDataBySubject}
                       />
                     );
@@ -1209,8 +1233,8 @@ export default function Reporting() {
                     return (
                       <ProgressRings
                         {...common}
-                        title="Progress"
-                        description={`Score progress by ${groupBy}`}
+                        title={t("reporting.progress")}
+                        description={t("reporting.descProgress", { scope: scopeWord })}
                         rings={ringData}
                         maxValue={maxVal}
                       />
@@ -1223,8 +1247,8 @@ export default function Reporting() {
                     return (
                       <TableChart
                         {...common}
-                        title="Summary table"
-                        description={`Grade summary by ${groupBy}`}
+                        title={t("reporting.summaryTable")}
+                        description={t("reporting.descSummary", { scope: scopeWord })}
                         rows={tableRows}
                       />
                     );
@@ -1233,8 +1257,8 @@ export default function Reporting() {
                     return (
                       <Gauge
                         {...common}
-                        title="Overall performance"
-                        description="Average score across all grades"
+                        title={t("reporting.overallPerformance")}
+                        description={t("reporting.gaugeStudentDesc")}
                         value={overallAvg}
                         maxValue={ratingScale?.points ?? 100}
                         displayValue={formatAvgWithConfig(overallAvg, ratingScale)}
@@ -1244,8 +1268,8 @@ export default function Reporting() {
                     return (
                       <ScatterPlot
                         {...common}
-                        title="Score distribution"
-                        description="Individual grades plotted by exam"
+                        title={t("reporting.scoreDistribution")}
+                        description={t("reporting.scatterStudentDesc")}
                         points={scatterData}
                         xLabels={scatterXLabels}
                       />
@@ -1254,8 +1278,8 @@ export default function Reporting() {
                     return (
                       <Histogram
                         {...common}
-                        title="Score histogram"
-                        description="Distribution of scores"
+                        title={t("reporting.scoreHistogram")}
+                        description={t("reporting.histogramStudentDesc")}
                         buckets={histogramData}
                       />
                     );
@@ -1271,8 +1295,8 @@ export default function Reporting() {
             <>
               <div className="border-b border-border">
                 <div className="flex gap-1">
-                  <TabButton active={activeTab === "exam"} onClick={() => setActiveTab("exam")}>By Exam</TabButton>
-                  <TabButton active={activeTab === "subject"} onClick={() => setActiveTab("subject")}>By Subject</TabButton>
+                  <TabButton active={activeTab === "exam"} onClick={() => setActiveTab("exam")}>{t("reporting.byExam")}</TabButton>
+                  <TabButton active={activeTab === "subject"} onClick={() => setActiveTab("subject")}>{t("reporting.bySubject")}</TabButton>
                 </div>
               </div>
 
@@ -1286,7 +1310,7 @@ export default function Reporting() {
                           <div className="flex items-start justify-between gap-2">
                             <h3 className="font-semibold text-gray-900">{g.exam_name}</h3>
                             <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
-                              {g.rows.length} subject{g.rows.length !== 1 ? "s" : ""}
+                              {t("reporting.subjectCount", { count: g.rows.length })}
                             </span>
                           </div>
 
@@ -1295,11 +1319,11 @@ export default function Reporting() {
                               <ExamPassBar passCount={g.passCount} belowCount={g.belowCount} total={g.gradedCount} />
                               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
                                 <span className="flex items-center gap-1">
-                                  <span className="h-2 w-2 rounded-full bg-emerald-500" />{g.passCount} passed
+                                  <span className="h-2 w-2 rounded-full bg-emerald-500" />{t("reporting.passedCount", { count: g.passCount })}
                                 </span>
                                 {g.belowCount > 0 && (
                                   <span className="flex items-center gap-1">
-                                    <span className="h-2 w-2 rounded-full bg-red-400" />{g.belowCount} below target
+                                    <span className="h-2 w-2 rounded-full bg-red-400" />{t("reporting.belowCount", { count: g.belowCount })}
                                   </span>
                                 )}
                               </div>
@@ -1309,17 +1333,17 @@ export default function Reporting() {
                           <div className="mt-3 flex flex-wrap gap-2">
                             {ratingScale?.type === "stars" && g.avgGrade != null && (
                               <span className="rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
-                                Avg {g.avgGrade.toFixed(1)} / {ratingScale.points}★
+                                {t("reporting.avgStars", { value: g.avgGrade.toFixed(1), max: ratingScale.points })}
                               </span>
                             )}
                             {!ratingScale && g.pctAvg != null && (
                               <span className="rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-800 ring-1 ring-primary-200">
-                                Avg {g.pctAvg.toFixed(1)}%
+                                {t("reporting.avgPercentShort", { value: g.pctAvg.toFixed(1) })}
                               </span>
                             )}
                             {!ratingScale && g.gpaAvg != null && (
                               <span className="rounded-lg bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-800 ring-1 ring-purple-200">
-                                Avg GPA {g.gpaAvg.toFixed(2)}
+                                {t("reporting.avgGpaShort", { value: g.gpaAvg.toFixed(2) })}
                               </span>
                             )}
                           </div>
@@ -1329,11 +1353,11 @@ export default function Reporting() {
                           <table className="w-full min-w-[300px] text-left text-sm">
                             <thead>
                               <tr className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                <th className="px-5 py-2.5">Subject</th>
-                                <th className="px-5 py-2.5">Score</th>
-                                {!ratingScale && <th className="px-5 py-2.5">Result</th>}
-                                <th className="hidden px-5 py-2.5 sm:table-cell">Graded on</th>
-                                {showComments && <th className="hidden px-5 py-2.5 md:table-cell">Comments</th>}
+                                <th className="px-5 py-2.5">{t("reporting.subject")}</th>
+                                <th className="px-5 py-2.5">{t("reporting.score")}</th>
+                                {!ratingScale && <th className="px-5 py-2.5">{t("reporting.result")}</th>}
+                                <th className="hidden px-5 py-2.5 sm:table-cell">{t("reporting.gradedOn")}</th>
+                                {showComments && <th className="hidden px-5 py-2.5 md:table-cell">{t("reporting.comments")}</th>}
                               </tr>
                             </thead>
                             <tbody>
@@ -1373,19 +1397,19 @@ export default function Reporting() {
                 <section>
                   <Card className="overflow-hidden p-0">
                     <div className="border-b border-border px-5 py-4">
-                      <h3 className="font-semibold text-gray-900">All entries</h3>
-                      <p className="mt-0.5 text-xs text-gray-500">Every graded subject across all exams</p>
+                      <h3 className="font-semibold text-gray-900">{t("reporting.allEntries")}</h3>
+                      <p className="mt-0.5 text-xs text-gray-500">{t("reporting.allEntriesSubtitle")}</p>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[360px] text-left text-sm">
                         <thead>
                           <tr className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            <th className="px-5 py-3">Subject</th>
-                            <th className="px-5 py-3">Exam</th>
-                            <th className="px-5 py-3">Score</th>
-                            {!ratingScale && <th className="px-5 py-3">Result</th>}
-                            <th className="hidden px-5 py-3 md:table-cell">Graded on</th>
-                            {showComments && <th className="hidden px-5 py-3 lg:table-cell">Comments</th>}
+                            <th className="px-5 py-3">{t("reporting.subject")}</th>
+                            <th className="px-5 py-3">{t("reporting.exam")}</th>
+                            <th className="px-5 py-3">{t("reporting.score")}</th>
+                            {!ratingScale && <th className="px-5 py-3">{t("reporting.result")}</th>}
+                            <th className="hidden px-5 py-3 md:table-cell">{t("reporting.gradedOn")}</th>
+                            {showComments && <th className="hidden px-5 py-3 lg:table-cell">{t("reporting.comments")}</th>}
                           </tr>
                         </thead>
                         <tbody>
