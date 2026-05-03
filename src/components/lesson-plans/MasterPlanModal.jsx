@@ -18,14 +18,13 @@ function getCurrentAcademicYear() {
  *   open: boolean,
  *   onClose: () => void,
  *   onSeeded: (plan: object) => void,
- *   context: { teacherId: string, campusId: string, className: string, subjectName: string, academicYear: string },
+ *   context: { teacherId: string, campusId: string, sectionId: string, subjectName: string, academicYear: string },
  * }} props
  */
 export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
   const { t } = useTranslation();
   const [board, setBoard] = useState("");
   const [subject, setSubject] = useState("");
-  const [className, setClassName] = useState("");
   const [academicYear, setAcademicYear] = useState("");
   const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState("");
@@ -34,7 +33,6 @@ export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
     if (!open) return;
     setBoard("");
     setSubject(context.subjectName || "");
-    setClassName(context.className || "");
     setAcademicYear(context.academicYear || getCurrentAcademicYear());
     setError("");
   }, [open, context]);
@@ -44,14 +42,13 @@ export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
     setError("");
     if (!board.trim()) { setError(t("lessonPlans.masterPlan.errorBoardRequired")); return; }
     if (!subject.trim()) { setError(t("lessonPlans.masterPlan.errorSubjectRequired")); return; }
-    if (!className.trim()) { setError(t("lessonPlans.masterPlan.errorClassRequired")); return; }
     if (!academicYear.trim()) { setError(t("lessonPlans.masterPlan.errorYearRequired")); return; }
     setSeeding(true);
     try {
       const plan = await seedClassPlanFromMaster({
         board: board.trim(),
         subject: subject.trim(),
-        class_name: className.trim(),
+        section_id: context.sectionId,
         academic_year: academicYear.trim(),
         campus_id: context.campusId,
         teacher_id: context.teacherId,
@@ -96,17 +93,6 @@ export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder={t("lessonPlans.masterPlan.subjectPlaceholder")}
-            required
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            {t("lessonPlans.masterPlan.class")} <span className="text-error-500">*</span>
-          </label>
-          <Input
-            value={className}
-            onChange={(e) => setClassName(e.target.value)}
-            placeholder={t("lessonPlans.masterPlan.classPlaceholder")}
             required
           />
         </div>

@@ -278,6 +278,15 @@
       "errorFailed": "Failed to seed class plan from master. Check the board, subject, class, and year.",
       "seedPlan": "Seed plan"
     },
+    "clone": {
+      "title": "Clone from Another Class",
+      "description": "Copy the lesson plan from another section that teaches the same subject.",
+      "sourceClass": "Source Class",
+      "clonePlan": "Clone Plan",
+      "noSectionsAvailable": "No other sections available for this subject.",
+      "errorSectionRequired": "Please select a source class.",
+      "errorFailed": "Failed to clone lesson plan."
+    },
     "lessonPlanForm": {
       "newTitle": "New lesson plan",
       "editTitle": "Edit lesson plan",
@@ -1262,6 +1271,7 @@
     "noClassPlanYet": "No class plan yet",
     "noClassPlanSubtitle": "Start from a master syllabus or create a blank plan.",
     "pullFromMasterPlan": "Pull from Master Plan",
+    "cloneFromClass": "Clone from Another Class",
     "createBlankPlan": "Create blank plan",
     "noTopicsAddedYet": "No topics added yet",
     "noTopicsAddedSubtitle": "Add your first topic to get started.",

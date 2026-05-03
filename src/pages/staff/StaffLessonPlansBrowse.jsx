@@ -12,6 +12,7 @@ import {
 } from "../../api/lessonPlans.api";
 import TopicFormModal from "../../components/lesson-plans/TopicFormModal";
 import MasterPlanModal from "../../components/lesson-plans/MasterPlanModal";
+import CloneFromClassModal from "../../components/lesson-plans/CloneFromClassModal";
 import Loader from "../../ui-components/Loader";
 import {
   ArrowLeft,
@@ -24,6 +25,7 @@ import {
   Pencil,
   Trash2,
   Download,
+  Copy,
 } from "lucide-react";
 
 /** Derive academic year from today's date: April onward starts new year */
@@ -242,6 +244,9 @@ export default function StaffLessonPlansBrowse() {
   // Master plan seed modal
   const [masterPlanOpen, setMasterPlanOpen] = useState(false);
 
+  // Clone from another class modal
+  const [cloneModalOpen, setCloneModalOpen] = useState(false);
+
   // Publish
   const [publishing, setPublishing] = useState(false);
 
@@ -294,7 +299,7 @@ export default function StaffLessonPlansBrowse() {
         teacher_id: permissions.teacher_id,
         campus_id: auth.campus_id || undefined,
         subject: subjectName,
-        class_name: className || undefined,
+        section_id: sectionId || undefined,
         academic_year: academicYear,
         limit: 1,
       });
@@ -314,7 +319,7 @@ export default function StaffLessonPlansBrowse() {
     } finally {
       setLoading(false);
     }
-  }, [permissions.teacher_id, auth.campus_id, subjectName, className, academicYear, t]);
+  }, [permissions.teacher_id, auth.campus_id, subjectName, sectionId, academicYear, t]);
 
   useEffect(() => { fetchClassPlan(); }, [fetchClassPlan]);
 
@@ -358,7 +363,7 @@ export default function StaffLessonPlansBrowse() {
       const plan = await createClassPlan({
         campus_id: context.campusId,
         teacher_id: context.teacherId,
-        class_name: context.className,
+        section_id: context.sectionId,
         subject: context.subjectName,
         academic_year: context.academicYear,
         is_published: false,
@@ -472,6 +477,10 @@ export default function StaffLessonPlansBrowse() {
               <Download className="h-4 w-4" />
               {t("lessonPlansBrowse.pullFromMasterPlan")}
             </Button>
+            <Button variant="secondary" className="gap-2" onClick={() => setCloneModalOpen(true)}>
+              <Copy className="h-4 w-4" />
+              {t("lessonPlansBrowse.cloneFromClass")}
+            </Button>
             <Button className="gap-2" loading={creatingPlan} onClick={handleCreateBlankPlan}>
               <Plus className="h-4 w-4" />
               {t("lessonPlansBrowse.createBlankPlan")}
@@ -543,6 +552,20 @@ export default function StaffLessonPlansBrowse() {
           fetchClassPlan();
         }}
         context={context}
+      />
+
+      {/* Clone from another class modal */}
+      <CloneFromClassModal
+        open={cloneModalOpen}
+        onClose={() => setCloneModalOpen(false)}
+        onCloned={(plan) => {
+          setClassPlan(plan);
+          setCloneModalOpen(false);
+          fetchClassPlan();
+        }}
+        context={context}
+        sections={permissions.sections || []}
+        classes={permissions.classes || []}
       />
 
       {/* Delete topic confirmation */}

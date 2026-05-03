@@ -232,7 +232,7 @@ function normalizeClassPlan(raw) {
 // ─── Class Plans ─────────────────────────────────────────────────────────────
 
 /**
- * @param {{ campus_id?: string, teacher_id?: string, class_name?: string, subject?: string, academic_year?: string, is_published?: boolean, limit?: number, offset?: number }} params
+ * @param {{ campus_id?: string, teacher_id?: string, class_id?: string, section_id?: string, subject?: string, academic_year?: string, is_published?: boolean, limit?: number, offset?: number }} params
  */
 export async function listClassPlans(params) {
   const response = await api.get("/class-plans", { params });
@@ -251,7 +251,7 @@ export async function getClassPlanById(classPlanId) {
 }
 
 /**
- * @param {{ campus_id: string, teacher_id: string, class_name: string, subject: string, academic_year: string, master_plan_id?: string, is_published?: boolean, topics?: object[] }} body
+ * @param {{ campus_id: string, teacher_id: string, class_id: string, section_id?: string, subject: string, academic_year: string, master_plan_id?: string, is_published?: boolean, topics?: object[] }} body
  */
 export async function createClassPlan(body) {
   const response = await api.post("/class-plans", body);
@@ -261,7 +261,7 @@ export async function createClassPlan(body) {
 
 /**
  * @param {string} classPlanId
- * @param {{ class_name?: string, subject?: string, academic_year?: string, is_published?: boolean, master_plan_id?: string | null }} body
+ * @param {{ class_id?: string, section_id?: string, subject?: string, academic_year?: string, is_published?: boolean, master_plan_id?: string | null }} body
  */
 export async function updateClassPlan(classPlanId, body) {
   const response = await api.patch(`/class-plans/${classPlanId}`, body);
@@ -279,10 +279,19 @@ export async function deleteClassPlan(classPlanId) {
 
 /**
  * Seed a class plan from a master plan.
- * @param {{ board: string, subject: string, class_name: string, academic_year: string, campus_id: string, teacher_id: string, is_published?: boolean }} body
+ * @param {{ board: string, subject: string, section_id: string, academic_year: string, campus_id: string, teacher_id: string, is_published?: boolean }} body
  */
 export async function seedClassPlanFromMaster(body) {
   const response = await api.post("/class-plans/seed-from-master", body);
+  const d = response.data?.data ?? response.data;
+  return d != null ? normalizeClassPlan(d) : d;
+}
+
+/**
+ * @param {{ source_section_id: string, destination_section_id: string }} body
+ */
+export async function cloneLessonPlan(body) {
+  const response = await api.post("/lesson-plans/clone", body);
   const d = response.data?.data ?? response.data;
   return d != null ? normalizeClassPlan(d) : d;
 }
