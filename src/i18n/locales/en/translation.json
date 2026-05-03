@@ -629,7 +629,8 @@
     "notMarkedForDate": "No marks for this date yet.",
     "attendanceSubmitted": "Attendance submitted",
     "progress": "Progress",
-    "submitAttendance": "Submit attendance"
+    "submitAttendance": "Submit attendance",
+    "today": "Today"
   },
   "studentAnnouncements": {
     "noAnnouncements": "No announcements yet",

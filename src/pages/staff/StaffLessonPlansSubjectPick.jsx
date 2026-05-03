@@ -119,7 +119,7 @@ export default function StaffLessonPlansSubjectPick() {
 
   if (!sectionId || !section) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
         <p className="text-sm text-gray-600">{t("staffPicker.sectionNotFound")}</p>
         <Button variant="secondary" className="mt-4 w-fit" onClick={() => navigate("/staff/lesson-plans")}>
           {t("common.back")}
@@ -138,7 +138,7 @@ export default function StaffLessonPlansSubjectPick() {
 
   if (subjects.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
         <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
           <ArrowLeft className="h-4 w-4" />
           {t("common.back")}
@@ -150,7 +150,7 @@ export default function StaffLessonPlansSubjectPick() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
       <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
         <ArrowLeft className="h-4 w-4" />
         {t("common.back")}

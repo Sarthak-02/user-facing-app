@@ -1,7 +1,7 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Pencil } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Pencil, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import AttendanceSummary from "../../components/attendance/AttendanceSummary";
 import BulkActionsMenu from "../../components/attendance/BulkActionsMenu";
 import ConfirmationModal from "../../components/attendance/ConfirmationModal";
@@ -49,6 +49,8 @@ export default function StaffAttendanceSection({ readOnly = false }) {
     return today;
   }, [readOnly, historyDateInput, today]);
 
+  const dateInputRef = useRef(null);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [students, setStudents] = useState([]);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
@@ -73,6 +75,21 @@ export default function StaffAttendanceSection({ readOnly = false }) {
     }
   }, [selectedClass, sectionRows.length, allowedIds, navigate]);
 
+  const todayInputMax = formatDateInputValue(new Date());
+
+  const goPrevDay = useCallback(() => {
+    const d = parseDateInputValue(historyDateInput);
+    d.setDate(d.getDate() - 1);
+    setHistoryDateInput(formatDateInputValue(d));
+  }, [historyDateInput]);
+
+  const goNextDay = useCallback(() => {
+    const d = parseDateInputValue(historyDateInput);
+    d.setDate(d.getDate() + 1);
+    const next = formatDateInputValue(d);
+    if (next <= todayInputMax) setHistoryDateInput(next);
+  }, [historyDateInput, todayInputMax]);
+
   const goBack = useCallback(() => {
     if (sectionRows.length > 1) {
       navigate("/staff/attendance");
@@ -83,8 +100,6 @@ export default function StaffAttendanceSection({ readOnly = false }) {
 
   const markPath = `/staff/attendance/section/${selectedClass}`;
   const historyPath = `/staff/attendance/section/${selectedClass}/history`;
-
-  const todayInputMax = formatDateInputValue(new Date());
 
   const fetchDateKey = useMemo(() => getFormattedDate(selectedDate), [selectedDate]);
 
@@ -358,18 +373,71 @@ export default function StaffAttendanceSection({ readOnly = false }) {
           </NavLink>
         </div>
 
-        {readOnly && (
-          <label className="flex flex-col gap-1 text-sm text-gray-600">
-            <span className="text-xs font-medium text-gray-700">{t("staffAttendance.date")}</span>
-            <input
-              type="date"
-              max={todayInputMax}
-              value={historyDateInput}
-              onChange={(e) => setHistoryDateInput(e.target.value)}
-              className="w-full max-w-xs rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-600"
-            />
-          </label>
-        )}
+        {readOnly && (() => {
+          const isViewingToday = historyDateInput === todayInputMax;
+          const viewingDate = parseDateInputValue(historyDateInput);
+          const dayName = viewingDate.toLocaleDateString(undefined, { weekday: "short" });
+          const dayNum = viewingDate.getDate();
+          const monthName = viewingDate.toLocaleDateString(undefined, { month: "short" });
+          const year = viewingDate.getFullYear();
+          const currentYear = new Date().getFullYear();
+          return (
+            <div className="flex items-center gap-2">
+              <div className="flex flex-1 items-center overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+                <button
+                  type="button"
+                  onClick={goPrevDay}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                  aria-label="Previous day"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => dateInputRef.current?.showPicker()}
+                  className="flex flex-1 items-center justify-center gap-1.5 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                >
+                  <Calendar className="h-3.5 w-3.5 shrink-0 text-primary-600" />
+                  <span className="truncate">
+                    {dayName}, {dayNum} {monthName}{year !== currentYear ? ` ${year}` : ""}
+                  </span>
+                  {isViewingToday && (
+                    <span className="shrink-0 rounded-full bg-primary-100 px-1.5 py-0.5 text-xs font-semibold text-primary-700">
+                      {t("staffAttendance.today")}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={goNextDay}
+                  disabled={isViewingToday}
+                  aria-label="Next day"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center text-gray-500 hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-30 transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+              {!isViewingToday && (
+                <button
+                  type="button"
+                  onClick={() => setHistoryDateInput(todayInputMax)}
+                  className="shrink-0 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-100 active:bg-primary-200 transition-colors"
+                >
+                  {t("staffAttendance.today")}
+                </button>
+              )}
+              <input
+                ref={dateInputRef}
+                type="date"
+                max={todayInputMax}
+                value={historyDateInput}
+                onChange={(e) => setHistoryDateInput(e.target.value)}
+                className="sr-only"
+                aria-hidden="true"
+              />
+            </div>
+          );
+        })()}
 
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <input

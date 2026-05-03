@@ -65,7 +65,7 @@ export default function StaffAttendanceHome() {
 
   if (rows.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
         <h1 className="text-xl font-bold text-gray-900">{t("nav.attendance")}</h1>
         <p className="mt-3 text-sm text-gray-600">
           {t("staffAttendance.noAssignments")}
@@ -75,7 +75,7 @@ export default function StaffAttendanceHome() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
       <h1 className="text-xl font-bold text-gray-900">{t("nav.attendance")}</h1>
       <p className="mt-1 text-sm text-gray-600">{t("staffAttendance.chooseClass")}</p>
       <div className="mt-5 space-y-2">

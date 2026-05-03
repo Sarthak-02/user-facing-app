@@ -186,7 +186,7 @@ export default function StudentLessonPlansHome() {
 
   if (subjects.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
         <h1 className="text-xl font-bold text-gray-900">{t("nav.lessonPlans")}</h1>
         <div className="mt-8 text-center">
           <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -204,7 +204,7 @@ export default function StudentLessonPlansHome() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
       <h1 className="text-xl font-bold text-gray-900">{t("nav.lessonPlans")}</h1>
       <p className="mt-1 text-sm text-gray-500">{t("studentLessonPlansHome.pickerSubtitle")}</p>
       <div className="mt-5 space-y-2">

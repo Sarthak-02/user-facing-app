@@ -330,7 +330,7 @@ function StudentDetailPanel({ student, onClose }) {
         </div>
 
         {/* Exam breakdown */}
-        <div className="flex-1 overflow-y-auto p-4 pb-8">
+        <div className="flex-1 overflow-y-auto p-4 pb-nav md:pb-8">
           <h3 className="mb-3 text-sm font-semibold text-gray-700">{t("reporting.gradeBreakdown")}</h3>
           {examGroups.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-400">{t("reporting.noGradesRecorded")}</div>
@@ -445,7 +445,7 @@ function ExamDetailPanel({ exam, studentGroups, onViewStudent, onClose }) {
         </div>
 
         {/* Grade table */}
-        <div className="flex-1 overflow-y-auto pb-8">
+        <div className="flex-1 overflow-y-auto pb-nav md:pb-8">
           <table className="w-full text-sm">
             <thead className="sticky top-0">
               <tr className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">

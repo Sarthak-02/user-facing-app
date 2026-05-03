@@ -456,7 +456,7 @@ export default function TeacherHomework() {
 
   if (routeInvalid) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
         <p className="text-sm text-gray-600">{t("staffHomework.invalidRoute")}</p>
         <Button variant="secondary" className="mt-4 w-fit" onClick={() => navigate("/staff/homework")}>
           {t("common.back")}

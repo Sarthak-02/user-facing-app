@@ -664,7 +664,7 @@ export default function StudentPickup() {
   const statusFilterTabs = ["ALL", "PENDING", "APPROVED", "REJECTED", "COMPLETED"];
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pb-16 md:pb-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pb-nav md:pb-6">
       {/* Hero */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl px-5 py-5 shadow-sm">
         <div className="flex items-center gap-3">

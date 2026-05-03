@@ -629,7 +629,8 @@
     "notMarkedForDate": "इस तिथि के लिए अभी तक कोई अंक नहीं है.",
     "attendanceSubmitted": "उपस्थिति जमा की गई",
     "progress": "प्रगति",
-    "submitAttendance": "उपस्थिति जमा करें"
+    "submitAttendance": "उपस्थिति जमा करें",
+    "today": "आज"
   },
   "studentAnnouncements": {
     "noAnnouncements": "अभी तक कोई घोषणा नहीं",

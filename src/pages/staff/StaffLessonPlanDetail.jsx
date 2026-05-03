@@ -119,7 +119,7 @@ export default function StaffLessonPlanDetail() {
 
   if (error || !plan) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
         <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
           <ArrowLeft className="h-4 w-4" />
           {t("common.back")}
@@ -136,7 +136,7 @@ export default function StaffLessonPlanDetail() {
   const teacherName = teacherDisplayName(plan.teacher);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6 ">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6 ">
       <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
         <ArrowLeft className="h-4 w-4" />
         {t("common.back")}

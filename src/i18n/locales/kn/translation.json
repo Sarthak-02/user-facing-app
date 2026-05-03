@@ -629,7 +629,8 @@
     "notMarkedForDate": "ಈ ದಿನಾಂಕಕ್ಕೆ ಇನ್ನೂ ಯಾವುದೇ ಅಂಕಗಳಿಲ್ಲ.",
     "attendanceSubmitted": "ಹಾಜರಾತಿ ಸಲ್ಲಿಸಲಾಗಿದೆ",
     "progress": "ಪ್ರಗತಿ",
-    "submitAttendance": "ಹಾಜರಾತಿ ಸಲ್ಲಿಸಿ"
+    "submitAttendance": "ಹಾಜರಾತಿ ಸಲ್ಲಿಸಿ",
+    "today": "ಇಂದು"
   },
   "studentAnnouncements": {
     "noAnnouncements": "ಇನ್ನೂ ಯಾವುದೇ ಪ್ರಕಟಣೆಗಳಿಲ್ಲ",

@@ -4,3 +4,8 @@
   box-sizing: border-box;
 }
 
+/* Clears the fixed bottom nav on mobile; overridden by responsive desktop padding */
+@utility pb-nav {
+  padding-bottom: calc(3.6rem + env(safe-area-inset-bottom, 0px));
+}
+

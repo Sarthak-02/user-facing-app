@@ -59,7 +59,7 @@ export default function StaffHomeworkStudentPick() {
 
   if (!sectionId || !section || !subjectIdKey) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
         <p className="text-sm text-gray-600">{t("staffPicker.invalidRoute")}</p>
         <Button variant="secondary" className="mt-4 w-fit" onClick={() => navigate("/staff/homework")}>
           {t("common.back")}
@@ -70,7 +70,7 @@ export default function StaffHomeworkStudentPick() {
 
   if (subjectsInSection.length > 0 && !subjectMeta) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
         <p className="text-sm text-gray-600">{t("staffPicker.subjectNotFound")}</p>
         <Button variant="secondary" className="mt-4 w-fit" onClick={goBack}>
           {t("common.back")}
@@ -89,7 +89,7 @@ export default function StaffHomeworkStudentPick() {
 
   if (students.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
         <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
           <ArrowLeft className="h-4 w-4" />
           {t("common.back")}
@@ -102,7 +102,7 @@ export default function StaffHomeworkStudentPick() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
       <Button variant="ghost" className="mb-4 w-fit gap-2 px-0" onClick={goBack}>
         <ArrowLeft className="h-4 w-4" />
         {t("common.back")}

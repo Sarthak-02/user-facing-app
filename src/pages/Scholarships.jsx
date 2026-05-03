@@ -160,7 +160,7 @@ function ScholarshipDetailModal({ scholarship, onClose }) {
         </div>
 
         <div
-          className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-4"
+          className="min-h-0 flex-1 overflow-y-auto px-5 py-4 pb-nav space-y-4 md:pb-4"
           aria-labelledby="scholarship-detail-title"
         >
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">

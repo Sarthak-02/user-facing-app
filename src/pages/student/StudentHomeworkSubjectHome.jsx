@@ -187,7 +187,7 @@ export default function StudentHomeworkSubjectHome() {
 
   if (subjects.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
         <h1 className="text-xl font-bold text-gray-900">{t("nav.homework")}</h1>
         <p className="mt-3 text-sm text-gray-600">
           {t("studentHomeworkSubjectHome.noSubjectsBody")}
@@ -197,7 +197,7 @@ export default function StudentHomeworkSubjectHome() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-nav md:p-6">
       <h1 className="text-xl font-bold text-gray-900">{t("nav.homework")}</h1>
       <p className="mt-1 text-sm text-gray-500">{t("studentHomeworkSubjectHome.pickerSubtitle")}</p>
       <div className="mt-5 space-y-2">
