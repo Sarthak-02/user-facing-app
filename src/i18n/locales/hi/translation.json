@@ -630,7 +630,8 @@
     "attendanceSubmitted": "उपस्थिति जमा की गई",
     "progress": "प्रगति",
     "submitAttendance": "उपस्थिति जमा करें",
-    "today": "आज"
+    "today": "आज",
+    "viewHistory": "इतिहास देखें"
   },
   "studentAnnouncements": {
     "noAnnouncements": "अभी तक कोई घोषणा नहीं",

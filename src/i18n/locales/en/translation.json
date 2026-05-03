@@ -630,7 +630,8 @@
     "attendanceSubmitted": "Attendance submitted",
     "progress": "Progress",
     "submitAttendance": "Submit attendance",
-    "today": "Today"
+    "today": "Today",
+    "viewHistory": "View history"
   },
   "studentAnnouncements": {
     "noAnnouncements": "No announcements yet",

@@ -7,6 +7,7 @@ import BulkActionsMenu from "../../components/attendance/BulkActionsMenu";
 import ConfirmationModal from "../../components/attendance/ConfirmationModal";
 import DesktopListing from "../../components/attendance/DesktopListing";
 import MobileListing from "../../components/attendance/MobileListing";
+import StudentHistoryModal from "../../components/attendance/StudentHistoryModal";
 import { Button, Shimmer } from "../../ui-components";
 import Loader from "../../ui-components/Loader";
 import { getFormattedDate, isToday, toLocalISOString } from "../../utils/common-functions";
@@ -37,7 +38,8 @@ export default function StaffAttendanceSection({ readOnly = false }) {
   const sectionRows = useTeacherSectionRows();
   const selectedClass = sectionIdParam || "";
 
-  const { auth: { userId } } = useAuth();
+  const { auth: { userId, campus } } = useAuth();
+  const [selectedStudentForHistory, setSelectedStudentForHistory] = useState(null);
 
   const [attendance, setAttendance] = useState({});
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -519,6 +521,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                 markAttendance={markAttendance}
                 STUDENTS={filteredStudents}
                 editMode={editMode}
+                onStudentClick={readOnly ? setSelectedStudentForHistory : undefined}
               />
             </div>
 
@@ -528,6 +531,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                 attendance={attendance}
                 markAttendance={markAttendance}
                 editMode={editMode}
+                onStudentClick={readOnly ? setSelectedStudentForHistory : undefined}
                 className={editMode ? "pb-[9.5rem]" : "pb-20"}
               />
             </div>
@@ -594,6 +598,14 @@ export default function StaffAttendanceSection({ readOnly = false }) {
           </>
         )}
       </div>
+
+      <StudentHistoryModal
+        student={selectedStudentForHistory}
+        sectionId={selectedClass}
+        termStart={campus?.term_start_date}
+        termEnd={campus?.term_end_date}
+        onClose={() => setSelectedStudentForHistory(null)}
+      />
     </div>
   );
 }

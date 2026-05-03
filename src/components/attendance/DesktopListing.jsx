@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { UserCheck, UserX } from "lucide-react";
+import { History, UserCheck, UserX } from "lucide-react";
 import { Avatar, Badge, Table } from "../../ui-components";
 import { useTranslation } from "react-i18next";
 
@@ -48,7 +48,7 @@ function AttendanceButtons({ status, onPresent, onAbsent }) {
   );
 }
 
-export default function DesktopListing({ attendance, markAttendance, STUDENTS, editMode }) {
+export default function DesktopListing({ attendance, markAttendance, STUDENTS, editMode, onStudentClick }) {
   const { t } = useTranslation();
   const columns = [
     {
@@ -79,6 +79,24 @@ export default function DesktopListing({ attendance, markAttendance, STUDENTS, e
                 onPresent={() => markAttendance(row.student_id, "PRESENT")}
                 onAbsent={() => markAttendance(row.student_id, "ABSENT")}
               />
+            ),
+          },
+        ]
+      : []),
+    ...(onStudentClick
+      ? [
+          {
+            key: "history",
+            label: "",
+            render: (row) => (
+              <button
+                type="button"
+                onClick={() => onStudentClick(row)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              >
+                <History className="h-3.5 w-3.5" />
+                {t("staffAttendance.viewHistory")}
+              </button>
             ),
           },
         ]

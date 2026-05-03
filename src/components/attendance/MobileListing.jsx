@@ -1,17 +1,22 @@
 import clsx from "clsx";
-import { UserCheck, UserX } from "lucide-react";
+import { ChevronRight, UserCheck, UserX } from "lucide-react";
 import { Avatar, Badge, Card } from "../../ui-components";
 import { useTranslation } from "react-i18next";
 
-export default function MobileListing({ STUDENTS, attendance, markAttendance, editMode, className }) {
+export default function MobileListing({ STUDENTS, attendance, markAttendance, editMode, onStudentClick, className }) {
   const { t } = useTranslation();
   return (
     <div className={clsx("h-full space-y-3 overflow-y-auto", className)}>
       {STUDENTS.map((student) => {
         const status = attendance[student.student_id];
+        const clickable = Boolean(onStudentClick);
 
         return (
-          <Card key={student.student_id}>
+          <Card
+            key={student.student_id}
+            className={clickable ? "cursor-pointer hover:shadow-md active:scale-[0.99] transition-all duration-150" : ""}
+            onClick={clickable ? () => onStudentClick(student) : undefined}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar src={student.photoUrl} name={student.name} />
@@ -20,11 +25,14 @@ export default function MobileListing({ STUDENTS, attendance, markAttendance, ed
                   <div className="text-sm text-gray-500">{t("attendance.rollNo", { rollNo: student.roll_number })}</div>
                 </div>
               </div>
-              {status ? (
-                <Badge variant={status === "PRESENT" ? "success" : "error"}>{status}</Badge>
-              ) : (
-                <Badge variant="info">{t("attendance.notMarked")}</Badge>
-              )}
+              <div className="flex items-center gap-2">
+                {status ? (
+                  <Badge variant={status === "PRESENT" ? "success" : "error"}>{status}</Badge>
+                ) : (
+                  <Badge variant="info">{t("attendance.notMarked")}</Badge>
+                )}
+                {clickable && <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />}
+              </div>
             </div>
 
             {editMode && (
