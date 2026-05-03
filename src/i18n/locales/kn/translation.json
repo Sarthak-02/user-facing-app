@@ -27,6 +27,7 @@
     "notProvided": "ಒದಗಿಸಿಲ್ಲ",
     "none": "ಯಾವುದೂ ಇಲ್ಲ",
     "na": "N/A",
+    "statusUnknown": "{{status}}",
     "add": "ಸೇರಿಸಿ",
     "remove": "ತೆಗೆದುಹಾಕಿ",
     "saveChanges": "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
@@ -462,7 +463,8 @@
     "status": {
       "draft": "ಕರಡು",
       "published": "ಪ್ರಕಟಿಸಲಾಗಿದೆ",
-      "completed": "ಪೂರ್ಣಗೊಂಡಿದೆ"
+      "completed": "ಪೂರ್ಣಗೊಂಡಿದೆ",
+      "unknown": "{{status}}"
     },
     "dateBadge": {
       "closed": "ಮುಚ್ಚಲಾಗಿದೆ",
@@ -631,7 +633,9 @@
     "progress": "ಪ್ರಗತಿ",
     "submitAttendance": "ಹಾಜರಾತಿ ಸಲ್ಲಿಸಿ",
     "today": "ಇಂದು",
-    "viewHistory": "ಇತಿಹಾಸ ವೀಕ್ಷಿಸಿ"
+    "viewHistory": "ಇತಿಹಾಸ ವೀಕ್ಷಿಸಿ",
+    "previousDay": "ಹಿಂದಿನ ದಿನ",
+    "nextDay": "ಮುಂದಿನ ದಿನ"
   },
   "studentAnnouncements": {
     "noAnnouncements": "ಇನ್ನೂ ಯಾವುದೇ ಪ್ರಕಟಣೆಗಳಿಲ್ಲ",
@@ -723,10 +727,26 @@
     "result": "ಫಲಿತಾಂಶ",
     "pass": "ಪಾಸ್",
     "fail": "ವಿಫಲವಾಗಿದೆ",
-    "fetchFailed": "ಪರೀಕ್ಷೆಗಳನ್ನು ಪಡೆಯಲು ವಿಫಲವಾಗಿದೆ"
+    "fetchFailed": "ಪರೀಕ್ಷೆಗಳನ್ನು ಪಡೆಯಲು ವಿಫಲವಾಗಿದೆ",
+    "statusUnknown": "{{status}}"
   },
   "studentHomeworkDetail": {
-    "fetchFailed": "ಹೋಮ್‌ವರ್ಕ್ ವಿವರಗಳನ್ನು ಪಡೆಯುವಲ್ಲಿ ವಿಫಲವಾಗಿದೆ"
+    "fetchFailed": "ಹೋಮ್‌ವರ್ಕ್ ವಿವರಗಳನ್ನು ಪಡೆಯುವಲ್ಲಿ ವಿಫಲವಾಗಿದೆ",
+    "title": "ಮನೆಕೆಲಸ",
+    "notFound": "ಮನೆಕೆಲಸ ಕಂಡುಬಂದಿಲ್ಲ.",
+    "backToHomework": "ಮನೆಕೆಲಸಕ್ಕೆ ಹಿಂತಿರುಗಿ",
+    "statusSubmitted": "ಸಲ್ಲಿಸಲಾಗಿದೆ",
+    "statusOverdue": "ಅವಧಿ ಮೀರಿದೆ",
+    "statusAssigned": "ನಿಯೋಜಿಸಲಾಗಿದೆ",
+    "classSection": "ತರಗತಿ / ವಿಭಾಗ",
+    "assignedBy": "ನಿಯೋಜಿಸಿದವರು",
+    "assigned": "ನಿಯೋಜಿಸಲಾಗಿದೆ",
+    "dueDate": "ಅಂತಿಮ ದಿನಾಂಕ",
+    "soon": "ಶೀಘ್ರದಲ್ಲೇ ಬಾಕಿ",
+    "description": "ವಿವರಣೆ",
+    "instructions": "ಸೂಚನೆಗಳು",
+    "attachments_one": "{{count}} ಲಗತ್ತು",
+    "attachments_other": "{{count}} ಲಗತ್ತುಗಳು"
   },
   "announcementCategories": {
     "general": "ಸಾಮಾನ್ಯ",

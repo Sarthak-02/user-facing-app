@@ -125,7 +125,7 @@ export default function StudentProfile() {
                   </h1>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
-                    {studentData?.current_status?.charAt(0).toUpperCase() + studentData?.current_status?.slice(1) || "N/A"}
+                    {studentData?.current_status?.charAt(0).toUpperCase() + studentData?.current_status?.slice(1) || t("common.na")}
                   </span>
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 justify-center sm:justify-start text-sm text-gray-500">
@@ -189,7 +189,7 @@ export default function StudentProfile() {
                 </p>
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
-                  {studentData?.current_status?.charAt(0).toUpperCase() + studentData?.current_status?.slice(1) || "N/A"}
+                  {studentData?.current_status?.charAt(0).toUpperCase() + studentData?.current_status?.slice(1) || t("common.na")}
                 </span>
               </div>
             </SectionCard>

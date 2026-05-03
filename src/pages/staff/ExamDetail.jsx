@@ -33,7 +33,7 @@ function StatusBadge({ status }) {
   if (status === "PUBLISHED") {
     return <Badge variant="info">{t("exams.status.published")}</Badge>;
   }
-  return <Badge variant="default">{status}</Badge>;
+  return <Badge variant="default">{t("exams.status.unknown", { status: status || "" })}</Badge>;
 }
 
 function getExamTypeLabel(type, t) {

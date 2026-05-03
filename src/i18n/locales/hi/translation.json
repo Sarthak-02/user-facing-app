@@ -27,6 +27,7 @@
     "notProvided": "उपलब्ध नहीं कराया",
     "none": "कोई नहीं",
     "na": "N/A",
+    "statusUnknown": "{{status}}",
     "add": "जोड़ना",
     "remove": "निकालना",
     "saveChanges": "परिवर्तनों को सुरक्षित करें",
@@ -462,7 +463,8 @@
     "status": {
       "draft": "मसौदा",
       "published": "प्रकाशित",
-      "completed": "पुरा होना।"
+      "completed": "पुरा होना।",
+      "unknown": "{{status}}"
     },
     "dateBadge": {
       "closed": "बंद किया हुआ",
@@ -631,7 +633,9 @@
     "progress": "प्रगति",
     "submitAttendance": "उपस्थिति जमा करें",
     "today": "आज",
-    "viewHistory": "इतिहास देखें"
+    "viewHistory": "इतिहास देखें",
+    "previousDay": "पिछला दिन",
+    "nextDay": "अगला दिन"
   },
   "studentAnnouncements": {
     "noAnnouncements": "अभी तक कोई घोषणा नहीं",
@@ -723,10 +727,26 @@
     "result": "परिणाम",
     "pass": "उत्तीर्ण",
     "fail": "असफल",
-    "fetchFailed": "परीक्षाएँ लाने में विफल"
+    "fetchFailed": "परीक्षाएँ लाने में विफल",
+    "statusUnknown": "{{status}}"
   },
   "studentHomeworkDetail": {
-    "fetchFailed": "होमवर्क विवरण लाने में विफल"
+    "fetchFailed": "होमवर्क विवरण लाने में विफल",
+    "title": "गृहकार्य",
+    "notFound": "गृहकार्य नहीं मिला।",
+    "backToHomework": "गृहकार्य पर वापस जाएँ",
+    "statusSubmitted": "जमा किया गया",
+    "statusOverdue": "अतिदेय",
+    "statusAssigned": "सौंपा गया",
+    "classSection": "कक्षा / अनुभाग",
+    "assignedBy": "सौंपने वाले",
+    "assigned": "सौंपा गया",
+    "dueDate": "नियत तारीख",
+    "soon": "जल्द देय",
+    "description": "विवरण",
+    "instructions": "निर्देश",
+    "attachments_one": "{{count}} संलग्नक",
+    "attachments_other": "{{count}} संलग्नकें"
   },
   "announcementCategories": {
     "general": "सामान्य",

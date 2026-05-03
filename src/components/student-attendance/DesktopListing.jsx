@@ -35,7 +35,7 @@ function StatusBadge({ status }) {
   if (status === "ON_LEAVE") {
     return <Badge variant="info">{t("studentAttendance.onLeave")}</Badge>;
   }
-  return <Badge variant="default">{status}</Badge>;
+  return <Badge variant="default">{t("common.statusUnknown", { status: String(status ?? "") })}</Badge>;
 }
 
 export default function DesktopListing({ attendanceRecords }) {

@@ -123,7 +123,7 @@ export default function StaffProfile() {
                   </h1>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
-                    {staffData?.current_status?.charAt(0).toUpperCase() + staffData?.current_status?.slice(1) || "N/A"}
+                    {staffData?.current_status?.charAt(0).toUpperCase() + staffData?.current_status?.slice(1) || t("common.na")}
                   </span>
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 justify-center sm:justify-start text-sm text-gray-500">
@@ -261,7 +261,7 @@ export default function StaffProfile() {
                   <p className="text-xs text-gray-400 mb-1">{t("profile.fields.status")}</p>
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
-                    {staffData?.current_status?.charAt(0).toUpperCase() + staffData?.current_status?.slice(1) || "N/A"}
+                    {staffData?.current_status?.charAt(0).toUpperCase() + staffData?.current_status?.slice(1) || t("common.na")}
                   </span>
                 </div>
               </div>

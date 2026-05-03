@@ -52,7 +52,7 @@ function StatusBadge({ status, t }) {
   if (status === "PUBLISHED") return <Badge variant="info">{t("studentExams.upcoming")}</Badge>;
   if (status === "DRAFT") return <Badge variant="default">{t("studentExams.draft")}</Badge>;
   if (!status) return <Badge variant="default">—</Badge>;
-  return <Badge variant="default">{status}</Badge>;
+  return <Badge variant="default">{t("studentExams.statusUnknown", { status: status || "" })}</Badge>;
 }
 
 function getExamTypeLabel(type, t) {

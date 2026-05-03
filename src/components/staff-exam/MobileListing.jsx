@@ -37,7 +37,7 @@ export default function MobileListing({ examList, onEdit, onPublish, onView, cla
       default:
         return (
           <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-            {status}
+            {t("exams.status.unknown", { status: status || "" })}
           </span>
         );
     }

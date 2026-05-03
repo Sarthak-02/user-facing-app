@@ -46,7 +46,7 @@ export default function MobileListing({ broadcastList, onSelectBroadcast, classN
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return t("common.na");
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",

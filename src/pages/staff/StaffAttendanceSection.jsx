@@ -390,7 +390,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                   type="button"
                   onClick={goPrevDay}
                   className="flex h-10 w-10 shrink-0 items-center justify-center text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
-                  aria-label="Previous day"
+                  aria-label={t("staffAttendance.previousDay")}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -413,7 +413,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                   type="button"
                   onClick={goNextDay}
                   disabled={isViewingToday}
-                  aria-label="Next day"
+                  aria-label={t("staffAttendance.nextDay")}
                   className="flex h-10 w-10 shrink-0 items-center justify-center text-gray-500 hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-30 transition-colors"
                 >
                   <ChevronRight className="h-4 w-4" />

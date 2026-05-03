@@ -63,7 +63,7 @@ function StatusBadge({ status }) {
       </Badge>
     );
   }
-  return <Badge variant="default">{status}</Badge>;
+  return <Badge variant="default">{t("common.statusUnknown", { status: String(status ?? "") })}</Badge>;
 }
 
 function formatPeriodLabel(period, t) {
@@ -138,7 +138,7 @@ export default function AttendanceCalendar({ attendanceRecords }) {
     <>
       <Card className="flex flex-col gap-4 overflow-hidden">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-2">
             <Button
               type="button"
               variant="secondary"

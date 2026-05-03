@@ -27,6 +27,7 @@
     "notProvided": "Not provided",
     "none": "None",
     "na": "N/A",
+    "statusUnknown": "{{status}}",
     "add": "Add",
     "remove": "Remove",
     "saveChanges": "Save changes",
@@ -462,7 +463,8 @@
     "status": {
       "draft": "Draft",
       "published": "Published",
-      "completed": "Completed"
+      "completed": "Completed",
+      "unknown": "{{status}}"
     },
     "dateBadge": {
       "closed": "Closed",
@@ -631,7 +633,9 @@
     "progress": "Progress",
     "submitAttendance": "Submit attendance",
     "today": "Today",
-    "viewHistory": "View history"
+    "viewHistory": "View history",
+    "previousDay": "Previous day",
+    "nextDay": "Next day"
   },
   "studentAnnouncements": {
     "noAnnouncements": "No announcements yet",
@@ -723,10 +727,26 @@
     "result": "Result",
     "pass": "Pass",
     "fail": "Fail",
-    "fetchFailed": "Failed to fetch exams"
+    "fetchFailed": "Failed to fetch exams",
+    "statusUnknown": "{{status}}"
   },
   "studentHomeworkDetail": {
-    "fetchFailed": "Failed to fetch homework details"
+    "fetchFailed": "Failed to fetch homework details",
+    "title": "Homework",
+    "notFound": "Homework not found.",
+    "backToHomework": "Back to homework",
+    "statusSubmitted": "Submitted",
+    "statusOverdue": "Overdue",
+    "statusAssigned": "Assigned",
+    "classSection": "Class / section",
+    "assignedBy": "Assigned by",
+    "assigned": "Assigned",
+    "dueDate": "Due date",
+    "soon": "Due soon",
+    "description": "Description",
+    "instructions": "Instructions",
+    "attachments_one": "{{count}} attachment",
+    "attachments_other": "{{count}} attachments"
   },
   "announcementCategories": {
     "general": "General",

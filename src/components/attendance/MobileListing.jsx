@@ -3,6 +3,12 @@ import { ChevronRight, UserCheck, UserX } from "lucide-react";
 import { Avatar, Badge, Card } from "../../ui-components";
 import { useTranslation } from "react-i18next";
 
+function displayAttendanceMark(status, t) {
+  if (status === "PRESENT") return t("attendance.present");
+  if (status === "ABSENT") return t("attendance.absent");
+  return t("common.statusUnknown", { status: String(status) });
+}
+
 export default function MobileListing({ STUDENTS, attendance, markAttendance, editMode, onStudentClick, className }) {
   const { t } = useTranslation();
   return (
@@ -27,7 +33,7 @@ export default function MobileListing({ STUDENTS, attendance, markAttendance, ed
               </div>
               <div className="flex items-center gap-2">
                 {status ? (
-                  <Badge variant={status === "PRESENT" ? "success" : "error"}>{status}</Badge>
+                  <Badge variant={status === "PRESENT" ? "success" : "error"}>{displayAttendanceMark(status, t)}</Badge>
                 ) : (
                   <Badge variant="info">{t("attendance.notMarked")}</Badge>
                 )}

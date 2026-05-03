@@ -96,7 +96,7 @@ export default function StudentAttendance() {
           const transformedRecords = response?.data?.records.map((record) => {
             const teacherName = record.attendanceSession?.teacher
               ? `${record.attendanceSession.teacher.teacher_first_name} ${record.attendanceSession.teacher.teacher_last_name}`
-              : "N/A";
+              : t("common.na");
 
             const date = record.attendanceSession?.submittedAt
               ? new Date(record.attendanceSession.submittedAt).toISOString().split('T')[0]

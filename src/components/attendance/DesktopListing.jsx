@@ -3,6 +3,12 @@ import { History, UserCheck, UserX } from "lucide-react";
 import { Avatar, Badge, Table } from "../../ui-components";
 import { useTranslation } from "react-i18next";
 
+function displayAttendanceMark(status, t) {
+  if (status === "PRESENT") return t("attendance.present");
+  if (status === "ABSENT") return t("attendance.absent");
+  return t("common.statusUnknown", { status: String(status) });
+}
+
 function StudentCell({ student }) {
   const { t } = useTranslation();
   return (
@@ -62,7 +68,7 @@ export default function DesktopListing({ attendance, markAttendance, STUDENTS, e
       render: (row) => {
         const status = attendance[row.student_id];
         return status ? (
-          <Badge variant={status === "PRESENT" ? "success" : "error"}>{status}</Badge>
+          <Badge variant={status === "PRESENT" ? "success" : "error"}>{displayAttendanceMark(status, t)}</Badge>
         ) : (
           <Badge variant="info">{t("attendance.notMarked")}</Badge>
         );
