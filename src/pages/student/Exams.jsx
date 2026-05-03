@@ -32,11 +32,13 @@ export default function StudentExams() {
     const options = [{ value: "", label: t("studentExams.allTypes") }];
     if (auth?.campus?.campus_exam_types && Array.isArray(auth.campus.campus_exam_types)) {
       auth.campus.campus_exam_types.forEach((examType) => {
-        options.push({ value: examType, label: examType });
+        const key = `studentExams.examTypes.${examType}`;
+        const translated = t(key);
+        options.push({ value: examType, label: translated === key ? examType : translated });
       });
     }
     return options;
-  }, [auth?.campus?.campus_exam_types]);
+  }, [auth?.campus?.campus_exam_types, t]);
 
   useEffect(() => {
     const fetchExams = async () => {
