@@ -478,7 +478,7 @@ export default function Scholarships() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center pb-16 md:pb-0">
+      <div className="flex flex-1 items-center justify-center pb-16 md:pb-0">
         <Loader />
       </div>
     );

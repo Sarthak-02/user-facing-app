@@ -164,7 +164,7 @@ export default function StudentLessonPlansBrowse() {
   const completedTopics = (classPlan?.topics ?? []).filter((t) => t.status === "COMPLETED").length;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col bg-gray-50 overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
         <button

@@ -280,7 +280,7 @@ export default function StudentExamDetail() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Loader />
       </div>
     );
@@ -288,7 +288,7 @@ export default function StudentExamDetail() {
 
   if (error || !examData || !examData.exam) {
     return (
-      <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6">
+      <div className="flex min-h-0 flex-1 flex-col p-4 gap-6">
         <Card>
           <div className="text-center py-12">
             <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -318,9 +318,9 @@ export default function StudentExamDetail() {
     : 0;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col bg-gray-50 overflow-y-auto">
       {/* Sticky Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
         <button
           onClick={handleGoBack}
           className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
@@ -338,9 +338,7 @@ export default function StudentExamDetail() {
         <StatusBadge status={displayStatus} t={t} />
       </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="max-w-3xl mx-auto p-4 space-y-4 pb-8">
+      <div className="max-w-3xl mx-auto w-full p-4 space-y-4 pb-4">
 
           {/* Hero Banner */}
           <div className={`rounded-xl p-5 ${isCompleted ? "bg-gradient-to-br from-green-500 to-emerald-600" : "bg-gradient-to-br from-blue-500 to-indigo-600"} text-white`}>
@@ -495,7 +493,6 @@ export default function StudentExamDetail() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }

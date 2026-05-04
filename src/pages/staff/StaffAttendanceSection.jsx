@@ -338,7 +338,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
   }
 
   return (
-    <div className="flex h-screen min-h-0 flex-1 flex-col gap-2 overflow-hidden px-3 pb-3 pt-2 md:min-h-screen md:px-4 md:pb-4 md:pt-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-3 pb-3 pt-2 md:px-4 md:pb-4 md:pt-3">
       {!readOnly && (
         <ConfirmationModal
           showConfirmation={showConfirmation}
@@ -350,7 +350,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
         />
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto md:overflow-hidden">
         <div className="flex min-w-0 items-center justify-between gap-3">
           <Button
             variant="ghost"
@@ -515,14 +515,46 @@ export default function StaffAttendanceSection({ readOnly = false }) {
               )}
             </div>
 
-            <div className="hidden min-h-0 flex-1 overflow-hidden md:block">
-              <DesktopListing
-                attendance={attendance}
-                markAttendance={markAttendance}
-                STUDENTS={filteredStudents}
-                editMode={editMode}
-                onStudentClick={readOnly ? setSelectedStudentForHistory : undefined}
-              />
+            <div className="hidden min-h-0 flex-1 overflow-hidden md:flex md:flex-col md:gap-2">
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <DesktopListing
+                  attendance={attendance}
+                  markAttendance={markAttendance}
+                  STUDENTS={filteredStudents}
+                  editMode={editMode}
+                  onStudentClick={readOnly ? setSelectedStudentForHistory : undefined}
+                />
+              </div>
+              {editMode && (
+                <div className="shrink-0">
+                  <div className="mx-auto flex max-w-2xl flex-col gap-2">
+                    <div>
+                      <div className="mb-1 flex items-center justify-between gap-2 text-xs text-gray-500">
+                        <span>{t("staffAttendance.progress")}</span>
+                        <span className="font-medium tabular-nums text-gray-700">
+                          {Object.keys(attendance).length} / {students.length}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                        <div
+                          className="h-full rounded-full bg-primary-600 transition-all duration-300 ease-out"
+                          style={{
+                            width: `${(Object.keys(attendance).length / students.length) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      variant="primary"
+                      className="w-full"
+                      disabled={Object.keys(attendance).length === 0}
+                      onClick={() => setShowConfirmation(true)}
+                    >
+                      {t("staffAttendance.submitAttendance")}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="min-h-0 flex-1 overflow-hidden md:hidden">
@@ -537,38 +569,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
             </div>
 
             {editMode && (
-              <div className="hidden pb-8 md:block">
-                <div className="mx-auto flex max-w-2xl flex-col gap-2">
-                  <div>
-                    <div className="mb-1 flex items-center justify-between gap-2 text-xs text-gray-500">
-                      <span>{t("staffAttendance.progress")}</span>
-                      <span className="font-medium tabular-nums text-gray-700">
-                        {Object.keys(attendance).length} / {students.length}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
-                      <div
-                        className="h-full rounded-full bg-primary-600 transition-all duration-300 ease-out"
-                        style={{
-                          width: `${(Object.keys(attendance).length / students.length) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    variant="primary"
-                    className="w-full"
-                    disabled={Object.keys(attendance).length === 0}
-                    onClick={() => setShowConfirmation(true)}
-                  >
-                    {t("staffAttendance.submitAttendance")}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {editMode && (
-              <div className="fixed bottom-14 left-0 right-0 z-[45] flex flex-col gap-2 border-t border-border bg-[var(--color-surface)] px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] shadow-[0_-2px_10px_rgba(0,0,0,0.06)] md:hidden">
+              <div className="fixed bottom-14 left-0 right-0 z-[45] flex flex-col gap-2 border-t border-border bg-[var(--color-surface)] px-3 py-2 pb-[max(2rem,env(safe-area-inset-bottom,0px))] shadow-[0_-2px_10px_rgba(0,0,0,0.06)] md:hidden">
                 <div>
                   <div className="mb-1 flex items-center justify-between gap-2 text-xs text-gray-500">
                     <span>{t("staffAttendance.progress")}</span>

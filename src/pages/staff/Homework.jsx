@@ -471,7 +471,7 @@ export default function TeacherHomework() {
     : sectionTitle;
 
   return (
-    <div className="h-screen md:min-h-screen flex flex-col gap-3 px-4 pb-4 pt-2 md:pt-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-2 md:pt-3">
       <div className="relative flex shrink-0 flex-col items-center justify-center py-0.5">
         <Button
           variant="ghost"

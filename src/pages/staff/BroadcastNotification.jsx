@@ -191,7 +191,7 @@ export default function BroadcastPage() {
   }, [auth.userId]);
 
   return (
-    <div className="h-screen md:h-screen flex flex-col p-4 gap-6">
+    <div className="flex min-h-0 flex-1 flex-col p-4 gap-6">
       {/* Desktop Header with Filters */}
       <Card className="hidden md:block">
         <div className="space-y-4">

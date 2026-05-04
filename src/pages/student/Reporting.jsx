@@ -1106,12 +1106,12 @@ export default function Reporting() {
   }, [items]);
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center"><Loader /></div>;
+    return <div className="flex flex-1 items-center justify-center"><Loader /></div>;
   }
 
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center p-4">
+      <div className="flex flex-1 items-center justify-center p-4">
         <Card className="max-w-md p-6 text-center">
           <h2 className="text-lg font-semibold text-red-600">{t("reporting.couldNotLoadReport")}</h2>
           <p className="mt-2 text-sm text-gray-600">{error}</p>

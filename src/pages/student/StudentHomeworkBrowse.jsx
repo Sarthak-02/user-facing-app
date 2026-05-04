@@ -97,7 +97,7 @@ export default function StudentHomeworkBrowse() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Loader />
       </div>
     );
@@ -105,7 +105,7 @@ export default function StudentHomeworkBrowse() {
 
   if (error) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Card className="p-6 text-center">
           <div className="mb-4 text-red-500">
             <h2 className="text-xl font-semibold">{t("studentHomeworkBrowse.errorLoadingTitle")}</h2>
@@ -126,7 +126,7 @@ export default function StudentHomeworkBrowse() {
   const headerTitle = subjectKey;
 
   return (
-    <div className="h-screen md:min-h-screen flex flex-col gap-3 px-4 pb-4 pt-2 md:pt-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-2 md:pt-3">
       {/* Desktop Header */}
       <div className="hidden md:flex items-center gap-3 shrink-0">
         <button

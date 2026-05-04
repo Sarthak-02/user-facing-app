@@ -128,7 +128,7 @@ export default function ExamDetail() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Loader />
       </div>
     );
@@ -136,7 +136,7 @@ export default function ExamDetail() {
 
   if (error || !exam) {
     return (
-      <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6">
+      <div className="flex min-h-0 flex-1 flex-col p-4 gap-6">
         <Card>
           <div className="text-center py-12">
             <div className="text-red-500 mb-4">
@@ -165,7 +165,7 @@ export default function ExamDetail() {
   }
 
   return (
-    <div className="h-screen flex flex-col p-4 pb-30 gap-6 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col p-4 gap-6 overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-4 flex-shrink-0">
         <button

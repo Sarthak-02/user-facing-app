@@ -171,7 +171,7 @@ function TabButton({ active, onClick, children }) {
 
 // ─── Charts ──────────────────────────────────────────────────────────────────
 
-function HorizBarChart({ title, description, bars }) {
+function HorizBarChart({ title, description, bars, onBarClick }) {
   const max = Math.max(...bars.map((b) => b.value), 1);
   return (
     <Card>
@@ -181,14 +181,21 @@ function HorizBarChart({ title, description, bars }) {
       </div>
       <div className="space-y-4">
         {bars.map((bar) => (
-          <div key={bar.label}>
+          <div
+            key={bar.label}
+            onClick={() => onBarClick?.(bar)}
+            className={onBarClick ? "-mx-2 cursor-pointer rounded-lg px-2 py-1 transition-colors hover:bg-gray-50" : ""}
+          >
             <div className="mb-1.5 flex items-center justify-between gap-2">
               <span className="max-w-[65%] truncate text-sm font-medium text-gray-700">
                 {bar.label}
               </span>
-              <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">
-                {bar.displayValue}
-              </span>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className="text-sm font-semibold tabular-nums text-gray-900">
+                  {bar.displayValue}
+                </span>
+                {onBarClick && <ChevronRight size={14} className="text-gray-400" />}
+              </div>
             </div>
             <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
               <div
@@ -611,14 +618,13 @@ export default function TeacherReporting() {
 
   const studentBarData = useMemo(
     () =>
-      studentGroups
-        .filter((s) => s.pctAvg != null)
-        .map((s) => ({
-          label: s.name,
-          value: s.pctAvg,
-          displayValue: `${s.pctAvg.toFixed(1)}%`,
-          barColor: "bg-primary-500",
-        })),
+      studentGroups.map((s) => ({
+        id: s.id,
+        label: s.name,
+        value: s.pctAvg ?? 0,
+        displayValue: s.pctAvg != null ? `${s.pctAvg.toFixed(1)}%` : "—",
+        barColor: "bg-primary-600",
+      })),
     [studentGroups]
   );
 
@@ -638,7 +644,7 @@ export default function TeacherReporting() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Loader />
       </div>
     );
@@ -646,7 +652,7 @@ export default function TeacherReporting() {
 
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center p-4">
+      <div className="flex flex-1 items-center justify-center p-4">
         <Card className="max-w-md p-6 text-center">
           <h2 className="text-lg font-semibold text-red-600">{t("reporting.couldNotLoadData")}</h2>
           <p className="mt-2 text-sm text-gray-600">{error}</p>
@@ -883,43 +889,12 @@ export default function TeacherReporting() {
                     title={t("reporting.studentPerformance")}
                     description={t("reporting.studentPerformanceDescription")}
                     bars={studentBarData}
+                    onBarClick={(bar) => {
+                      const student = studentGroups.find((s) => s.id === bar.id);
+                      if (student) setStudentDetail(student);
+                    }}
                   />
                 )}
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {studentGroups.map((s) => {
-                    const passRate = s.gradedCount > 0 ? Math.round((s.passed / s.gradedCount) * 100) : null;
-                    return (
-                      <button
-                        key={s.id}
-                        onClick={() => setStudentDetail(s)}
-                        className="flex w-full items-center gap-3 rounded-xl border border-border bg-white p-4 text-left transition-shadow hover:shadow-md active:scale-[0.99]"
-                      >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700">
-                          <User size={18} strokeWidth={2} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold text-gray-900">{s.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {t("reporting.gradeEntry", { count: s.rows.length })}
-                          </p>
-                          <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {s.pctAvg != null && (
-                              <span className="rounded-lg bg-primary-50 px-2 py-0.5 text-xs font-semibold text-primary-800 ring-1 ring-primary-200">
-                                {t("reporting.studentAvgChip", { value: s.pctAvg.toFixed(1) })}
-                              </span>
-                            )}
-                            {passRate != null && (
-                              <span className={`rounded-lg px-2 py-0.5 text-xs font-semibold ring-1 ${passRate >= 60 ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-red-50 text-red-700 ring-red-200"}`}>
-                                {t("reporting.passRateChip", { pct: passRate })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <ChevronRight size={16} className="shrink-0 text-gray-400" />
-                      </button>
-                    );
-                  })}
-                </div>
               </section>
             )}
           </>

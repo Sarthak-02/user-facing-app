@@ -64,7 +64,7 @@ export default function Announcements() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Loader />
       </div>
     );
@@ -72,7 +72,7 @@ export default function Announcements() {
 
   if (error) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Card className="p-6 text-center">
           <div className="text-red-500 mb-4">
             <svg
@@ -105,7 +105,7 @@ export default function Announcements() {
   }
 
   return (
-    <div className="h-screen md:min-h-screen flex flex-col p-4 gap-4">
+    <div className="flex min-h-0 flex-1 flex-col p-4 gap-4">
       {/* Desktop Header */}
       <div className="hidden md:block bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">

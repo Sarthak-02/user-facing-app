@@ -105,7 +105,7 @@ export default function StudentExams() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Loader />
       </div>
     );
@@ -113,7 +113,7 @@ export default function StudentExams() {
 
   if (error) {
     return (
-      <div className="h-screen flex items-center justify-center p-4">
+      <div className="flex flex-1 items-center justify-center p-4">
         <Card className="p-6 text-center max-w-sm w-full">
           <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
             <span className="text-red-600 text-lg font-bold">!</span>
@@ -132,7 +132,7 @@ export default function StudentExams() {
   }
 
   return (
-    <div className="h-screen md:min-h-screen flex flex-col p-4 gap-4">
+    <div className="flex min-h-0 flex-1 flex-col p-4 gap-4">
       {/* Desktop Header */}
       <Card className="hidden md:block !py-3 !px-4">
         <div className="flex items-center justify-between gap-4">

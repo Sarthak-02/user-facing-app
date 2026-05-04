@@ -80,7 +80,7 @@ export default function AnnouncementDetail() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Loader />
       </div>
     );
@@ -88,7 +88,7 @@ export default function AnnouncementDetail() {
 
   if (error || !announcement) {
     return (
-      <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col bg-gray-50 overflow-hidden">
         <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
           <button onClick={handleGoBack} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -126,7 +126,7 @@ export default function AnnouncementDetail() {
   const sender = announcement.senderName || announcement.createdBy || t("studentAnnouncements.senderFallback");
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col bg-gray-50 overflow-hidden">
       {/* Sticky Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
         <button onClick={handleGoBack} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">

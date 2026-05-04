@@ -92,7 +92,7 @@ export default function HomeworkDetail() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Loader />
       </div>
     );
@@ -100,7 +100,7 @@ export default function HomeworkDetail() {
 
   if (error || !homework) {
     return (
-      <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6">
+      <div className="flex min-h-0 flex-1 flex-col p-4 gap-6">
         <Card>
           <div className="text-center py-12">
             <div className="text-red-500 mb-4">
@@ -132,7 +132,7 @@ export default function HomeworkDetail() {
   }
  
   return (
-    <div className="h-screen md:min-h-screen flex flex-col p-4 gap-6 pb-30 md:pb-6 overflow-y-auto">
+    <div className="flex min-h-0 flex-1 flex-col p-4 gap-6 pb-30 md:pb-6 overflow-y-auto">
       {/* Back Button */}
       <div>
         <button

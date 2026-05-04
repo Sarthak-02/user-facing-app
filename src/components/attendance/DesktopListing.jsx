@@ -110,8 +110,8 @@ export default function DesktopListing({ attendance, markAttendance, STUDENTS, e
   ];
 
   return (
-    <div className="hidden md:block h-full">
-      <Table columns={columns} data={STUDENTS} maxHeight="calc(100vh - 360px)" />
+    <div className="h-full">
+      <Table columns={columns} data={STUDENTS} maxHeight="100%" />
     </div>
   );
 }

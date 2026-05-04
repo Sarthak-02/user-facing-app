@@ -161,7 +161,7 @@ export default function StudentAttendance() {
 
  
   return (
-    <div className="h-screen md:min-h-screen flex flex-col p-4 gap-3 md:gap-4">
+    <div className="flex min-h-0 flex-1 flex-col p-4 gap-3 md:gap-4">
       {/* Loading State */}
       {loading && (
         <div className="flex flex-col gap-3 md:gap-4 animate-pulse">

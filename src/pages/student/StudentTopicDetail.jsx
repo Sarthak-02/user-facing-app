@@ -111,7 +111,7 @@ export default function StudentTopicDetail() {
 
   if (error || !topic) {
     return (
-      <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col bg-gray-50 overflow-hidden">
         <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
           <button onClick={goBack} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
             <ArrowLeft className="h-5 w-5 text-gray-600" />
@@ -146,7 +146,7 @@ export default function StudentTopicDetail() {
   const chapterNumber = state?.chapterNumber ?? topic.chapter_number;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col bg-gray-50 overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
         <button

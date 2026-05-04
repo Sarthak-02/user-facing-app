@@ -90,7 +90,7 @@ export default function Layout() {
         </div>
 
         {/* Page Content — bottom padding reserves space for fixed BottomNav + safe area (mobile) */}
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-4">
           <Outlet />
         </main>
       </div>
