@@ -6,9 +6,9 @@ import { getStudentExamDetail } from "../../api/exam.api";
 import { useAuth } from "../../store/auth.store";
 import Loader from "../../ui-components/Loader";
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("en-GB", {
+  return new Date(date).toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -99,7 +99,8 @@ function ScoreRing({ obtained, max, size = 72 }) {
   );
 }
 
-function MarksCard({ subject, gradingType, maxValue, passingValue, t }) {
+function MarksCard({ subject, gradingType, maxValue, passingValue }) {
+  const { t, i18n } = useTranslation();
   const hasMarks =
     subject.is_graded &&
     subject.grades_obtained !== null &&
@@ -170,7 +171,7 @@ function MarksCard({ subject, gradingType, maxValue, passingValue, t }) {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span>{formatDate(subject.exam_date)}</span>
+                  <span>{formatDate(subject.exam_date, i18n.language)}</span>
                 </div>
               )}
               {(subject.exam_start_time || subject.exam_end_time) && (

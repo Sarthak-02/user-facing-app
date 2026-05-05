@@ -53,8 +53,8 @@ function greetingKeyForHour(hour) {
   return "home.greeting.evening";
 }
 
-function formatDisplayDate(d) {
-  return d.toLocaleDateString(undefined, {
+function formatDisplayDate(d, locale) {
+  return d.toLocaleDateString(locale || undefined, {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -62,10 +62,10 @@ function formatDisplayDate(d) {
   });
 }
 
-function formatShortDue(iso) {
+function formatShortDue(iso, locale) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleDateString(locale || undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -420,7 +420,7 @@ function QuickStat({ icon, label, value, colorClass, onClick, hint }) {
 export default function StaffHome() {
   const { auth } = useAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [summaryPayload, setSummaryPayload] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -488,7 +488,7 @@ export default function StaffHome() {
   const { summary, periods, currentPeriodIndex, subjects } = useMemo(() => {
     const now = new Date();
     const greeting = `${t(greetingKeyForHour(now.getHours()))},`;
-    const dayLine = formatDisplayDate(now);
+    const dayLine = formatDisplayDate(now, i18n.language);
 
     const periodsToday = todaysPeriodsFromSummaryPayload(summaryPayload, now, (type) =>
       t(`home.slots.${type}`)
@@ -502,7 +502,7 @@ export default function StaffHome() {
       currentPeriodIndex: idx,
       subjects: subjectRows,
     };
-  }, [summaryPayload, firstName, t]);
+  }, [summaryPayload, firstName, t, i18n.language]);
 
   const messagesUnreadTotal =
     summaryPayload?.messages?.total_unread ?? summaryPayload?.messages?.totalUnread ?? 0;
@@ -692,7 +692,7 @@ export default function StaffHome() {
               <MessageCircle size={16} />
               {messagesUnreadTotal > 0 ? (
                 <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[9px] font-bold text-white">
-                  {messagesUnreadTotal > 9 ? "9+" : messagesUnreadTotal}
+                  {messagesUnreadTotal > 9 ? t("common.unreadOverflow") : messagesUnreadTotal}
                 </span>
               ) : null}
             </span>
@@ -916,7 +916,7 @@ export default function StaffHome() {
                         </span>
                       ) : null}
                       <p className="text-xs text-gray-400">
-                        {formatShortDue(h.dueDate || h.due_date)}
+                        {formatShortDue(h.dueDate || h.due_date, i18n.language)}
                       </p>
                     </div>
                   </Link>
@@ -965,7 +965,7 @@ export default function StaffHome() {
                       <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{a.body}</p>
                     ) : null}
                     {a.date ? (
-                      <p className="mt-1 text-xs text-gray-400">{formatShortDue(a.date)}</p>
+                      <p className="mt-1 text-xs text-gray-400">{formatShortDue(a.date, i18n.language)}</p>
                     ) : null}
                   </div>
                 </div>

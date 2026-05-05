@@ -31,20 +31,25 @@ import {
 
 const todayStr = new Date().toISOString().split("T")[0];
 
-function formatTime(iso) {
+function formatTime(iso, locale) {
   if (!iso) return "—";
   const d = new Date(iso);
   return isNaN(d.getTime())
     ? iso
-    : d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    : d.toLocaleTimeString(locale || undefined, { hour: "numeric", minute: "2-digit" });
 }
 
-function formatDate(dateStr) {
+function formatDate(dateStr, locale) {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
   return isNaN(d.getTime())
     ? dateStr
-    : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    : d.toLocaleDateString(locale || undefined, { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function pickupStatusLabel(status, t) {
+  const s = (status || "PENDING").toUpperCase();
+  return t(`pickup.requestStatus.${s}`, { defaultValue: s });
 }
 
 function sourceBadge(source, t) {
@@ -226,7 +231,7 @@ function RejectModal({ open, onClose, onReject, request, rejecting }) {
 // ─── Request Detail Modal ─────────────────────────────────────────────────────
 
 function RequestDetailModal({ request, open, onClose, onApprove, onReject, approvingId, rejectingId }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (!request) return null;
   const photoUrl = request.photoUrl || request.photo_url;
   const validDate = request.validDate || request.valid_date;
@@ -259,19 +264,19 @@ function RequestDetailModal({ request, open, onClose, onApprove, onReject, appro
         )}
         <p className="text-lg font-bold text-gray-900">{request.name}</p>
         <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor()}`}>
-          {status.charAt(0) + status.slice(1).toLowerCase()}
+          {pickupStatusLabel(status, t)}
         </span>
       </div>
 
       {/* Details grid */}
       <div className="bg-gray-50 rounded-xl divide-y divide-gray-100 mb-4">
         <DetailRow label={t("staffPickup.relationship")} value={request.relationship} />
-        <DetailRow label={t("staffPickup.validDate")} value={formatDate(validDate)} />
+        <DetailRow label={t("staffPickup.validDate")} value={formatDate(validDate, i18n.language)} />
         {studentName && <DetailRow label={t("staffPickup.student")} value={studentName} />}
         {request.remarks && <DetailRow label={t("staffPickup.remarks")} value={request.remarks} />}
         <DetailRow
           label={t("staffPickup.submitted")}
-          value={request.createdAt ? formatDate(request.createdAt) : "—"}
+          value={request.createdAt ? formatDate(request.createdAt, i18n.language) : "—"}
         />
       </div>
 
@@ -314,7 +319,7 @@ function DetailRow({ label, value }) {
 // ─── Pending Request Card ─────────────────────────────────────────────────────
 
 function PendingRequestCard({ request, onApprove, onReject, onView, approvingId, rejectingId }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const busy = approvingId === request.id || rejectingId === request.id;
   const photoUrl = request.photoUrl || request.photo_url;
   const validDate = request.validDate || request.valid_date;
@@ -351,7 +356,7 @@ function PendingRequestCard({ request, onApprove, onReject, onView, approvingId,
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex items-center gap-1 text-xs text-gray-400">
             <Calendar className="h-3.5 w-3.5" />
-            {formatDate(validDate)}
+            {formatDate(validDate, i18n.language)}
           </div>
           <ChevronRight className="h-4 w-4 text-gray-300" />
         </div>
@@ -432,7 +437,7 @@ function PersonProfileModal({ person, onClose }) {
 // ─── Student Pickup Panel ─────────────────────────────────────────────────────
 
 function StudentPickupPanel({ student, onConfirm }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [authorizedPersons, setAuthorizedPersons] = useState([]);
   const [approvedRequests, setApprovedRequests] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
@@ -531,7 +536,7 @@ function StudentPickupPanel({ student, onConfirm }) {
               )}
             </p>
             <p>
-              {t("staffPickup.timeLabel")} <span className="font-semibold">{formatTime(todayPickup.pickedUpAt)}</span>
+              {t("staffPickup.timeLabel")} <span className="font-semibold">{formatTime(todayPickup.pickedUpAt, i18n.language)}</span>
             </p>
             {teacherName && (
               <p>
@@ -699,7 +704,7 @@ function StudentPickupPanel({ student, onConfirm }) {
 // ─── Pickup Log Card ──────────────────────────────────────────────────────────
 
 function PickupLogCard({ log }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { label, variant } = sourceBadge(log.source, t);
 
   // Handle camelCase (API) with snake_case fallbacks
@@ -743,7 +748,7 @@ function PickupLogCard({ log }) {
           <div className="flex items-center gap-3 mt-1.5 flex-wrap">
             <div className="flex items-center gap-1 text-xs text-gray-400">
               <Clock className="h-3.5 w-3.5" />
-              <span>{formatTime(pickedUpAt)}</span>
+              <span>{formatTime(pickedUpAt, i18n.language)}</span>
             </div>
             {teacherName && (
               <span className="text-xs text-gray-400">
@@ -771,7 +776,7 @@ function PickupLogCard({ log }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function StaffPickup() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { auth } = useAuth();
   const { permissions } = usePermissions();
   const teacherId = auth?.userId;
@@ -925,11 +930,15 @@ export default function StaffPickup() {
     }
   }
 
-  const todayFormatted = new Date().toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-  });
+  const todayFormatted = useMemo(
+    () =>
+      new Date().toLocaleDateString(i18n.language || undefined, {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+      }),
+    [i18n.language]
+  );
 
   const tabs = useMemo(
     () => [

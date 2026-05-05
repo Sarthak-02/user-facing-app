@@ -6,9 +6,9 @@ import { getReceivedBroadcasts } from "../../api/broadcast.api";
 import { useAuth } from "../../store/auth.store";
 import Loader from "../../ui-components/Loader";
 
-function formatDateTime(date) {
+function formatDateTime(date, locale) {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("en-GB", {
+  return new Date(date).toLocaleString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -31,7 +31,7 @@ function senderInitial(name) {
 }
 
 export default function AnnouncementDetail() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { announcementId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -154,7 +154,7 @@ export default function AnnouncementDetail() {
                 <p className="text-xs font-semibold uppercase tracking-widest opacity-80 mb-1">{t("studentAnnouncements.from", { sender })}</p>
                 <h2 className="text-xl font-bold leading-tight">{announcement.title}</h2>
                 <p className="text-xs opacity-75 mt-2">
-                  {formatDateTime(announcement.submittedAt || announcement.submitted_at || announcement.createdAt)}
+                  {formatDateTime(announcement.submittedAt || announcement.submitted_at || announcement.createdAt, i18n.language)}
                 </p>
               </div>
             </div>

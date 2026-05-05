@@ -16,11 +16,11 @@ import {
 } from "lucide-react";
 import Loader from "../../ui-components/Loader";
 
-function formatDate(d) {
+function formatDate(d, locale) {
   if (!d) return null;
   const x = new Date(d);
   if (Number.isNaN(x.getTime())) return String(d);
-  return x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return x.toLocaleDateString(locale || undefined, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function topicStatusConfig(status, t) {
@@ -61,7 +61,7 @@ function topicStatusConfig(status, t) {
 }
 
 export default function StudentTopicDetail() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { subjectId, topicId } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -194,13 +194,13 @@ export default function StudentTopicDetail() {
               {topic.scheduled_date && (
                 <div className="bg-white/15 rounded-xl p-2.5">
                   <p className="text-xs opacity-70 mb-0.5">{t("staffTopicDetail.scheduledLabel")}</p>
-                  <p className="text-sm font-semibold">{formatDate(topic.scheduled_date)}</p>
+                  <p className="text-sm font-semibold">{formatDate(topic.scheduled_date, i18n.language)}</p>
                 </div>
               )}
               {topic.completed_on && (
                 <div className="bg-white/15 rounded-xl p-2.5">
                   <p className="text-xs opacity-70 mb-0.5">{t("staffTopicDetail.completedLabel")}</p>
-                  <p className="text-sm font-semibold">{formatDate(topic.completed_on)}</p>
+                  <p className="text-sm font-semibold">{formatDate(topic.completed_on, i18n.language)}</p>
                 </div>
               )}
               {topic.actual_duration_mins != null && (
@@ -275,7 +275,7 @@ export default function StudentTopicDetail() {
                       {a.due_date && (
                         <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                           <Calendar className="h-3 w-3" />
-                          {t("staffTopicDetail.duePrefix")} {formatDate(a.due_date)}
+                          {t("staffTopicDetail.duePrefix")} {formatDate(a.due_date, i18n.language)}
                         </p>
                       )}
                     </div>

@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("en-GB", {
+  return new Date(date).toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -16,7 +16,7 @@ function senderInitial(item) {
 }
 
 export default function MobileListing({ announcements, className }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (item) => {
@@ -45,7 +45,7 @@ export default function MobileListing({ announcements, className }) {
     <div className={`md:hidden h-full overflow-y-auto space-y-3${className ? ` ${className}` : ""}`}>
       {announcements.map((item) => {
         const attachCount = attachmentCount(item);
-        const dateStr = formatDate(item.submittedAt || item.submitted_at || item.createdAt);
+        const dateStr = formatDate(item.submittedAt || item.submitted_at || item.createdAt, i18n.language);
         const sender = item.senderName || item.createdBy || t("studentAnnouncements.senderFallback");
 
         return (

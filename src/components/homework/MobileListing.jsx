@@ -2,9 +2,9 @@ import { Badge } from "../../ui-components";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("en-GB", {
+  return new Date(date).toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -34,7 +34,7 @@ function getStatusConfig(dueDate) {
 }
 
 export default function MobileListing({ homeworkList, listFromPath, className }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (homeworkId) => {
@@ -111,7 +111,7 @@ export default function MobileListing({ homeworkList, listFromPath, className })
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span className={`font-medium ${cfg.icon === "text-gray-400" ? "text-gray-400" : "text-gray-500"}`}>
-                  {t("homework.due")}: {formatDate(due) || "—"}
+                  {t("homework.due")}: {formatDate(due, i18n.language) || "—"}
                 </span>
               </div>
               <div className="flex items-center gap-2">

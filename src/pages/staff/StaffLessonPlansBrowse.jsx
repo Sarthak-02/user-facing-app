@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { createElement, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button, Modal } from "../../ui-components";
@@ -81,18 +81,18 @@ function statusLabel(status, t) {
   return String(status).replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
 }
 
-function ResourcePill({ icon: Icon, count, color, label }) {
+function ResourcePill({ icon: IconComponent, count, color, label }) {
   if (!count) return null;
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${color}`}>
-      <Icon className="h-3 w-3" />
+      {createElement(IconComponent, { className: "h-3 w-3" })}
       {count} {label}
     </span>
   );
 }
 
 function TopicRow({ topic, classPlanId, sectionId, subjectId, onEdit, onDelete }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const assignments = topic.assignments ?? [];
   const quizzes = topic.quizzes ?? [];
@@ -119,7 +119,7 @@ function TopicRow({ topic, classPlanId, sectionId, subjectId, onEdit, onDelete }
         </div>
         {topic.scheduled_date && (
           <p className="mt-0.5 text-xs text-gray-400">
-            {new Date(topic.scheduled_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+            {new Date(topic.scheduled_date).toLocaleDateString(i18n.language || undefined, { day: "2-digit", month: "short", year: "numeric" })}
           </p>
         )}
         {(assignments.length > 0 || quizzes.length > 0 || materials.length > 0) && (

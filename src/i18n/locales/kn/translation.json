@@ -44,9 +44,10 @@
     "assigned": "ನಿಯೋಜಿಸಲಾಗಿದೆ: {{date}}",
     "dueToday": "ಇಂದು ಬಾಕಿಯಿದೆ",
     "tomorrow": "ನಾಳೆ",
-    "daysLeft": "{{days}}d ಉಳಿದಿದೆ",
+    "daysLeft": "{{days}} ದಿನ ಉಳಿದಿದೆ",
     "today": "ಇಂದು",
-    "inDays": "{{days}} ದಿನಗಳಲ್ಲಿ"
+    "inDays": "{{days}} ದಿನಗಳಲ್ಲಿ",
+    "unreadOverflow": "9+"
   },
   "login": {
     "subtitle": "ನಿಮ್ಮ ಶಾಲಾ ಖಾತೆಯೊಂದಿಗೆ ಸೈನ್ ಇನ್ ಮಾಡಿ",
@@ -653,6 +654,9 @@
   "studentAttendance": {
     "title": "ಹಾಜರಾತಿ",
     "noRecordsForPeriod": "ಆಯ್ಕೆಮಾಡಿದ ಅವಧಿಗೆ ಯಾವುದೇ ಹಾಜರಾತಿ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
+    "errorLoading": "ಹಾಜರಾತಿಯನ್ನು ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ದೋಷ",
+    "noRecordsFound": "ಯಾವುದೇ ಹಾಜರಾತಿ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ",
+    "adjustFilters": "ನಿಮ್ಮ ಶೋಧಕಗಳನ್ನು ಬದಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
     "late": "ತಡವಾಗಿ",
     "onLeave": "ರಜೆಯಲ್ಲಿ",
     "periodOverall": "ಒಟ್ಟಾರೆ",
@@ -853,7 +857,7 @@
       "now": "ಈಗ",
       "dueToday": "ಇಂದು ಬಾಕಿಯಿದೆ",
       "tomorrow": "ನಾಳೆ",
-      "daysLeft": "{{days}}d ಉಳಿದಿದೆ"
+      "daysLeft": "{{days}} ದಿನ ಉಳಿದಿದೆ"
     },
     "eventTypes": {
       "exam": "ಪರೀಕ್ಷೆ",
@@ -869,13 +873,13 @@
       "break": "ಬ್ರೇಕ್"
     },
     "weekdayShort": {
-      "mon": "Mon",
-      "tue": "Tue",
-      "wed": "Wed",
-      "thu": "Thu",
-      "fri": "Fri",
-      "sat": "Sat",
-      "sun": "Sun"
+      "mon": "ಸೋಮ",
+      "tue": "ಮಂಗಳ",
+      "wed": "ಬುಧ",
+      "thu": "ಗುರು",
+      "fri": "ಶುಕ್ರ",
+      "sat": "ಶನಿ",
+      "sun": "ಭಾನು"
     }
   },
   "profile": {
@@ -1066,7 +1070,7 @@
     "classChip": "ವರ್ಗ {{label}}",
     "moreClasses": "+{{count}} ಹೆಚ್ಚು",
     "closesOnShort": "ಮುಚ್ಚುತ್ತದೆ {{date}}",
-    "daysLeftShort": "{{days}}d ಉಳಿದಿದೆ",
+    "daysLeftShort": "{{days}} ದಿನ ಉಳಿದಿದೆ",
     "allCategories": "ಎಲ್ಲಾ ವರ್ಗಗಳು",
     "allStatuses": "ಎಲ್ಲಾ ಸ್ಥಿತಿಗಳು",
     "couldNotLoadTitle": "ವಿದ್ಯಾರ್ಥಿವೇತನವನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
@@ -1489,6 +1493,8 @@
     "pendingCountLabel": "{{count}} ಬಾಕಿಯಿದೆ",
     "avgPercentChip": "ಸರಾಸರಿ {{value}}%",
     "avgGpaChip": "ಸರಾಸರಿ {{value}} GPA",
+    "percentValue": "{{value}}%",
+    "gpaValue": "{{value}} GPA",
     "gradedHintCount": "{{count}} ಶ್ರೇಣೀಕರಿಸಲಾಗಿದೆ",
     "pendingHintCount": "{{count}} ಬಾಕಿಯಿದೆ",
     "loadSectionError": "ವಿಭಾಗದ ಡೇಟಾವನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",

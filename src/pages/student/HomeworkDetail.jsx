@@ -5,9 +5,9 @@ import { Badge, Button } from "../../ui-components";
 import { getHomeworkDetail } from "../../api/homework.api";
 import Loader from "../../ui-components/Loader";
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("en-GB", {
+  return new Date(date).toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -75,7 +75,7 @@ export default function HomeworkDetail() {
   const { homeworkId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [homework, setHomework] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -178,12 +178,12 @@ export default function HomeworkDetail() {
               </div>
               <div className="bg-white/15 backdrop-blur-sm rounded-lg p-2.5">
                 <p className="text-xs opacity-75 mb-0.5">{t("studentHomeworkDetail.assigned")}</p>
-                <p className="text-sm font-semibold">{formatDate(assignedDateValue(homework)) || "—"}</p>
+                <p className="text-sm font-semibold">{formatDate(assignedDateValue(homework), i18n.language) || "—"}</p>
               </div>
               <div className={`rounded-lg p-2.5 ${dueSoon ? "bg-amber-400/30" : "bg-white/15 backdrop-blur-sm"}`}>
                 <p className="text-xs opacity-75 mb-0.5">{t("studentHomeworkDetail.dueDate")}</p>
                 <p className="text-sm font-semibold">
-                  {formatDate(dueDate) || "—"}
+                  {formatDate(dueDate, i18n.language) || "—"}
                   {dueSoon && <span className="ml-1 text-xs font-normal opacity-90">· {t("studentHomeworkDetail.soon")}</span>}
                 </p>
               </div>

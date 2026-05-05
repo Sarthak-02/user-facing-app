@@ -23,26 +23,27 @@ export default function Announcements() {
     ...ANNOUNCEMENT_CATEGORY_OPTIONS.map((o) => ({ value: o.value, labelKey: o.labelKey })),
   ];
 
+  const load = async () => {
+    if (!auth.userId) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getReceivedBroadcasts(auth.userId);
+      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      setItems(list);
+    } catch (err) {
+      console.error("Error fetching announcements:", err);
+      setError(err.message || t("studentAnnouncements.loadFailed"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      if (!auth.userId) return;
-
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await getReceivedBroadcasts(auth.userId);
-        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-        setItems(list);
-      } catch (err) {
-        console.error("Error fetching announcements:", err);
-        setError(err.message || t("studentAnnouncements.loadFailed"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
     load();
-  }, [auth.userId, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.userId]);
 
   const filtered = useMemo(() => {
     let list = [...items];
@@ -94,7 +95,7 @@ export default function Announcements() {
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={load}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
             {t("common.tryAgain")}

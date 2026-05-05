@@ -44,9 +44,10 @@
     "assigned": "असाइन किया गया: {{date}}",
     "dueToday": "आज देय",
     "tomorrow": "कल",
-    "daysLeft": "{{days}}d बाएँ",
+    "daysLeft": "{{days}} दिन शेष",
     "today": "आज",
-    "inDays": "{{days}} दिनों में"
+    "inDays": "{{days}} दिनों में",
+    "unreadOverflow": "9+"
   },
   "login": {
     "subtitle": "अपने स्कूल खाते से साइन इन करें",
@@ -653,6 +654,9 @@
   "studentAttendance": {
     "title": "उपस्थिति",
     "noRecordsForPeriod": "चयनित अवधि के लिए कोई उपस्थिति रिकॉर्ड नहीं मिला.",
+    "errorLoading": "उपस्थिति लोड करने में त्रुटि",
+    "noRecordsFound": "कोई उपस्थिति रिकॉर्ड नहीं मिला",
+    "adjustFilters": "फ़िल्टर बदलकर फिर से प्रयास करें।",
     "late": "देर",
     "onLeave": "छुट्टी पर",
     "periodOverall": "कुल मिलाकर",
@@ -829,7 +833,7 @@
         "classesToday": "कक्षाएं आज",
         "dueSoon": "शीघ्र देय",
         "announcements": "घोषणाएं",
-        "unread": "अपठित ग"
+        "unread": "अपठित"
       },
       "viewSchedule": "शेड्यूल देखें →",
       "viewHomework": "होमवर्क देखें →",
@@ -853,7 +857,7 @@
       "now": "अब",
       "dueToday": "आज देय",
       "tomorrow": "कल",
-      "daysLeft": "{{days}}d बाएँ"
+      "daysLeft": "{{days}} दिन शेष"
     },
     "eventTypes": {
       "exam": "परीक्षा",
@@ -864,18 +868,18 @@
       "other": "अन्य"
     },
     "slots": {
-      "assembly": "विधानसभा",
+      "assembly": "प्रार्थना सभा",
       "lunch": "दिन का खाना",
-      "break": "तोड़ना"
+      "break": "अंतराल"
     },
     "weekdayShort": {
-      "mon": "Mon",
-      "tue": "Tue",
-      "wed": "Wed",
-      "thu": "Thu",
-      "fri": "Fri",
-      "sat": "Sat",
-      "sun": "Sun"
+      "mon": "सोम",
+      "tue": "मंगल",
+      "wed": "बुध",
+      "thu": "गुरु",
+      "fri": "शुक्र",
+      "sat": "शनि",
+      "sun": "रवि"
     }
   },
   "profile": {
@@ -1066,7 +1070,7 @@
     "classChip": "कक्षा {{label}}",
     "moreClasses": "+{{count}} अधिक",
     "closesOnShort": "बंद होता है {{date}}",
-    "daysLeftShort": "{{days}}d बाएँ",
+    "daysLeftShort": "{{days}} दिन शेष",
     "allCategories": "सभी श्रेणियां",
     "allStatuses": "सभी स्थितियाँ",
     "couldNotLoadTitle": "छात्रवृत्तियाँ लोड नहीं की जा सकीं",
@@ -1489,6 +1493,8 @@
     "pendingCountLabel": "{{count}} लंबित",
     "avgPercentChip": "औसत {{value}}%",
     "avgGpaChip": "औसत {{value}} जीपीए",
+    "percentValue": "{{value}}%",
+    "gpaValue": "{{value}} जीपीए",
     "gradedHintCount": "{{count}} ग्रेड दिया गया",
     "pendingHintCount": "{{count}} लंबित",
     "loadSectionError": "अनुभाग डेटा लोड नहीं किया जा सका.",

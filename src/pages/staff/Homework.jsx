@@ -67,7 +67,7 @@ function homeworkAppliesToStudent(homework, studentId, sectionId, sectionRecord)
 }
 
 export default function TeacherHomework() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const statusFilterOptions = useMemo(
     () => [
       { value: "", label: t("staffHomework.filterAll") },
@@ -667,7 +667,7 @@ export default function TeacherHomework() {
                 </p>
                 <p className="text-sm text-gray-600 mt-2">
                   {t("common.due", {
-                    date: new Date(homeworkToPublish.dueDate).toLocaleDateString("en-GB", {
+                    date: new Date(homeworkToPublish.dueDate).toLocaleDateString(i18n.language || undefined, {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",

@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 export default function MobileListing({ examList, onEdit, onPublish, onView, className }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const getDateBadge = (startDate, endDate) => {
     const now = new Date();
@@ -161,12 +161,12 @@ export default function MobileListing({ examList, onEdit, onPublish, onView, cla
                   />
                 </svg>
                 <span>
-                  {new Date(exam.startDate).toLocaleDateString("en-GB", {
+                  {new Date(exam.startDate).toLocaleDateString(i18n.language || undefined, {
                     day: "2-digit",
                     month: "short",
                   })}{" "}
-                  -{" "}
-                  {new Date(exam.endDate).toLocaleDateString("en-GB", {
+                  {t("exams.dateTo")}{" "}
+                  {new Date(exam.endDate).toLocaleDateString(i18n.language || undefined, {
                     day: "2-digit",
                     month: "short",
                     year: "numeric",

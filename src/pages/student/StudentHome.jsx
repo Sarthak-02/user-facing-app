@@ -97,8 +97,8 @@ function greetingForHour(hour) {
   return "home.greeting.evening";
 }
 
-function formatDisplayDate(d) {
-  return d.toLocaleDateString(undefined, {
+function formatDisplayDate(d, locale) {
+  return d.toLocaleDateString(locale || undefined, {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -106,10 +106,10 @@ function formatDisplayDate(d) {
   });
 }
 
-function formatShortDue(iso) {
+function formatShortDue(iso, locale) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleDateString(locale || undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -119,9 +119,9 @@ function formatShortDue(iso) {
   }
 }
 
-function formatEventDate(iso) {
+function formatEventDate(iso, locale) {
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleDateString(locale || undefined, {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -279,7 +279,7 @@ function QuickStat({ icon, label, value, colorClass, onClick, hint }) {
 }
 
 export default function StudentHome() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { auth } = useAuth();
   const navigate = useNavigate();
   const [summaryPayload, setSummaryPayload] = useState(null);
@@ -381,7 +381,7 @@ export default function StudentHome() {
       const isWeekend = weekday === 0 || weekday === 6;
 
       const greeting = `${t(greetingForHour(now.getHours()))},`;
-      const dayLine = formatDisplayDate(now);
+      const dayLine = formatDisplayDate(now, i18n.language);
 
       let attendanceLine;
       let attendanceVariant;
@@ -427,7 +427,7 @@ export default function StudentHome() {
         upcomingHomework,
         announcements,
       };
-    }, [summaryPayload, firstName]);
+    }, [summaryPayload, firstName, t, i18n.language]);
 
   const messagesUnreadTotal = summaryPayload?.messages?.totalUnread ?? 0;
 
@@ -537,8 +537,8 @@ export default function StudentHome() {
           const style = EVENT_TYPE_STYLE[ev.type] ?? EVENT_TYPE_STYLE.other;
           const isRange = ev.end_date && ev.end_date !== ev.start_date;
           const dateLabel = isRange
-            ? `${formatEventDate(ev.start_date)} – ${formatEventDate(ev.end_date)}`
-            : formatEventDate(ev.start_date);
+            ? `${formatEventDate(ev.start_date, i18n.language)} – ${formatEventDate(ev.end_date, i18n.language)}`
+            : formatEventDate(ev.start_date, i18n.language);
           return (
             <button
               type="button"
@@ -644,7 +644,7 @@ export default function StudentHome() {
                       </span>
                     ) : null}
                     <p className="text-xs text-gray-500">
-                      {formatShortDue(h.dueDate || h.due_date)}
+                      {formatShortDue(h.dueDate || h.due_date, i18n.language)}
                     </p>
                   </div>
                 </Link>
@@ -785,7 +785,7 @@ export default function StudentHome() {
                     <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{a.body}</p>
                   ) : null}
                   {a.date ? (
-                    <p className="mt-1 text-xs text-gray-400">{formatShortDue(a.date)}</p>
+                    <p className="mt-1 text-xs text-gray-400">{formatShortDue(a.date, i18n.language)}</p>
                   ) : null}
                 </div>
                 <ChevronRight size={16} className="mt-0.5 shrink-0 text-gray-300" aria-hidden />
@@ -825,8 +825,8 @@ export default function StudentHome() {
               const style = EVENT_TYPE_STYLE[ev.type] ?? EVENT_TYPE_STYLE.other;
               const isRange = ev.end_date && ev.end_date !== ev.start_date;
               const dateLabel = isRange
-                ? `${formatEventDate(ev.start_date)} – ${formatEventDate(ev.end_date)}`
-                : formatEventDate(ev.start_date);
+                ? `${formatEventDate(ev.start_date, i18n.language)} – ${formatEventDate(ev.end_date, i18n.language)}`
+                : formatEventDate(ev.start_date, i18n.language);
               const isPast = days !== null && days < 0;
               return (
                 <li

@@ -36,11 +36,11 @@ import TopicFormModal from "../../components/lesson-plans/TopicFormModal";
 
 const ASSIGNMENT_STATUS_OPTIONS = ["DRAFT", "PUBLISHED", "CLOSED"];
 
-function formatDate(d) {
+function formatDate(d, locale) {
   if (!d) return "";
   const x = new Date(d);
   if (Number.isNaN(x.getTime())) return String(d);
-  return x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return x.toLocaleDateString(locale || undefined, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function topicStatusConfig(status, t) {
@@ -333,7 +333,7 @@ function ResourceSection({ title, icon: Icon, iconBg, count, children, onAdd, ad
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function StaffTopicDetail() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { sectionId, subjectId, classPlanId, topicId } = useParams();
   const navigate = useNavigate();
 
@@ -470,13 +470,13 @@ export default function StaffTopicDetail() {
               {topic.scheduled_date && (
                 <div className="bg-white/15 rounded-xl p-2.5">
                   <p className="text-xs opacity-70 mb-0.5">{t("staffTopicDetail.scheduledLabel")}</p>
-                  <p className="text-sm font-semibold">{formatDate(topic.scheduled_date)}</p>
+                  <p className="text-sm font-semibold">{formatDate(topic.scheduled_date, i18n.language)}</p>
                 </div>
               )}
               {topic.completed_on && (
                 <div className="bg-white/15 rounded-xl p-2.5">
                   <p className="text-xs opacity-70 mb-0.5">{t("staffTopicDetail.completedLabel")}</p>
-                  <p className="text-sm font-semibold">{formatDate(topic.completed_on)}</p>
+                  <p className="text-sm font-semibold">{formatDate(topic.completed_on, i18n.language)}</p>
                 </div>
               )}
             </div>
@@ -536,7 +536,7 @@ export default function StaffTopicDetail() {
                       </div>
                       {a.due_date && (
                         <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
-                          <Calendar className="h-3 w-3" />{t("staffTopicDetail.duePrefix")} {formatDate(a.due_date)}
+                          <Calendar className="h-3 w-3" />{t("staffTopicDetail.duePrefix")} {formatDate(a.due_date, i18n.language)}
                         </p>
                       )}
                       {a.file_url && (

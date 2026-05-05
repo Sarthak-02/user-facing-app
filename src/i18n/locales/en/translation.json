@@ -46,7 +46,8 @@
     "tomorrow": "Tomorrow",
     "daysLeft": "{{days}}d left",
     "today": "Today",
-    "inDays": "In {{days}} days"
+    "inDays": "In {{days}} days",
+    "unreadOverflow": "9+"
   },
   "login": {
     "subtitle": "Sign in with your school account",
@@ -653,6 +654,9 @@
   "studentAttendance": {
     "title": "Attendance",
     "noRecordsForPeriod": "No attendance records found for the selected period.",
+    "errorLoading": "Error loading attendance",
+    "noRecordsFound": "No attendance records found",
+    "adjustFilters": "Try adjusting your filters.",
     "late": "Late",
     "onLeave": "On Leave",
     "periodOverall": "Overall",
@@ -1489,6 +1493,8 @@
     "pendingCountLabel": "{{count}} pending",
     "avgPercentChip": "avg {{value}}%",
     "avgGpaChip": "avg {{value}} GPA",
+    "percentValue": "{{value}}%",
+    "gpaValue": "{{value}} GPA",
     "gradedHintCount": "{{count}} graded",
     "pendingHintCount": "{{count}} pending",
     "loadSectionError": "Could not load section data.",

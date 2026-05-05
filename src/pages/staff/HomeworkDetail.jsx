@@ -6,9 +6,9 @@ import Modal from "../../ui-components/Modal";
 import { getHomeworkDetail, deleteHomework } from "../../api/homework.api";
 import Loader from "../../ui-components/Loader";
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  const formattedDate = new Date(date).toLocaleDateString("en-GB", {
+  const formattedDate = new Date(date).toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -37,7 +37,7 @@ function StatusBadges({ status, dueDate }) {
 }
 
 export default function HomeworkDetail() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { homeworkId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -205,13 +205,13 @@ export default function HomeworkDetail() {
             <div>
               <div className="text-xs text-gray-500 mb-1">{t("staffHomeworkPage.createdDate")}</div>
               <div className="text-sm font-medium text-gray-900">
-                {formatDate(homework.createdAt || homework.created_at)}
+                {formatDate(homework.createdAt || homework.created_at, i18n.language)}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">{t("staffHomeworkPage.dueDate")}</div>
               <div className="text-sm font-medium text-gray-900">
-                {formatDate(homework.dueDate || homework.due_date)}
+                {formatDate(homework.dueDate || homework.due_date, i18n.language)}
               </div>
             </div>
           </div>

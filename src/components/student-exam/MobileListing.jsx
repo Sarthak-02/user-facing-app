@@ -34,7 +34,7 @@ const STATUS_CONFIG = {
 };
 
 export default function MobileListing({ examList, className }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (examId) => {
@@ -61,7 +61,7 @@ export default function MobileListing({ examList, className }) {
     <div className={`md:hidden h-full overflow-y-auto space-y-3${className ? ` ${className}` : ""}`}>
       {examList.map((exam) => {
         const config = STATUS_CONFIG[exam.status] || STATUS_CONFIG.DRAFT;
-        const dateLabel = examListDateRangeLabel(exam);
+        const dateLabel = examListDateRangeLabel(exam, i18n.language);
         const subjectCount = exam.subjects?.length || 0;
         const typeLabel = getExamTypeLabel(exam.examType, t);
 

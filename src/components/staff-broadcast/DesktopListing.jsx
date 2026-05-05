@@ -2,7 +2,7 @@ import { Card } from "../../ui-components";
 import { useTranslation } from "react-i18next";
 
 export default function DesktopListing({ broadcastList, onSelectBroadcast }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -48,7 +48,7 @@ export default function DesktopListing({ broadcastList, onSelectBroadcast }) {
   const formatDate = (dateString) => {
     if (!dateString) return t("common.na");
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-GB", {
+    return date.toLocaleDateString(i18n.language || undefined, {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -58,7 +58,7 @@ export default function DesktopListing({ broadcastList, onSelectBroadcast }) {
   const formatTime = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toLocaleTimeString("en-US", {
+    return date.toLocaleTimeString(i18n.language || undefined, {
       hour: "2-digit",
       minute: "2-digit",
     });

@@ -9,11 +9,11 @@ import LessonPlanFormModal from "../../components/lesson-plans/LessonPlanFormMod
 import { ArrowLeft } from "lucide-react";
 import Loader from "../../ui-components/Loader";
 
-function formatDate(d) {
+function formatDate(d, locale) {
   if (!d) return "—";
   const x = new Date(d);
   if (Number.isNaN(x.getTime())) return String(d);
-  return x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return x.toLocaleDateString(locale || undefined, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function statusVariant(status) {
@@ -60,7 +60,7 @@ function classSectionLabel(p) {
 }
 
 export default function StaffLessonPlanDetail() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { sectionId, subjectId, planId } = useParams();
   const navigate = useNavigate();
   const { auth } = useAuth();
@@ -148,7 +148,7 @@ export default function StaffLessonPlanDetail() {
             {plan.chapter_topic ?? plan.chapterTopic ?? t("staffLessonPlanDetail.lessonPlanFallback")}
           </h1>
           <p className="mt-1 text-sm text-gray-600">
-            {formatDate(plan.lesson_date ?? plan.lessonDate)}
+            {formatDate(plan.lesson_date ?? plan.lessonDate, i18n.language)}
           </p>
           {(plan.subject_name || classSection || teacherName) ? (
             <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">

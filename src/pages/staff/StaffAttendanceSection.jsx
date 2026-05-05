@@ -32,7 +32,7 @@ function parseDateInputValue(s) {
 }
 
 export default function StaffAttendanceSection({ readOnly = false }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { sectionId: sectionIdParam } = useParams();
   const navigate = useNavigate();
   const sectionRows = useTeacherSectionRows();
@@ -378,9 +378,9 @@ export default function StaffAttendanceSection({ readOnly = false }) {
         {readOnly && (() => {
           const isViewingToday = historyDateInput === todayInputMax;
           const viewingDate = parseDateInputValue(historyDateInput);
-          const dayName = viewingDate.toLocaleDateString(undefined, { weekday: "short" });
+          const dayName = viewingDate.toLocaleDateString(i18n.language || undefined, { weekday: "short" });
           const dayNum = viewingDate.getDate();
-          const monthName = viewingDate.toLocaleDateString(undefined, { month: "short" });
+          const monthName = viewingDate.toLocaleDateString(i18n.language || undefined, { month: "short" });
           const year = viewingDate.getFullYear();
           const currentYear = new Date().getFullYear();
           return (

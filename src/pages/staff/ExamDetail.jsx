@@ -7,14 +7,13 @@ import { usePermissions } from "../../store/permissions.store";
 import { useExamDetail } from "../../store/examDetail.store";
 import Loader from "../../ui-components/Loader";
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  const formattedDate = new Date(date).toLocaleDateString("en-GB", {
+  return new Date(date).toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
-  return formattedDate;
 }
 
 function formatTime(time) {
@@ -49,7 +48,7 @@ function getGradingTypeLabel(type, t) {
 }
 
 export default function ExamDetail() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { examId } = useParams();
   const navigate = useNavigate();
   const { permissions } = usePermissions();
@@ -227,7 +226,7 @@ export default function ExamDetail() {
                 <p className="text-sm text-gray-600 mb-1">{t("exams.columns.dateRange")}</p>
                 <p className="text-base font-semibold text-gray-900">
                   {exam.startDate && exam.endDate
-                    ? `${formatDate(exam.startDate)} - ${formatDate(exam.endDate)}`
+                    ? `${formatDate(exam.startDate, i18n.language)} - ${formatDate(exam.endDate, i18n.language)}`
                     : t("exams.notScheduled")}
                 </p>
               </div>
@@ -255,7 +254,7 @@ export default function ExamDetail() {
                   <div>
                     <p className="text-xs text-gray-600 mb-1">{t("exams.examDate")}</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {formatDate(subject.examDate)}
+                      {formatDate(subject.examDate, i18n.language)}
                     </p>
                   </div>
                   <div>

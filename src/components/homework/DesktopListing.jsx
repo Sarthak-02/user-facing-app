@@ -2,9 +2,9 @@ import { Badge } from "../../ui-components";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("en-GB", {
+  return new Date(date).toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -65,7 +65,7 @@ function getStatusConfig(dueDate) {
 }
 
 export default function DesktopListing({ homeworkList, listFromPath }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (homeworkId) => {
@@ -195,7 +195,7 @@ export default function DesktopListing({ homeworkList, listFromPath }) {
                     />
                   </svg>
                   <span className={`text-xs font-semibold ${cfg.icon === "text-gray-400" ? "text-gray-400" : "text-gray-600"}`}>
-                    {t("homework.due")}: {formatDate(due) || "—"}
+                    {t("homework.due")}: {formatDate(due, i18n.language) || "—"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

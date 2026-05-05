@@ -17,13 +17,13 @@ export function parseExamDateInput(value) {
   return Number.isNaN(dt.getTime()) ? null : dt;
 }
 
-export function formatExamListDate(value) {
+export function formatExamListDate(value, locale) {
   const d =
     value instanceof Date && !Number.isNaN(value.getTime())
       ? value
       : parseExamDateInput(value);
   if (!d) return "";
-  return d.toLocaleDateString("en-GB", {
+  return d.toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -64,10 +64,10 @@ function dateKey(value) {
   return `${y}-${m}-${day}`;
 }
 
-export function examListDateRangeLabel(exam) {
+export function examListDateRangeLabel(exam, locale) {
   const { start, end } = getExamListDateRange(exam);
   if (!start) return "";
-  const startLabel = formatExamListDate(start);
+  const startLabel = formatExamListDate(start, locale);
   if (!end || dateKey(start) === dateKey(end)) return startLabel;
-  return `${startLabel} - ${formatExamListDate(end)}`;
+  return `${startLabel} - ${formatExamListDate(end, locale)}`;
 }

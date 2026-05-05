@@ -36,11 +36,11 @@ function gradePasses(item) {
   return score >= pass;
 }
 
-function formatGrade(item) {
+function formatGrade(item, t) {
   if (item.grades_obtained == null || item.grades_obtained === "") return "—";
   const v = String(item.grades_obtained);
-  if (item.grading_type === "PERCENTAGE") return `${v}%`;
-  if (item.grading_type === "GPA") return `${v} GPA`;
+  if (item.grading_type === "PERCENTAGE") return t ? t("reporting.percentValue", { value: v }) : `${v}%`;
+  if (item.grading_type === "GPA") return t ? t("reporting.gpaValue", { value: v }) : `${v} GPA`;
   return v;
 }
 
@@ -388,7 +388,7 @@ function StudentDetailPanel({ student, onClose }) {
                             </div>
                           </td>
                           <td className="px-4 py-2.5">
-                            {row.is_graded ? <ScorePill>{formatGrade(row)}</ScorePill> : <ScorePill muted>{t("reporting.pending")}</ScorePill>}
+                            {row.is_graded ? <ScorePill>{formatGrade(row, t)}</ScorePill> : <ScorePill muted>{t("reporting.pending")}</ScorePill>}
                           </td>
                           <td className="px-4 py-2.5">
                             <PassBadge passes={row.is_graded ? gradePasses(row) : null} />
@@ -480,7 +480,7 @@ function ExamDetailPanel({ exam, studentGroups, onViewStudent, onClose }) {
                   </td>
                   <td className="px-5 py-3 text-gray-600">{row.subject_name ?? "—"}</td>
                   <td className="px-5 py-3">
-                    {row.is_graded ? <ScorePill>{formatGrade(row)}</ScorePill> : <ScorePill muted>{t("reporting.pending")}</ScorePill>}
+                    {row.is_graded ? <ScorePill>{formatGrade(row, t)}</ScorePill> : <ScorePill muted>{t("reporting.pending")}</ScorePill>}
                   </td>
                   <td className="px-5 py-3">
                     <PassBadge passes={row.is_graded ? gradePasses(row) : null} />

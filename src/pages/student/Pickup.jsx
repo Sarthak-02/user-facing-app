@@ -37,12 +37,12 @@ function getInitials(name) {
     .join("");
 }
 
-function formatDate(dateStr) {
+function formatDate(dateStr, locale) {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
   return isNaN(d.getTime())
     ? dateStr
-    : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    : d.toLocaleDateString(locale || undefined, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function requestStatusVariant(status) {
@@ -400,7 +400,7 @@ function DetailRow({ label, value }) {
 }
 
 function RequestDetailModal({ request, onClose }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (!request) return null;
   const status = (request.status || "PENDING").toUpperCase();
   const photoUrl = request.photoUrl || request.photo_url;
@@ -430,9 +430,9 @@ function RequestDetailModal({ request, onClose }) {
 
       <div className="space-y-2.5 bg-gray-50 rounded-xl px-4 py-3 mb-4">
         <DetailRow label={t("pickup.requestDetail.relationship")} value={request.relationship} />
-        <DetailRow label={t("pickup.requestDetail.validDate")} value={formatDate(validDate)} />
+        <DetailRow label={t("pickup.requestDetail.validDate")} value={formatDate(validDate, i18n.language)} />
         {request.remarks && <DetailRow label={t("pickup.requestDetail.remarks")} value={request.remarks} />}
-        {createdAt && <DetailRow label={t("pickup.requestDetail.submitted")} value={formatDate(createdAt)} />}
+        {createdAt && <DetailRow label={t("pickup.requestDetail.submitted")} value={formatDate(createdAt, i18n.language)} />}
         {(request.rejectionNote || request.rejection_note) && (
           <DetailRow label={t("pickup.requestDetail.rejectionNote")} value={request.rejectionNote || request.rejection_note} />
         )}
@@ -448,7 +448,7 @@ function RequestDetailModal({ request, onClose }) {
 // ─── Request Card ─────────────────────────────────────────────────────────────
 
 function RequestCard({ request, onView }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const initials = getInitials(request.name);
   const status = (request.status || "PENDING").toUpperCase();
   const photoUrl = request.photoUrl || request.photo_url;
@@ -482,7 +482,7 @@ function RequestCard({ request, onView }) {
         <p className="text-xs text-gray-500 mt-0.5">{request.relationship}</p>
         <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-400">
           <Calendar className="h-3.5 w-3.5" />
-          <span>{t("pickup.requestCard.valid", { date: formatDate(validDate) })}</span>
+          <span>{t("pickup.requestCard.valid", { date: formatDate(validDate, i18n.language) })}</span>
         </div>
         {request.remarks && (
           <p className="text-xs text-gray-400 mt-1 italic">"{request.remarks}"</p>
@@ -839,7 +839,7 @@ export default function StudentPickup() {
                               className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors disabled:opacity-50"
                             >
                               <RotateCcw className="h-3.5 w-3.5" />
-                              {busy ? "…" : t("pickup.reactivate")}
+                              {busy ? t("common.loading") : t("pickup.reactivate")}
                             </button>
                           </div>
                         );

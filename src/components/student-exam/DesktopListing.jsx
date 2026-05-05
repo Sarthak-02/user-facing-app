@@ -40,9 +40,9 @@ const STATUS_CONFIG = {
 };
 
 function ExamCard({ exam, onClick }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const config = STATUS_CONFIG[exam.status] || STATUS_CONFIG.DRAFT;
-  const dateLabel = examListDateRangeLabel(exam);
+  const dateLabel = examListDateRangeLabel(exam, i18n.language);
   const subjectCount = exam.subjects?.length || 0;
   const examName = exam.customExamType || getExamTypeLabel(exam.examType, t);
 

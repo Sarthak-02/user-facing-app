@@ -18,11 +18,11 @@ import { useTranslation } from "react-i18next";
 
 import Loader from "../../ui-components/Loader";
 
-function formatDate(d) {
+function formatDate(d, locale) {
   if (!d) return null;
   const x = new Date(d);
   if (Number.isNaN(x.getTime())) return String(d);
-  return x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return x.toLocaleDateString(locale || undefined, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function topicStatusConfig(status, t) {
@@ -68,7 +68,7 @@ function groupTopicsByChapter(topics) {
 }
 
 export default function StudentLessonPlansBrowse() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { subjectId } = useParams();
   const navigate = useNavigate();
   const { auth } = useAuth();
@@ -322,7 +322,7 @@ export default function StudentLessonPlansBrowse() {
                                       {topic.scheduled_date && (
                                         <span className="flex items-center gap-1 text-xs text-gray-400">
                                           <Calendar className="h-3 w-3" />
-                                          {formatDate(topic.scheduled_date)}
+                                          {formatDate(topic.scheduled_date, i18n.language)}
                                         </span>
                                       )}
                                       {resourceCount > 0 && (

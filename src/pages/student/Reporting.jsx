@@ -28,18 +28,18 @@ function gradePasses(item) {
   return score >= pass;
 }
 
-function formatGrade(item) {
+function formatGrade(item, t) {
   if (item.grades_obtained == null || item.grades_obtained === "") return "—";
   const v = String(item.grades_obtained);
-  if (item.grading_type === "PERCENTAGE") return `${v}%`;
-  if (item.grading_type === "GPA") return `${v} GPA`;
+  if (item.grading_type === "PERCENTAGE") return t ? t("reporting.percentValue", { value: v }) : `${v}%`;
+  if (item.grading_type === "GPA") return t ? t("reporting.gpaValue", { value: v }) : `${v} GPA`;
   return v;
 }
 
-function formatShortDate(iso) {
+function formatShortDate(iso, locale) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleDateString(locale || undefined, {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -251,7 +251,7 @@ function GradeDisplay({ item, ratingScale }) {
   if (ratingScale?.type === "emoji") {
     return <EmojiRating value={value} emojiSet={ratingScale.emoji_set} labels={ratingScale.labels} />;
   }
-  return <ScorePill>{formatGrade(item)}</ScorePill>;
+  return <ScorePill>{formatGrade(item, t)}</ScorePill>;
 }
 
 // ─── GroupBy toggle ───────────────────────────────────────────────────────────
@@ -844,7 +844,7 @@ function Histogram({ title, description, buckets, groupByOptions, groupBy, onGro
 // ─── main page ───────────────────────────────────────────────────────────────
 
 export default function Reporting() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { auth } = useAuth();
   const campusId = auth.campus_id;
   const sectionId = auth.sections?.[0]?.value;
@@ -1374,7 +1374,7 @@ export default function Reporting() {
                                     </td>
                                   )}
                                   <td className="hidden px-5 py-3 text-xs text-gray-500 sm:table-cell">
-                                    {formatShortDate(row.graded_at)}
+                                    {formatShortDate(row.graded_at, i18n.language)}
                                   </td>
                                   {showComments && (
                                     <td className="hidden px-5 py-3 text-xs text-gray-600 md:table-cell">
@@ -1434,7 +1434,7 @@ export default function Reporting() {
                                 </td>
                               )}
                               <td className="hidden px-5 py-3 text-xs text-gray-500 md:table-cell">
-                                {formatShortDate(row.graded_at)}
+                                {formatShortDate(row.graded_at, i18n.language)}
                               </td>
                               {showComments && (
                                 <td className="hidden px-5 py-3 text-xs text-gray-600 lg:table-cell">

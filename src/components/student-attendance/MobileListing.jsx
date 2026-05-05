@@ -9,10 +9,10 @@ function formatPeriodLabel(period, t) {
   return String(period);
 }
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "short" });
-  const formattedDate = date.toLocaleDateString("en-GB", {
+  const dayOfWeek = date.toLocaleDateString(locale || undefined, { weekday: "short" });
+  const formattedDate = date.toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -38,7 +38,7 @@ function StatusBadge({ status }) {
 }
 
 export default function MobileListing({ attendanceRecords }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="md:hidden h-full overflow-y-auto space-y-3 pb-26">
@@ -56,10 +56,10 @@ export default function MobileListing({ attendanceRecords }) {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="font-medium text-gray-900">
-                    {formatDate(new Date(record.date))}
+                    {formatDate(new Date(record.date), i18n.language)}
                   </div>
                   <div className="text-sm text-gray-500 mt-0.5">
-                    {new Date(record.date).toLocaleDateString("en-US", {
+                    {new Date(record.date).toLocaleDateString(i18n.language || undefined, {
                       weekday: "long",
                     })}
                   </div>

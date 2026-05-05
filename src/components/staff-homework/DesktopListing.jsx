@@ -2,9 +2,9 @@ import { Badge, Card } from "../../ui-components";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  const formattedDate = new Date(date).toLocaleDateString("en-GB", {
+  const formattedDate = new Date(date).toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -56,7 +56,7 @@ function AttachmentIndicator({ count }) {
 }
 
 export default function DesktopListing({ homeworkList, onEdit, onPublish, listFromPath }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const handleCardClick = (homeworkId) => {
@@ -139,7 +139,7 @@ export default function DesktopListing({ homeworkList, onEdit, onPublish, listFr
                       d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
-                  <span>{t("common.due", { date: formatDate(homework.dueDate) })}</span>
+                  <span>{t("common.due", { date: formatDate(homework.dueDate, i18n.language) })}</span>
                 </div>
 
                 {homework.assignedDate && (
@@ -159,7 +159,7 @@ export default function DesktopListing({ homeworkList, onEdit, onPublish, listFr
                       />
                     </svg>
                     <span>
-                      {t("common.assigned", { date: formatDate(homework.assignedDate) })}
+                      {t("common.assigned", { date: formatDate(homework.assignedDate, i18n.language) })}
                     </span>
                   </div>
                 )}

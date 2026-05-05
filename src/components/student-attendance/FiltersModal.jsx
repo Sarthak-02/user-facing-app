@@ -5,9 +5,9 @@ import { Calendar } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  return date.toLocaleDateString("en-GB", {
+  return date.toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -23,7 +23,7 @@ export default function FiltersModal({
   setCustomDateRange,
   periodOptions,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const resolvedPeriodOptions = useMemo(
     () =>
       periodOptions ?? [{ label: t("studentAttendance.allPeriods"), value: "ALL" }],
@@ -108,7 +108,7 @@ export default function FiltersModal({
             <Calendar size={16} />
             <span className="text-gray-500">
               {customDateRange.start
-                ? formatDate(customDateRange.start)
+                ? formatDate(customDateRange.start, i18n.language)
                 : t("studentAttendance.pickStartDate")}
             </span>
           </Button>
@@ -140,7 +140,7 @@ export default function FiltersModal({
             <Calendar size={16} />
             <span className="text-gray-500">
               {customDateRange.end
-                ? formatDate(customDateRange.end)
+                ? formatDate(customDateRange.end, i18n.language)
                 : t("studentAttendance.pickEndDate")}
             </span>
           </Button>

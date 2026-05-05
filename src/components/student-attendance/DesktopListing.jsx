@@ -10,10 +10,10 @@ function formatPeriodLabel(period, t) {
   return String(period);
 }
 
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "short" });
-  const formattedDate = date.toLocaleDateString("en-GB", {
+  const dayOfWeek = date.toLocaleDateString(locale || undefined, { weekday: "short" });
+  const formattedDate = date.toLocaleDateString(locale || undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -39,7 +39,7 @@ function StatusBadge({ status }) {
 }
 
 export default function DesktopListing({ attendanceRecords }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const columns = useMemo(
     () => [
@@ -47,7 +47,7 @@ export default function DesktopListing({ attendanceRecords }) {
         key: "date",
         label: t("studentAttendance.colDate"),
         render: (row) => (
-          <div className="font-medium">{formatDate(new Date(row.date))}</div>
+          <div className="font-medium">{formatDate(new Date(row.date), i18n.language)}</div>
         ),
       },
       {
@@ -55,7 +55,7 @@ export default function DesktopListing({ attendanceRecords }) {
         label: t("studentAttendance.colDay"),
         render: (row) => (
           <div className="text-gray-600">
-            {new Date(row.date).toLocaleDateString("en-US", { weekday: "long" })}
+            {new Date(row.date).toLocaleDateString(i18n.language || undefined, { weekday: "long" })}
           </div>
         ),
       },
@@ -79,7 +79,7 @@ export default function DesktopListing({ attendanceRecords }) {
         ),
       },
     ],
-    [t]
+    [t, i18n.language]
   );
 
   return (
