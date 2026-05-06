@@ -10,10 +10,45 @@
     />
     <meta name="theme-color" content="#2563eb" />
     <meta name="description" content="Attendance, homework & notifications for teachers and students" />
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DigiSchool" />
     <title>Digi School</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="app-splash" style="
+        position:fixed;inset:0;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:16px;
+        background:#ffffff;z-index:9999;
+      ">
+        <img src="/app/pwa-192x192.png" width="80" height="80" style="border-radius:18px;" alt="" />
+        <div style="width:160px;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;">
+          <div id="splash-bar" style="
+            height:100%;width:0%;background:#2563eb;border-radius:99px;
+            transition:width 0.4s ease;
+          "></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var bar = document.getElementById('splash-bar');
+        var splash = document.getElementById('app-splash');
+        if (!bar || !splash) return;
+        var pct = 0;
+        var interval = setInterval(function () {
+          pct = Math.min(pct + Math.random() * 18, 85);
+          bar.style.width = pct + '%';
+        }, 200);
+        document.addEventListener('DOMContentLoaded', function () {
+          clearInterval(interval);
+          bar.style.width = '100%';
+          setTimeout(function () { splash.style.display = 'none'; }, 300);
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

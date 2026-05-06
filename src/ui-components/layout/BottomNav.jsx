@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { hapticTap } from "../../utils/haptics";
 
 const MAX_BOTTOM_ICONS = 5;
 /** When overflowing, show this many primary tabs plus "More" (total = MAX_BOTTOM_ICONS). */
@@ -28,6 +29,7 @@ export default function BottomNav({ navItems, setActiveNav }) {
   }, [location.pathname]);
 
   const handleNavClick = (labelKey, path) => {
+    hapticTap();
     setActiveNav(labelKey);
     navigate(path);
   };
@@ -80,7 +82,7 @@ export default function BottomNav({ navItems, setActiveNav }) {
                     ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
                     : "text-[var(--color-text)]"
                 }`}
-                onClick={() => handleNavClick(labelKey ?? label, path)}
+                onClick={() => { hapticTap(); handleNavClick(labelKey ?? label, path); }}
               >
                 <Icon
                   size={20}
@@ -124,7 +126,7 @@ export default function BottomNav({ navItems, setActiveNav }) {
             <button
               type="button"
               className={navButtonClass(overflowHasActive || moreOpen)}
-              onClick={() => setMoreOpen((open) => !open)}
+              onClick={() => { hapticTap(); setMoreOpen((open) => !open); }}
               aria-expanded={moreOpen}
               aria-haspopup="menu"
             >

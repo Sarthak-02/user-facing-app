@@ -337,9 +337,9 @@
       "teacherNotes": "Teacher notes (optional)",
       "teacherNotesPlaceholder": "Any notes or reminders for this topic",
       "errorChapterRequired": "Chapter title is required.",
-    "errorTopicRequired": "Topic title is required.",
-    "errorNoClassPlan": "No class plan is open. Open a class plan first, then add a topic.",
-    "errorFailed": "Failed to save topic",
+      "errorTopicRequired": "Topic title is required.",
+      "errorNoClassPlan": "No class plan is open. Open a class plan first, then add a topic.",
+      "errorFailed": "Failed to save topic",
       "addTopicButton": "Add topic",
       "status_pending": "Pending",
       "status_inProgress": "In progress",
@@ -1634,5 +1634,17 @@
   "chatUi": {
     "composerHint": "Enter to send · Shift+Enter for new line",
     "selectConversation": "Select a conversation to start chatting"
+  },
+  "pwaInstall": {
+    "title": "Install Digi School App",
+    "description": "Add Digi School to your home screen for quick access to attendance, homework, and notifications — even offline.",
+    "install": "Install App",
+    "maybeLater": "Maybe Later",
+    "dontAskAgain": "Don't Ask Again"
+  },
+  "iosInstall": {
+    "title": "Install Digi School",
+    "step1": "Tap",
+    "step2": "then \"Add to Home Screen\" to install this app."
   }
 }

@@ -1634,5 +1634,17 @@
   "chatUi": {
     "composerHint": "भेजने के लिए एंटर करें · नई लाइन के लिए Shift+Enter",
     "selectConversation": "चैटिंग शुरू करने के लिए एक वार्तालाप चुनें"
+  },
+  "pwaInstall": {
+    "title": "Digi School ऐप इंस्टॉल करें",
+    "description": "उपस्थिति, होमवर्क और सूचनाओं तक त्वरित पहुँच के लिए Digi School को अपनी होम स्क्रीन पर जोड़ें — ऑफलाइन भी।",
+    "install": "ऐप इंस्टॉल करें",
+    "maybeLater": "शायद बाद में",
+    "dontAskAgain": "दोबारा मत पूछो"
+  },
+  "iosInstall": {
+    "title": "Digi School इंस्टॉल करें",
+    "step1": "नीचे",
+    "step2": "टैप करें, फिर \"होम स्क्रीन में जोड़ें\" चुनें।"
   }
 }

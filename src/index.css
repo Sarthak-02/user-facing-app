@@ -2,6 +2,11 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  overscroll-behavior-y: none;
 }
 
 /* Clears the fixed bottom nav on mobile; overridden by responsive desktop padding */

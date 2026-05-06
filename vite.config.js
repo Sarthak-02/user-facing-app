@@ -35,6 +35,7 @@ export default defineConfig({
         theme_color: "#2563eb",
         background_color: "#ffffff",
         display: "standalone",
+        orientation: "portrait",
         start_url: "/app/",
         scope: "/app/",
         icons: [
@@ -49,6 +50,26 @@ export default defineConfig({
             sizes: "512x512",
             type: "image/png",
             purpose: "any",
+          },
+          {
+            src: "/app/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+        shortcuts: [
+          {
+            name: "Take Attendance",
+            short_name: "Attendance",
+            url: "/app/staff/attendance",
+            icons: [{ src: "/app/pwa-192x192.png", sizes: "192x192" }],
+          },
+          {
+            name: "View Homework",
+            short_name: "Homework",
+            url: "/app/staff/homework",
+            icons: [{ src: "/app/pwa-192x192.png", sizes: "192x192" }],
           },
         ],
       },
