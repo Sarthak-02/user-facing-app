@@ -111,8 +111,10 @@ export default function StudentLessonPlansBrowse() {
       setSubjectName(resolvedName);
 
       // Fetch the class plan (curriculum) for this subject
+      const studentSectionId = auth.sections?.[0]?.value;
       const allPlans = await listClassPlans({
         campus_id: auth.campus_id,
+        ...(studentSectionId ? { section_id: studentSectionId } : {}),
         is_published: true,
         limit: 100,
       });
@@ -124,7 +126,10 @@ export default function StudentLessonPlansBrowse() {
       );
       if (match) {
         const planId = match.id ?? match.class_plan_id;
-        const full = await getClassPlanById(planId);
+        const full = await getClassPlanById(
+          planId,
+          studentSectionId ? { section_id: studentSectionId } : {},
+        );
         setClassPlan(full);
         // Use class plan's subject as the display name if we don't have a better one
         if (resolvedName === subjectId && match.subject) setSubjectName(match.subject);
@@ -134,7 +139,7 @@ export default function StudentLessonPlansBrowse() {
     } finally {
       setLoading(false);
     }
-  }, [subjectId, auth.campus_id, auth.userId, t]);
+  }, [subjectId, auth.campus_id, auth.userId, auth.sections, t]);
 
   useEffect(() => { load(); }, [load]);
 

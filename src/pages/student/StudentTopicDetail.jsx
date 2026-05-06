@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { getClassPlanById } from "../../api/lessonPlans.api";
+import { useAuth } from "../../store/auth.store";
 import {
   ArrowLeft,
   Calendar,
@@ -65,6 +66,7 @@ export default function StudentTopicDetail() {
   const { subjectId, topicId } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
+  const { auth } = useAuth();
 
   const [topic, setTopic] = useState(state?.topic ?? null);
   const [loading, setLoading] = useState(!!state?.classPlanId);
@@ -82,7 +84,8 @@ export default function StudentTopicDetail() {
     let cancelled = false;
     (async () => {
       try {
-        const plan = await getClassPlanById(classPlanId);
+        const sid = auth.sections?.[0]?.value;
+        const plan = await getClassPlanById(classPlanId, sid ? { section_id: sid } : {});
         const found = (plan?.topics ?? []).find(
           (t) => String(t.id ?? t.class_plan_topic_id) === String(topicId)
         );
@@ -97,7 +100,7 @@ export default function StudentTopicDetail() {
       }
     })();
     return () => { cancelled = true; };
-  }, [topicId, state?.classPlanId, t]);
+  }, [topicId, state?.classPlanId, auth.sections?.[0]?.value, t]);
 
   const goBack = () => navigate(`/student/lesson-plans/subject/${subjectId}`);
 

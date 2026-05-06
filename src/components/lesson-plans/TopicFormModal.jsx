@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Input, Modal, Dropdown } from "../../ui-components";
 import Textarea from "../../ui-components/TextArea";
-import { addClassPlanTopics, updateClassPlanTopic } from "../../api/lessonPlans.api";
+import {
+  addClassPlanTopics,
+  updateClassPlanTopic,
+  createTopicProgress,
+  updateTopicProgress,
+  classPlanTopicRowId,
+} from "../../api/lessonPlans.api";
 import { useTranslation } from "react-i18next";
 
 const TOPIC_STATUS_ORDER = ["PENDING", "IN_PROGRESS", "COMPLETED", "SKIPPED"];
@@ -24,6 +30,8 @@ export default function TopicFormModal({
   onSaved,
   topic,
   classPlanId,
+  /** Required when creating topic progress (staff section route). */
+  sectionId = "",
   prefillChapterTitle = "",
   prefillChapterNumber = null,
   lockChapter = false,
@@ -95,32 +103,72 @@ export default function TopicFormModal({
     }
     setSubmitting(true);
     try {
+      const progressBodyForPatch = {
+        status: topicStatus,
+        scheduled_date: scheduledDate || null,
+        teacher_notes: teacherNotes.trim() || null,
+        is_added_by_teacher: true,
+      };
+      const sid = String(sectionId || "").trim();
+      if ((isEdit && !topic.progress_id) || !isEdit) {
+        if (!sid) {
+          setError(t("lessonPlans.topicForm.errorFailed"));
+          setSubmitting(false);
+          return;
+        }
+      }
+      const progressBodyForCreate = {
+        section_id: sid,
+        status: topicStatus,
+        scheduled_date: scheduledDate || null,
+        teacher_notes: teacherNotes.trim() || null,
+        is_added_by_teacher: true,
+      };
+
       if (isEdit) {
-        const body = {
+        const rowId = classPlanTopicRowId(topic);
+        if (!rowId) {
+          setError(t("lessonPlans.topicForm.errorFailed"));
+          return;
+        }
+        const topicBody = {
           chapter_title: chapterTitle.trim(),
           title: title.trim(),
-          status: topicStatus,
-          scheduled_date: scheduledDate || null,
-          teacher_notes: teacherNotes.trim() || null,
+          chapter_number: chapterNumber !== "" ? (parseInt(chapterNumber, 10) || null) : null,
         };
-        if (chapterNumber !== "") {
-          body.chapter_number = parseInt(chapterNumber, 10) || null;
+        await updateClassPlanTopic(rowId, topicBody);
+        if (topic.progress_id) {
+          await updateTopicProgress(topic.progress_id, progressBodyForPatch);
         } else {
-          body.chapter_number = null;
+          await createTopicProgress(rowId, progressBodyForCreate);
         }
-        await updateClassPlanTopic(topic.id, body);
       } else {
         const topicPayload = {
           chapter_title: chapterTitle.trim(),
           title: title.trim(),
           display_order: (existingTopicsCount + 1) * 10,
-          status: topicStatus,
         };
         if (chapterNumber !== "") topicPayload.chapter_number = parseInt(chapterNumber, 10) || undefined;
-        if (scheduledDate) topicPayload.scheduled_date = scheduledDate;
-        if (teacherNotes.trim()) topicPayload.teacher_notes = teacherNotes.trim();
-        topicPayload.is_added_by_teacher = true;
-        await addClassPlanTopics(classPlanId, [topicPayload]);
+        const result = await addClassPlanTopics(classPlanId, [topicPayload]);
+        const resultTopics = result?.topics ?? [];
+        const payloadTitle = title.trim();
+        const payloadChapter = chapterTitle.trim();
+        const matched =
+          resultTopics.find((trow) => {
+            const ti = (trow.title ?? "").trim();
+            const ch = (trow.chapter_title ?? trow.chapterTitle ?? "").trim();
+            return ti === payloadTitle && ch === payloadChapter;
+          }) ??
+          [...resultTopics].sort(
+            (a, b) =>
+              (b.display_order ?? b.displayOrder ?? 0) - (a.display_order ?? a.displayOrder ?? 0),
+          )[0];
+        const newTopicId = classPlanTopicRowId(matched);
+        if (!newTopicId || String(newTopicId) === String(classPlanId)) {
+          setError(t("lessonPlans.topicForm.errorFailed"));
+          return;
+        }
+        await createTopicProgress(newTopicId, progressBodyForCreate);
       }
       onSaved();
     } catch (err) {

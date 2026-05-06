@@ -14,6 +14,8 @@ import {
   updateTopicQuiz,
   deleteTopicQuiz,
   uploadLessonPlanFile,
+  createTopicProgress,
+  classPlanTopicRowId,
 } from "../../api/lessonPlans.api";
 import Loader from "../../ui-components/Loader";
 import {
@@ -85,7 +87,7 @@ function FileUploadRow({ fileUrl, fileName, uploading, onFile, onRemove }) {
 
 // ─── Assignment form ─────────────────────────────────────────────────────────
 
-function AssignmentForm({ topicId, assignment, onSaved, onCancel }) {
+function AssignmentForm({ topicId, progressId, sectionId, assignment, onSaved, onCancel }) {
   const { t } = useTranslation();
   const isEdit = !!assignment;
   const [title, setTitle] = useState(assignment?.title ?? "");
@@ -120,8 +122,19 @@ function AssignmentForm({ topicId, assignment, onSaved, onCancel }) {
     setSubmitting(true);
     try {
       const body = { title: title.trim(), due_date: dueDate || undefined, file_url: fileUrl || undefined, status };
-      if (isEdit) await updateTopicAssignment(assignment.id, body);
-      else await addTopicAssignment(topicId, body);
+      if (isEdit) {
+        await updateTopicAssignment(assignment.id, body);
+      } else {
+        let pid = progressId;
+        if (!pid) {
+          const p = await createTopicProgress(topicId, {
+            section_id: sectionId,
+            is_added_by_teacher: true,
+          });
+          pid = p?.id ?? p?.progress_id;
+        }
+        await addTopicAssignment(pid, body);
+      }
       onSaved();
     } catch (err) {
       setError(err?.message || t("staffTopicDetail.failedSave"));
@@ -170,7 +183,7 @@ function AssignmentForm({ topicId, assignment, onSaved, onCancel }) {
 
 // ─── Quiz form ───────────────────────────────────────────────────────────────
 
-function QuizForm({ topicId, quiz, onSaved, onCancel }) {
+function QuizForm({ topicId, progressId, sectionId, quiz, onSaved, onCancel }) {
   const { t } = useTranslation();
   const isEdit = !!quiz;
   const [title, setTitle] = useState(quiz?.title ?? "");
@@ -203,8 +216,19 @@ function QuizForm({ topicId, quiz, onSaved, onCancel }) {
     setSubmitting(true);
     try {
       const body = { title: title.trim(), file_url: fileUrl || undefined, generated_by_ai: false };
-      if (isEdit) await updateTopicQuiz(quiz.id, body);
-      else await addTopicQuiz(topicId, body);
+      if (isEdit) {
+        await updateTopicQuiz(quiz.id, body);
+      } else {
+        let pid = progressId;
+        if (!pid) {
+          const p = await createTopicProgress(topicId, {
+            section_id: sectionId,
+            is_added_by_teacher: true,
+          });
+          pid = p?.id ?? p?.progress_id;
+        }
+        await addTopicQuiz(pid, body);
+      }
       onSaved();
     } catch (err) {
       setError(err?.message || t("staffTopicDetail.failedSave"));
@@ -235,7 +259,7 @@ function QuizForm({ topicId, quiz, onSaved, onCancel }) {
 
 // ─── Material form ────────────────────────────────────────────────────────────
 
-function MaterialForm({ topicId, onSaved, onCancel }) {
+function MaterialForm({ topicId, progressId, sectionId, onSaved, onCancel }) {
   const { t } = useTranslation();
   const [fileName, setFileName] = useState("");
   const [fileUrl, setFileUrl] = useState("");
@@ -264,7 +288,15 @@ function MaterialForm({ topicId, onSaved, onCancel }) {
     if (!fileUrl) { setError(t("staffTopicDetail.pleaseUploadFile")); return; }
     setSubmitting(true);
     try {
-      await addTopicMaterial(topicId, { file_name: fileName, file_url: fileUrl });
+      let pid = progressId;
+      if (!pid) {
+        const p = await createTopicProgress(topicId, {
+          section_id: sectionId,
+          is_added_by_teacher: true,
+        });
+        pid = p?.id ?? p?.progress_id;
+      }
+      await addTopicMaterial(pid, { file_name: fileName, file_url: fileUrl });
       onSaved();
     } catch (err) {
       setError(err?.message || t("staffTopicDetail.failedAddMaterial"));
@@ -356,10 +388,11 @@ export default function StaffTopicDetail() {
     setLoading(true);
     setError(null);
     try {
-      const plan = await getClassPlanById(classPlanId);
+      const plan = await getClassPlanById(classPlanId, sectionId ? { section_id: sectionId } : {});
       const topics = plan?.topics ?? [];
       setExistingTopicsCount(topics.length);
-      const found = topics.find((tp) => String(tp.id) === String(topicId));
+      const param = String(topicId);
+      const found = topics.find((tp) => classPlanTopicRowId(tp) === param);
       if (!found) throw new Error(t("staffTopicDetail.topicNotInPlan"));
       setTopic(found);
     } catch (err) {
@@ -367,7 +400,7 @@ export default function StaffTopicDetail() {
     } finally {
       setLoading(false);
     }
-  }, [classPlanId, topicId, t]);
+  }, [classPlanId, topicId, sectionId, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -407,6 +440,8 @@ export default function StaffTopicDetail() {
     );
   }
 
+  const topicRowId = classPlanTopicRowId(topic) ?? topicId;
+  const progressId = topic.progress_id ?? null;
   const assignments = topic.assignments ?? [];
   const quizzes = topic.quizzes ?? [];
   const materials = topic.materials ?? topic.study_materials ?? [];
@@ -506,7 +541,9 @@ export default function StaffTopicDetail() {
           >
             {assignmentForm === "add" && (
               <AssignmentForm
-                topicId={topicId}
+                topicId={topicRowId}
+                progressId={progressId}
+                sectionId={sectionId}
                 onSaved={handleSaved(setAssignmentForm)}
                 onCancel={() => setAssignmentForm(null)}
               />
@@ -518,7 +555,9 @@ export default function StaffTopicDetail() {
               <div key={a.id}>
                 {assignmentForm?.id === a.id ? (
                   <AssignmentForm
-                    topicId={topicId}
+                    topicId={topicRowId}
+                    progressId={progressId}
+                    sectionId={sectionId}
                     assignment={a}
                     onSaved={handleSaved(setAssignmentForm)}
                     onCancel={() => setAssignmentForm(null)}
@@ -570,7 +609,9 @@ export default function StaffTopicDetail() {
           >
             {quizForm === "add" && (
               <QuizForm
-                topicId={topicId}
+                topicId={topicRowId}
+                progressId={progressId}
+                sectionId={sectionId}
                 onSaved={handleSaved(setQuizForm)}
                 onCancel={() => setQuizForm(null)}
               />
@@ -582,7 +623,9 @@ export default function StaffTopicDetail() {
               <div key={q.id}>
                 {quizForm?.id === q.id ? (
                   <QuizForm
-                    topicId={topicId}
+                    topicId={topicRowId}
+                    progressId={progressId}
+                    sectionId={sectionId}
                     quiz={q}
                     onSaved={handleSaved(setQuizForm)}
                     onCancel={() => setQuizForm(null)}
@@ -627,7 +670,9 @@ export default function StaffTopicDetail() {
           >
             {materialForm === "add" && (
               <MaterialForm
-                topicId={topicId}
+                topicId={topicRowId}
+                progressId={progressId}
+                sectionId={sectionId}
                 onSaved={handleSaved(setMaterialForm)}
                 onCancel={() => setMaterialForm(null)}
               />
@@ -669,6 +714,7 @@ export default function StaffTopicDetail() {
         onSaved={() => { setEditTopicOpen(false); load(); }}
         topic={topic}
         classPlanId={classPlanId}
+        sectionId={sectionId || ""}
         prefillChapterTitle={topic.chapter_title ?? ""}
         prefillChapterNumber={topic.chapter_number ?? null}
         existingTopicsCount={existingTopicsCount}

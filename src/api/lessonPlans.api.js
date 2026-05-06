@@ -187,39 +187,79 @@ export async function uploadLessonPlanFile(file, lessonPlanId) {
 
 // ─── Class Plan normalizers ───────────────────────────────────────────────────
 
-function normalizeClassPlanTopic(raw) {
-  if (!raw || typeof raw !== "object") return raw;
-  const normalizeItem = (item) => ({
+function normalizeItem(item) {
+  return {
     ...item,
     due_date: item.dueDate ?? item.due_date ?? null,
     file_url: item.fileUrl ?? item.file_url ?? null,
     file_name: item.fileName ?? item.file_name ?? null,
     generated_by_ai: item.generatedByAi ?? item.generated_by_ai ?? false,
-  });
+  };
+}
+
+/**
+ * Row id for a class-plan topic (used in `/class-plan-topics/:id` and `.../progress`).
+ * @param {object|null|undefined} topic
+ * @returns {string|null}
+ */
+export function classPlanTopicRowId(topic) {
+  if (!topic || typeof topic !== "object") return null;
+  const id = topic.id ?? topic.classPlanTopicId ?? topic.class_plan_topic_id;
+  return id != null && String(id) !== "" ? String(id) : null;
+}
+
+function normalizeProgressRecord(raw) {
+  if (!raw || typeof raw !== "object") return raw;
   return {
     ...raw,
-    chapter_title: raw.chapterTitle ?? raw.chapter_title ?? "",
-    chapter_number: raw.chapterNumber ?? raw.chapter_number ?? null,
-    display_order: raw.displayOrder ?? raw.display_order ?? 0,
+    status: raw.status ?? "PENDING",
     scheduled_date: raw.scheduledDate ?? raw.scheduled_date ?? null,
     completed_on: raw.completedOn ?? raw.completed_on ?? null,
     actual_duration_mins: raw.actualDurationMins ?? raw.actual_duration_mins ?? null,
     teacher_notes: raw.teacherNotes ?? raw.teacher_notes ?? null,
     is_added_by_teacher: raw.isAddedByTeacher ?? raw.is_added_by_teacher ?? false,
-    class_plan_id: raw.classPlanId ?? raw.class_plan_id,
     assignments: (raw.assignments ?? []).map(normalizeItem),
     quizzes: (raw.quizzes ?? []).map(normalizeItem),
     materials: (raw.materials ?? raw.study_materials ?? []).map(normalizeItem),
   };
 }
 
-function normalizeClassPlan(raw) {
+function normalizeClassPlanTopic(raw) {
   if (!raw || typeof raw !== "object") return raw;
+  const progress = Array.isArray(raw.progress) ? raw.progress.map(normalizeProgressRecord) : [];
+  const primary = progress[0] ?? null;
+  const rowId = raw.id ?? raw.classPlanTopicId ?? raw.class_plan_topic_id;
   return {
     ...raw,
+    id: rowId,
+    chapter_title: raw.chapterTitle ?? raw.chapter_title ?? "",
+    chapter_number: raw.chapterNumber ?? raw.chapter_number ?? null,
+    display_order: raw.displayOrder ?? raw.display_order ?? 0,
+    class_plan_id: raw.classPlanId ?? raw.class_plan_id,
+    progress,
+    progress_id: primary?.id ?? null,
+    status: primary?.status ?? raw.status ?? "PENDING",
+    scheduled_date: primary?.scheduled_date ?? raw.scheduledDate ?? raw.scheduled_date ?? null,
+    completed_on: primary?.completed_on ?? raw.completedOn ?? raw.completed_on ?? null,
+    actual_duration_mins: primary?.actual_duration_mins ?? raw.actualDurationMins ?? raw.actual_duration_mins ?? null,
+    teacher_notes: primary?.teacher_notes ?? raw.teacherNotes ?? raw.teacher_notes ?? null,
+    is_added_by_teacher: primary?.is_added_by_teacher ?? raw.isAddedByTeacher ?? raw.is_added_by_teacher ?? false,
+    assignments: primary?.assignments ?? (raw.assignments ?? []).map(normalizeItem),
+    quizzes: primary?.quizzes ?? (raw.quizzes ?? []).map(normalizeItem),
+    materials: primary?.materials ?? (raw.materials ?? raw.study_materials ?? []).map(normalizeItem),
+  };
+}
+
+function normalizeClassPlan(raw) {
+  if (!raw || typeof raw !== "object") return raw;
+  const rowId = raw.id ?? raw.classPlanId ?? raw.class_plan_id;
+  return {
+    ...raw,
+    id: rowId,
     master_plan_id: raw.masterPlanId ?? raw.master_plan_id ?? null,
     campus_id: raw.campusId ?? raw.campus_id,
     teacher_id: raw.teacherId ?? raw.teacher_id,
+    class_id: raw.classId ?? raw.class_id,
     class_name: raw.className ?? raw.class_name,
     academic_year: raw.academicYear ?? raw.academic_year,
     is_published: raw.isPublished ?? raw.is_published ?? false,
@@ -243,15 +283,19 @@ export async function listClassPlans(params) {
 
 /**
  * @param {string} classPlanId
+ * @param {{ section_id?: string }} [options] Optional query: filter topic progress to this section
  */
-export async function getClassPlanById(classPlanId) {
-  const response = await api.get(`/class-plans/${classPlanId}`);
+export async function getClassPlanById(classPlanId, options = {}) {
+  const section_id = options.section_id;
+  const params =
+    section_id != null && String(section_id).trim() !== "" ? { section_id: String(section_id).trim() } : undefined;
+  const response = await api.get(`/class-plans/${classPlanId}`, { params });
   const d = response.data?.data ?? response.data;
   return d != null ? normalizeClassPlan(d) : d;
 }
 
 /**
- * @param {{ campus_id: string, teacher_id: string, class_id: string, section_id?: string, subject: string, academic_year: string, master_plan_id?: string, is_published?: boolean, topics?: object[] }} body
+ * @param {{ campus_id: string, teacher_id: string, class_id: string, subject: string, academic_year: string, master_plan_id?: string, is_published?: boolean, topics?: object[] }} body
  */
 export async function createClassPlan(body) {
   const response = await api.post("/class-plans", body);
@@ -261,7 +305,7 @@ export async function createClassPlan(body) {
 
 /**
  * @param {string} classPlanId
- * @param {{ class_id?: string, section_id?: string, subject?: string, academic_year?: string, is_published?: boolean, master_plan_id?: string | null }} body
+ * @param {{ class_id?: string, subject?: string, academic_year?: string, is_published?: boolean, master_plan_id?: string | null }} body
  */
 export async function updateClassPlan(classPlanId, body) {
   const response = await api.patch(`/class-plans/${classPlanId}`, body);
@@ -279,7 +323,7 @@ export async function deleteClassPlan(classPlanId) {
 
 /**
  * Seed a class plan from a master plan.
- * @param {{ board: string, subject: string, section_id: string, academic_year: string, campus_id: string, teacher_id: string, is_published?: boolean }} body
+ * @param {{ board: string, subject: string, class_id: string, academic_year: string, campus_id: string, teacher_id: string, is_published?: boolean }} body
  */
 export async function seedClassPlanFromMaster(body) {
   const response = await api.post("/class-plans/seed-from-master", body);
@@ -300,16 +344,17 @@ export async function cloneLessonPlan(body) {
 
 /**
  * @param {string} classPlanId
- * @param {Array<{ chapter_title: string, chapter_number?: number, title: string, display_order: number, status?: string, scheduled_date?: string, teacher_notes?: string, is_added_by_teacher?: boolean }>} topics
+ * @param {Array<{ chapter_title: string, chapter_number?: number, title: string, display_order: number }>} topics
  */
 export async function addClassPlanTopics(classPlanId, topics) {
   const response = await api.post(`/class-plans/${classPlanId}/topics`, { topics });
-  return response.data?.data ?? response.data;
+  const d = response.data?.data ?? response.data;
+  return d != null ? normalizeClassPlan(d) : d;
 }
 
 /**
  * @param {string} topicId
- * @param {{ chapter_title?: string, chapter_number?: number | null, title?: string, display_order?: number, status?: string, scheduled_date?: string | null, completed_on?: string | null, actual_duration_mins?: number | null, teacher_notes?: string | null, is_added_by_teacher?: boolean }} body
+ * @param {{ chapter_title?: string, chapter_number?: number | null, title?: string, display_order?: number }} body
  */
 export async function updateClassPlanTopic(topicId, body) {
   const response = await api.patch(`/class-plan-topics/${topicId}`, body);
@@ -324,14 +369,55 @@ export async function deleteClassPlanTopic(topicId) {
   return response.data?.data ?? response.data;
 }
 
+// ─── Topic Progress ───────────────────────────────────────────────────────────
+
+function omitNullish(obj) {
+  if (!obj || typeof obj !== "object") return {};
+  const out = { ...obj };
+  for (const k of Object.keys(out)) {
+    if (out[k] === null || out[k] === undefined) delete out[k];
+  }
+  return out;
+}
+
+/**
+ * POST progress — body must include `section_id` (required by API). Null optionals omitted; PATCH allows nulls.
+ * @param {string} topicId
+ * @param {{ section_id: string, status?: string, scheduled_date?: string, completed_on?: string, actual_duration_mins?: number, teacher_notes?: string, is_added_by_teacher?: boolean }} body
+ */
+export async function createTopicProgress(topicId, body = {}) {
+  if (!body.section_id || String(body.section_id).trim() === "") {
+    throw new Error("createTopicProgress requires section_id");
+  }
+  const response = await api.post(`/class-plan-topics/${topicId}/progress`, omitNullish(body));
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} progressId
+ * @param {{ status?: string, scheduled_date?: string | null, completed_on?: string | null, actual_duration_mins?: number | null, teacher_notes?: string | null, is_added_by_teacher?: boolean }} body
+ */
+export async function updateTopicProgress(progressId, body) {
+  const response = await api.patch(`/class-plan-topic-progress/${progressId}`, body);
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {string} progressId
+ */
+export async function deleteTopicProgress(progressId) {
+  const response = await api.delete(`/class-plan-topic-progress/${progressId}`);
+  return response.data?.data ?? response.data;
+}
+
 // ─── Materials ────────────────────────────────────────────────────────────────
 
 /**
- * @param {string} topicId
+ * @param {string} progressId
  * @param {{ file_name: string, file_url: string }} body
  */
-export async function addTopicMaterial(topicId, body) {
-  const response = await api.post(`/class-plan-topics/${topicId}/materials`, body);
+export async function addTopicMaterial(progressId, body) {
+  const response = await api.post(`/class-plan-topic-progress/${progressId}/materials`, body);
   return response.data?.data ?? response.data;
 }
 
@@ -346,11 +432,11 @@ export async function deleteTopicMaterial(materialId) {
 // ─── Assignments ──────────────────────────────────────────────────────────────
 
 /**
- * @param {string} topicId
+ * @param {string} progressId
  * @param {{ title: string, due_date?: string, file_url?: string, status?: "DRAFT"|"PUBLISHED"|"CLOSED" }} body
  */
-export async function addTopicAssignment(topicId, body) {
-  const response = await api.post(`/class-plan-topics/${topicId}/assignments`, body);
+export async function addTopicAssignment(progressId, body) {
+  const response = await api.post(`/class-plan-topic-progress/${progressId}/assignments`, body);
   return response.data?.data ?? response.data;
 }
 
@@ -374,11 +460,11 @@ export async function deleteTopicAssignment(assignmentId) {
 // ─── Quizzes ──────────────────────────────────────────────────────────────────
 
 /**
- * @param {string} topicId
+ * @param {string} progressId
  * @param {{ title: string, generated_by_ai?: boolean, file_url?: string }} body
  */
-export async function addTopicQuiz(topicId, body) {
-  const response = await api.post(`/class-plan-topics/${topicId}/quizzes`, body);
+export async function addTopicQuiz(progressId, body) {
+  const response = await api.post(`/class-plan-topic-progress/${progressId}/quizzes`, body);
   return response.data?.data ?? response.data;
 }
 

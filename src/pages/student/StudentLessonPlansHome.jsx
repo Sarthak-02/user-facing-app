@@ -126,8 +126,10 @@ export default function StudentLessonPlansHome() {
 
         if (campusId) {
           try {
+            const studentSectionId = auth.sections?.[0]?.value;
             const classPlans = await listClassPlans({
               campus_id: campusId,
+              ...(studentSectionId ? { section_id: studentSectionId } : {}),
               is_published: true,
               limit: 100,
             });
@@ -160,7 +162,7 @@ export default function StudentLessonPlansHome() {
     else setLoading(false);
 
     return () => { cancelled = true; };
-  }, [auth.userId, auth.campus_id]);
+  }, [auth.userId, auth.campus_id, auth.sections?.[0]?.value]);
 
   useEffect(() => {
     if (!loading && subjects.length === 1) {

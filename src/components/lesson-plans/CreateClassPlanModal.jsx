@@ -8,13 +8,12 @@ import { useTranslation } from "react-i18next";
  *   open: boolean,
  *   onClose: () => void,
  *   onCreated: (plan: object) => void,
- *   context: { teacherId: string, campusId: string, className: string, subjectName: string, academicYear: string },
+ *   context: { teacherId: string, campusId: string, classId: string, className?: string, subjectName: string, academicYear: string },
  * }} props
  */
 export default function CreateClassPlanModal({ open, onClose, onCreated, context }) {
   const { t } = useTranslation();
   const [subject, setSubject] = useState("");
-  const [className, setClassName] = useState("");
   const [academicYear, setAcademicYear] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -22,7 +21,6 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
   useEffect(() => {
     if (!open) return;
     setSubject(context.subjectName || "");
-    setClassName(context.className || "");
     setAcademicYear(context.academicYear || "");
     setError("");
   }, [open, context]);
@@ -30,14 +28,14 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
   const handleSave = async (isPublished) => {
     setError("");
     if (!subject.trim()) { setError(t("lessonPlans.createModal.errorSubjectRequired")); return; }
-    if (!className.trim()) { setError(t("lessonPlans.createModal.errorClassRequired")); return; }
+    if (!context.classId) { setError(t("lessonPlans.createModal.errorFailed")); return; }
     if (!academicYear.trim()) { setError(t("lessonPlans.createModal.errorAcademicYearRequired")); return; }
     setSubmitting(true);
     try {
       const plan = await createClassPlan({
         campus_id: context.campusId,
         teacher_id: context.teacherId,
-        class_name: className.trim(),
+        class_id: context.classId,
         subject: subject.trim(),
         academic_year: academicYear.trim(),
         is_published: isPublished,
@@ -68,15 +66,12 @@ export default function CreateClassPlanModal({ open, onClose, onCreated, context
             required
           />
         </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.createModal.class")}</label>
-          <Input
-            value={className}
-            onChange={(e) => setClassName(e.target.value)}
-            placeholder={t("lessonPlans.createModal.classPlaceholder")}
-            required
-          />
-        </div>
+        {context.className ? (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.createModal.class")}</label>
+            <p className="rounded-lg border border-border bg-gray-50 px-3 py-2 text-sm text-gray-800">{context.className}</p>
+          </div>
+        ) : null}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-900">{t("lessonPlans.createModal.academicYear")}</label>
           <Input

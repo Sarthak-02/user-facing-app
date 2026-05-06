@@ -18,7 +18,7 @@ function getCurrentAcademicYear() {
  *   open: boolean,
  *   onClose: () => void,
  *   onSeeded: (plan: object) => void,
- *   context: { teacherId: string, campusId: string, sectionId: string, subjectName: string, academicYear: string },
+ *   context: { teacherId: string, campusId: string, classId: string, subjectName: string, academicYear: string },
  * }} props
  */
 export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
@@ -43,12 +43,16 @@ export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
     if (!board.trim()) { setError(t("lessonPlans.masterPlan.errorBoardRequired")); return; }
     if (!subject.trim()) { setError(t("lessonPlans.masterPlan.errorSubjectRequired")); return; }
     if (!academicYear.trim()) { setError(t("lessonPlans.masterPlan.errorYearRequired")); return; }
+    if (!context.classId) {
+      setError(t("lessonPlans.masterPlan.errorFailed"));
+      return;
+    }
     setSeeding(true);
     try {
       const plan = await seedClassPlanFromMaster({
         board: board.trim(),
         subject: subject.trim(),
-        section_id: context.sectionId,
+        class_id: context.classId,
         academic_year: academicYear.trim(),
         campus_id: context.campusId,
         teacher_id: context.teacherId,

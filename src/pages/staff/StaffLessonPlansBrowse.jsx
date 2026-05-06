@@ -9,6 +9,7 @@ import {
   deleteClassPlanTopic,
   createClassPlan,
   updateClassPlan,
+  classPlanTopicRowId,
 } from "../../api/lessonPlans.api";
 import TopicFormModal from "../../components/lesson-plans/TopicFormModal";
 import MasterPlanModal from "../../components/lesson-plans/MasterPlanModal";
@@ -103,11 +104,13 @@ function TopicRow({ topic, classPlanId, sectionId, subjectId, onEdit, onDelete }
       <button
         type="button"
         className="flex min-w-0 flex-1 flex-col text-left"
-        onClick={() =>
+        onClick={() => {
+          const tid = classPlanTopicRowId(topic);
+          if (!tid) return;
           navigate(
-            `/staff/lesson-plans/section/${sectionId}/subject/${subjectId}/plan/${classPlanId}/topic/${topic.id}`
-          )
-        }
+            `/staff/lesson-plans/section/${sectionId}/subject/${subjectId}/plan/${classPlanId}/topic/${tid}`,
+          );
+        }}
       >
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-medium text-gray-900 leading-snug">{topic.title}</p>
@@ -288,8 +291,11 @@ export default function StaffLessonPlansBrowse() {
   );
 
   const fetchClassPlan = useCallback(async () => {
-    if (!permissions.teacher_id || !subjectName) {
+    if (!permissions.teacher_id || !subjectName || !classId) {
       setLoading(false);
+      if (!classId && permissions.teacher_id && subjectName) {
+        setLoadError(t("lessonPlansBrowse.failedToLoadClassPlan"));
+      }
       return;
     }
     setLoading(true);
@@ -299,6 +305,7 @@ export default function StaffLessonPlansBrowse() {
         teacher_id: permissions.teacher_id,
         campus_id: auth.campus_id || undefined,
         subject: subjectName,
+        class_id: classId,
         section_id: sectionId || undefined,
         academic_year: academicYear,
         limit: 1,
@@ -319,13 +326,12 @@ export default function StaffLessonPlansBrowse() {
     } finally {
       setLoading(false);
     }
-  }, [permissions.teacher_id, auth.campus_id, subjectName, sectionId, academicYear, t]);
+  }, [permissions.teacher_id, auth.campus_id, subjectName, classId, sectionId, academicYear, t]);
 
   useEffect(() => { fetchClassPlan(); }, [fetchClassPlan]);
 
   const goBack = () => {
-    if (subjectsInSection.length > 1) navigate(`/staff/lesson-plans/section/${sectionId}`);
-    else if ((permissions.sections || []).length > 1) navigate("/staff/lesson-plans");
+    if ((permissions.sections || []).length > 0) navigate("/staff/lesson-plans");
     else navigate("/home");
   };
 
@@ -358,12 +364,16 @@ export default function StaffLessonPlansBrowse() {
   };
 
   const handleCreateBlankPlan = async () => {
+    if (!context.classId) {
+      console.error("createClassPlan requires class_id");
+      return;
+    }
     setCreatingPlan(true);
     try {
       const plan = await createClassPlan({
         campus_id: context.campusId,
         teacher_id: context.teacherId,
-        section_id: context.sectionId,
+        class_id: context.classId,
         subject: context.subjectName,
         academic_year: context.academicYear,
         is_published: false,
@@ -536,6 +546,7 @@ export default function StaffLessonPlansBrowse() {
         onSaved={handleTopicSaved}
         topic={editingTopic}
         classPlanId={classPlan?.id ?? null}
+        sectionId={sectionId || ""}
         prefillChapterTitle={prefillChapterTitle}
         prefillChapterNumber={prefillChapterNumber}
         lockChapter={lockChapter}
