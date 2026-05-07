@@ -10,6 +10,10 @@ export default function PWAInstallBanner() {
     const dismissed = localStorage.getItem("pwaInstallDismissed");
     if (dismissed) return;
 
+    // Only show on touch/mobile devices — coarse pointer means touchscreen
+    const isMobile = window.matchMedia("(pointer: coarse)").matches;
+    if (!isMobile) return;
+
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);

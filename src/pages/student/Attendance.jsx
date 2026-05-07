@@ -72,7 +72,7 @@ export default function StudentAttendance() {
   // Fetch attendance data once on mount
   useEffect(() => {
     const fetchAttendance = async () => {
-      if (!auth.userId || !auth.sections[0]?.value) {
+      if (!auth.userId || !auth.sections?.section_id) {
         console.warn("Missing required data: student_id or section_id");
         return;
       }
@@ -83,7 +83,7 @@ export default function StudentAttendance() {
       try {
         const params = {
           student_id: auth.userId,
-          section_id: auth.sections[0]?.value,
+          section_id: auth.sections?.section_id,
           start_date: auth.campus.term_start_date,
           end_date: auth.campus.term_end_date,
         };

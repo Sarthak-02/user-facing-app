@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button, TextField } from "../ui-components";
-import { loginApi, fetchTeacherPermissions } from "../api/auth.api";
+import { loginApi, fetchTeacherPermissions, fetchStudentPermissions } from "../api/auth.api";
 import { useAuth } from "../store/auth.store";
 import { usePermissions } from "../store/permissions.store";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
@@ -58,11 +58,41 @@ export default function LoginPage() {
           const permissionsResponse = await fetchTeacherPermissions(data.userid);
 
           if (permissionsResponse?.success && permissionsResponse?.data) {
-            setPermissions(permissionsResponse.data);
+            const permData = permissionsResponse.data;
+            setPermissions(permData);
+            setAuth({
+              ...authData,
+              campus_id: permData.campus_id || authData.campus_id,
+              details: permData.details || authData.details,
+              campus: permData.campus || authData.campus,
+              sections: permData?.sections ?? [],
+            });
           }
         } catch (permissionsErr) {
           console.error("Failed to fetch teacher permissions:", permissionsErr);
           setPermissionsError(permissionsErr?.message || t("login.permissionsFetchFailed"));
+        } finally {
+          setLoading(false);
+        }
+      } else if (data.role === "STUDENT") {
+        try {
+          setLoading(true);
+          const permissionsResponse = await fetchStudentPermissions(data.userid);
+
+          if (permissionsResponse?.success && permissionsResponse?.data) {
+            const permData = permissionsResponse.data;
+            setPermissions(permData);
+
+            setAuth({
+              ...authData,
+              campus_id: permData?.campus?.campus_id || authData.campus_id,
+              details: permData.details || authData.details,
+              campus: permData.campus || authData.campus,
+              sections:permData?.section ?? {},
+            });
+          }
+        } catch (permissionsErr) {
+          console.error("Failed to fetch student permissions:", permissionsErr);
         } finally {
           setLoading(false);
         }

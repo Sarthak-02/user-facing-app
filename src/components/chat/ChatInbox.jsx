@@ -90,7 +90,7 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
 
   useEffect(() => {
     const campusId = auth.campus_id;
-    const sectionId = auth.sections?.[0]?.value;
+    const sectionId = auth.sections?.section_id;
     if (mode !== "student" || !campusId || !sectionId) return;
     let cancelled = false;
     (async () => {

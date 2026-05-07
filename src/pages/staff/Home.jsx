@@ -5,6 +5,7 @@ import { Card } from "../../ui-components";
 import Modal from "../../ui-components/Modal";
 import Loader from "../../ui-components/Loader";
 import { useAuth } from "../../store/auth.store";
+import { usePermissions } from "../../store/permissions.store";
 import {
   postTeacherSummary,
   unwrapTeacherSummaryResponse,
@@ -344,8 +345,8 @@ function subjectsFromSummaryPayload(payload) {
 
 function normalizeSectionIds(sections) {
   return (sections || [])
-    .map((s) => (typeof s === "string" ? s : s?.value))
-    .filter((id) => typeof id === "string" && id.length > 0);
+    .map((s) => s.section_id)
+    
 }
 
 function homeworkUrgency(dueDate) {
@@ -419,6 +420,7 @@ function QuickStat({ icon, label, value, colorClass, onClick, hint }) {
 
 export default function StaffHome() {
   const { auth } = useAuth();
+  const { isFeatureEnabled } = usePermissions();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [summaryPayload, setSummaryPayload] = useState(null);
@@ -443,8 +445,46 @@ export default function StaffHome() {
   const campusId = auth.campus_id;
   const teacherId = auth.userId;
   const teacherSections = useMemo(() => normalizeSectionIds(auth.sections), [auth.sections]);
-
   const canFetch = Boolean(campusId && teacherId && teacherSections.length > 0);
+
+  const staffQuickNav = useMemo(
+    () =>
+      [
+        {
+          to: "/staff/attendance",
+          icon: UserCheck,
+          labelKey: "home.staff.quickNav.attendance",
+          color: "text-sky-600 bg-sky-50",
+          feature: "staff_attendance_mark",
+        },
+        {
+          to: "/staff/homework",
+          icon: ClipboardList,
+          labelKey: "home.staff.quickNav.homework",
+          color: "text-amber-600 bg-amber-50",
+          feature: "staff_homework",
+        },
+        {
+          to: "/staff/lesson-plans",
+          icon: Layers,
+          labelKey: "home.staff.quickNav.lessonPlans",
+          color: "text-emerald-600 bg-emerald-50",
+          feature: "staff_lesson_plans",
+        },
+        {
+          to: "/staff/exams",
+          icon: BookOpen,
+          labelKey: "home.staff.quickNav.exams",
+          color: "text-violet-600 bg-violet-50",
+          feature: "staff_exams",
+        },
+      ].filter((item) => isFeatureEnabled(item.feature)),
+    [isFeatureEnabled]
+  );
+
+  const lessonPlansEnabled = isFeatureEnabled("staff_lesson_plans");
+  const homeworkEnabled = isFeatureEnabled("staff_homework");
+  const messagesEnabled = isFeatureEnabled("staff_messages");
 
   const loadSummary = useCallback(async () => {
     if (!campusId || !teacherId || teacherSections.length === 0) {
@@ -683,36 +723,33 @@ export default function StaffHome() {
           </div>
 
           {/* Messages quick link */}
-          <button
-            type="button"
-            onClick={() => navigate("/staff/chat")}
-            className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-[0.99]"
-          >
-            <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600">
-              <MessageCircle size={16} />
-              {messagesUnreadTotal > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[9px] font-bold text-white">
-                  {messagesUnreadTotal > 9 ? t("common.unreadOverflow") : messagesUnreadTotal}
-                </span>
-              ) : null}
-            </span>
-            <div className="min-w-0 flex-1 text-left">
-              <p className="text-sm font-semibold text-gray-900">{t("home.staff.messages.title")}</p>
-              <p className="text-xs text-gray-400">
-                {messagesUnreadTotal > 0 ? t("home.staff.messages.unread", { count: messagesUnreadTotal }) : t("home.staff.messages.noNew")}
-              </p>
-            </div>
-            <ChevronRight size={16} className="shrink-0 text-gray-400" />
-          </button>
+          {messagesEnabled ? (
+            <button
+              type="button"
+              onClick={() => navigate("/staff/chat")}
+              className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-[0.99]"
+            >
+              <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600">
+                <MessageCircle size={16} />
+                {messagesUnreadTotal > 0 ? (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[9px] font-bold text-white">
+                    {messagesUnreadTotal > 9 ? t("common.unreadOverflow") : messagesUnreadTotal}
+                  </span>
+                ) : null}
+              </span>
+              <div className="min-w-0 flex-1 text-left">
+                <p className="text-sm font-semibold text-gray-900">{t("home.staff.messages.title")}</p>
+                <p className="text-xs text-gray-400">
+                  {messagesUnreadTotal > 0 ? t("home.staff.messages.unread", { count: messagesUnreadTotal }) : t("home.staff.messages.noNew")}
+                </p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-gray-400" />
+            </button>
+          ) : null}
 
           {/* Quick nav links */}
           <div className="grid grid-cols-2 gap-2.5">
-            {[
-              { to: "/staff/attendance", icon: UserCheck, labelKey: "home.staff.quickNav.attendance", color: "text-sky-600 bg-sky-50" },
-              { to: "/staff/homework", icon: ClipboardList, labelKey: "home.staff.quickNav.homework", color: "text-amber-600 bg-amber-50" },
-              { to: "/staff/lesson-plans", icon: Layers, labelKey: "home.staff.quickNav.lessonPlans", color: "text-emerald-600 bg-emerald-50" },
-              { to: "/staff/exams", icon: BookOpen, labelKey: "home.staff.quickNav.exams", color: "text-violet-600 bg-violet-50" },
-            ].map(({ to, icon, labelKey, color }) => (
+            {staffQuickNav.map(({ to, icon, labelKey, color }) => (
               <Link
                 key={to}
                 to={to}
@@ -802,7 +839,7 @@ export default function StaffHome() {
           <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
             {subjects.map((s) => {
               const lessonPlansHref =
-                s.subjectId && s.sectionIds.length === 1
+                lessonPlansEnabled && s.subjectId && s.sectionIds.length === 1
                   ? `/staff/lesson-plans/section/${s.sectionIds[0]}/subject/${s.subjectId}`
                   : null;
               const inner = (
@@ -846,14 +883,16 @@ export default function StaffHome() {
             })}
           </ul>
         )}
-        <Link
-          to="/staff/lesson-plans"
-          onClick={() => setIsSubjectsModalOpen(false)}
-          className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
-        >
-          {t("home.staff.allLessonPlans")}
-          <ChevronRight size={14} />
-        </Link>
+        {lessonPlansEnabled ? (
+          <Link
+            to="/staff/lesson-plans"
+            onClick={() => setIsSubjectsModalOpen(false)}
+            className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
+          >
+            {t("home.staff.allLessonPlans")}
+            <ChevronRight size={14} />
+          </Link>
+        ) : null}
       </Modal>
 
       {/* Homework modal */}
@@ -870,19 +909,15 @@ export default function StaffHome() {
             {upcomingHomework.map((h) => {
               const urgency = homeworkUrgency(h.dueDate || h.due_date);
               const days = daysUntil(h.dueDate || h.due_date);
-              return (
-                <li key={h.id}>
-                  <Link
-                    to={`/staff/homework/${h.id}`}
-                    onClick={() => setIsHomeworkModalOpen(false)}
-                    className={`block rounded-lg border p-3 transition-all ${
-                      urgency === "urgent"
-                        ? "border-red-200 bg-red-50/60 hover:border-red-300"
-                        : urgency === "soon"
-                          ? "border-amber-200 bg-amber-50/60 hover:border-amber-300"
-                          : "border-gray-100 hover:border-primary-300 hover:bg-primary-50/50"
-                    }`}
-                  >
+              const cardClass = `block rounded-lg border p-3 transition-all ${
+                urgency === "urgent"
+                  ? "border-red-200 bg-red-50/60 hover:border-red-300"
+                  : urgency === "soon"
+                    ? "border-amber-200 bg-amber-50/60 hover:border-amber-300"
+                    : "border-gray-100 hover:border-primary-300 hover:bg-primary-50/50"
+              }`;
+              const cardBody = (
+                <>
                     <span
                       className={`inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                         urgency === "urgent"
@@ -919,20 +954,36 @@ export default function StaffHome() {
                         {formatShortDue(h.dueDate || h.due_date, i18n.language)}
                       </p>
                     </div>
-                  </Link>
+                </>
+              );
+              return (
+                <li key={h.id}>
+                  {homeworkEnabled ? (
+                    <Link
+                      to={`/staff/homework/${h.id}`}
+                      onClick={() => setIsHomeworkModalOpen(false)}
+                      className={cardClass}
+                    >
+                      {cardBody}
+                    </Link>
+                  ) : (
+                    <div className={cardClass}>{cardBody}</div>
+                  )}
                 </li>
               );
             })}
           </ul>
         )}
-        <Link
-          to="/staff/homework"
-          onClick={() => setIsHomeworkModalOpen(false)}
-          className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-amber-200 bg-amber-50 py-2 text-sm font-bold text-amber-700 hover:bg-amber-100"
-        >
-          {t("home.staff.viewAllHomework")}
-          <ChevronRight size={14} />
-        </Link>
+        {homeworkEnabled ? (
+          <Link
+            to="/staff/homework"
+            onClick={() => setIsHomeworkModalOpen(false)}
+            className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-amber-200 bg-amber-50 py-2 text-sm font-bold text-amber-700 hover:bg-amber-100"
+          >
+            {t("home.staff.viewAllHomework")}
+            <ChevronRight size={14} />
+          </Link>
+        ) : null}
       </Modal>
 
       {/* Announcements modal */}

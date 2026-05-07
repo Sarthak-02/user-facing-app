@@ -49,7 +49,7 @@ export const routes = [
     path: "/login",
     element: (
       <PublicRoute>
-        <LoginPage />{" "}
+        <LoginPage />
       </PublicRoute>
     ),
   },
@@ -63,20 +63,20 @@ export const routes = [
     children: [
       { index: true, element: <Home /> },
       { path: "home", element: <Home /> },
-      
-      // Teacher/Staff routes
-      { 
-        path: "staff/profile", 
+
+      // ── Staff / Teacher routes ────────────────────────────────────────────
+      {
+        path: "staff/profile",
         element: (
           <RoleBasedRoute allowedRoles={["teacher", "staff", "admin"]}>
             <StaffProfile />
           </RoleBasedRoute>
-        )
+        ),
       },
       {
         path: "staff/attendance/section/:sectionId/history",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_attendance_mark">
             <StaffAttendanceSection readOnly />
           </RoleBasedRoute>
         ),
@@ -84,7 +84,7 @@ export const routes = [
       {
         path: "staff/attendance/section/:sectionId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_attendance_mark">
             <StaffAttendanceSection />
           </RoleBasedRoute>
         ),
@@ -92,7 +92,7 @@ export const routes = [
       {
         path: "staff/attendance",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_attendance_mark">
             <StaffAttendanceHome />
           </RoleBasedRoute>
         ),
@@ -100,7 +100,7 @@ export const routes = [
       {
         path: "staff/homework/section/:sectionId/subject/:subjectId/student/:studentId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_homework">
             <TeacherHomework />
           </RoleBasedRoute>
         ),
@@ -108,7 +108,7 @@ export const routes = [
       {
         path: "staff/homework/section/:sectionId/subject/:subjectId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_homework">
             <TeacherHomework />
           </RoleBasedRoute>
         ),
@@ -120,7 +120,7 @@ export const routes = [
       {
         path: "staff/homework/section/:sectionId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_homework">
             <StaffHomeworkSubjectPick />
           </RoleBasedRoute>
         ),
@@ -128,7 +128,7 @@ export const routes = [
       {
         path: "staff/homework",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_homework">
             <StaffHomeworkHome />
           </RoleBasedRoute>
         ),
@@ -136,7 +136,7 @@ export const routes = [
       {
         path: "staff/homework/:homeworkId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_homework">
             <TeacherHomeworkDetail />
           </RoleBasedRoute>
         ),
@@ -144,7 +144,7 @@ export const routes = [
       {
         path: "staff/lesson-plans/section/:sectionId/subject/:subjectId/plan/:classPlanId/topic/:topicId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_lesson_plans">
             <StaffTopicDetail />
           </RoleBasedRoute>
         ),
@@ -152,7 +152,7 @@ export const routes = [
       {
         path: "staff/lesson-plans/section/:sectionId/subject/:subjectId/plan/:planId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_lesson_plans">
             <StaffLessonPlanDetail />
           </RoleBasedRoute>
         ),
@@ -160,7 +160,7 @@ export const routes = [
       {
         path: "staff/lesson-plans/section/:sectionId/subject/:subjectId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_lesson_plans">
             <StaffLessonPlansBrowse />
           </RoleBasedRoute>
         ),
@@ -168,7 +168,7 @@ export const routes = [
       {
         path: "staff/lesson-plans/section/:sectionId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_lesson_plans">
             <StaffLessonPlansSubjectPick />
           </RoleBasedRoute>
         ),
@@ -176,39 +176,39 @@ export const routes = [
       {
         path: "staff/lesson-plans",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_lesson_plans">
             <StaffLessonPlansHome />
           </RoleBasedRoute>
         ),
       },
-      { 
-        path: "staff/exams", 
+      {
+        path: "staff/exams",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_exams">
             <Exams />
           </RoleBasedRoute>
-        )
+        ),
       },
-      { 
-        path: "staff/exams/:examId", 
+      {
+        path: "staff/exams/:examId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_exams">
             <ExamDetail />
           </RoleBasedRoute>
-        )
+        ),
       },
-      { 
-        path: "staff/exams/:examId/enter-marks", 
+      {
+        path: "staff/exams/:examId/enter-marks",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_exams">
             <EnterMarks />
           </RoleBasedRoute>
-        )
+        ),
       },
       {
         path: "staff/chat",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_messages">
             <StaffMessages />
           </RoleBasedRoute>
         ),
@@ -216,41 +216,65 @@ export const routes = [
       {
         path: "staff/chat/:conversationId",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_messages">
             <StaffMessages />
           </RoleBasedRoute>
         ),
       },
-      { 
-        path: "broadcast", 
+      {
+        path: "staff/pickup",
         element: (
-          <RoleBasedRoute allowedRoles={["admin","teacher","staff"]}>
+          <RoleBasedRoute allowedRoles={["teacher", "staff", "admin"]} requiredFeature="staff_pickup">
+            <StaffPickup />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/reporting",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_reporting">
+            <StaffReportingHome />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/reporting/section/:sectionId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_reporting">
+            <TeacherReporting />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "broadcast",
+        element: (
+          <RoleBasedRoute allowedRoles={["admin", "teacher", "staff"]} requiredFeature="staff_broadcast">
             <BroadcastNotification />
           </RoleBasedRoute>
-        )
+        ),
       },
-      
-      // Student routes
-      { 
-        path: "student/profile", 
+
+      // ── Student routes ────────────────────────────────────────────────────
+      {
+        path: "student/profile",
         element: (
           <RoleBasedRoute allowedRoles={["student"]}>
             <StudentProfile />
           </RoleBasedRoute>
-        )
+        ),
       },
-      { 
-        path: "student/attendance", 
+      {
+        path: "student/attendance",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_attendance_view">
             <StudentAttendance />
           </RoleBasedRoute>
-        )
+        ),
       },
       {
         path: "student/homework/subject/:subjectId",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_homework">
             <StudentHomeworkBrowse />
           </RoleBasedRoute>
         ),
@@ -262,7 +286,7 @@ export const routes = [
       {
         path: "student/homework",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_homework">
             <StudentHomeworkSubjectHome />
           </RoleBasedRoute>
         ),
@@ -270,7 +294,7 @@ export const routes = [
       {
         path: "student/homework/:homeworkId",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_homework">
             <HomeworkDetail />
           </RoleBasedRoute>
         ),
@@ -278,7 +302,7 @@ export const routes = [
       {
         path: "student/lesson-plans/subject/:subjectId/topic/:topicId",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_lesson_plans">
             <StudentTopicDetail />
           </RoleBasedRoute>
         ),
@@ -286,7 +310,7 @@ export const routes = [
       {
         path: "student/lesson-plans/subject/:subjectId",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_lesson_plans">
             <StudentLessonPlansBrowse />
           </RoleBasedRoute>
         ),
@@ -294,7 +318,7 @@ export const routes = [
       {
         path: "student/lesson-plans",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_lesson_plans">
             <StudentLessonPlansHome />
           </RoleBasedRoute>
         ),
@@ -302,7 +326,7 @@ export const routes = [
       {
         path: "student/announcements",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_announcements">
             <Announcements />
           </RoleBasedRoute>
         ),
@@ -310,39 +334,39 @@ export const routes = [
       {
         path: "student/announcements/:announcementId",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_announcements">
             <AnnouncementDetail />
           </RoleBasedRoute>
         ),
       },
-      { 
-        path: "student/exams", 
+      {
+        path: "student/exams",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_exams">
             <StudentExams />
           </RoleBasedRoute>
-        )
+        ),
       },
-      { 
-        path: "student/exams/:examId", 
+      {
+        path: "student/exams/:examId",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_exams">
             <StudentExamDetail />
           </RoleBasedRoute>
-        )
+        ),
       },
       {
         path: "student/study",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_study_ai">
             <StudyChat />
           </RoleBasedRoute>
-        )
+        ),
       },
       {
         path: "student/chat",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_messages">
             <StudentMessages />
           </RoleBasedRoute>
         ),
@@ -350,7 +374,7 @@ export const routes = [
       {
         path: "student/chat/:conversationId",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_messages">
             <StudentMessages />
           </RoleBasedRoute>
         ),
@@ -358,56 +382,34 @@ export const routes = [
       {
         path: "student/reporting",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_reporting">
             <StudentReporting />
-          </RoleBasedRoute>
-        ),
-      },
-
-      {
-        path: "scholarships",
-        element: (
-          <RoleBasedRoute
-            allowedRoles={["student", "teacher", "staff", "admin"]}
-          >
-            <Scholarships />
           </RoleBasedRoute>
         ),
       },
       {
         path: "student/pickup",
         element: (
-          <RoleBasedRoute allowedRoles={["student"]}>
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_pickup">
             <StudentPickup />
           </RoleBasedRoute>
         ),
       },
+
+      // ── Shared routes ─────────────────────────────────────────────────────
       {
-        path: "staff/pickup",
+        path: "scholarships",
         element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff", "admin"]}>
-            <StaffPickup />
-          </RoleBasedRoute>
-        ),
-      },
-      {
-        path: "staff/reporting",
-        element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
-            <StaffReportingHome />
-          </RoleBasedRoute>
-        ),
-      },
-      {
-        path: "staff/reporting/section/:sectionId",
-        element: (
-          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
-            <TeacherReporting />
+          <RoleBasedRoute
+            allowedRoles={["student", "teacher", "staff", "admin"]}
+            requiredFeature={["student_scholarships", "staff_scholarships"]}
+          >
+            <Scholarships />
           </RoleBasedRoute>
         ),
       },
 
-      // Catch-all route
+      // Catch-all
       { path: "*", element: <Home /> },
     ],
   },

@@ -162,7 +162,7 @@ export default function StudentLessonPlansHome() {
     else setLoading(false);
 
     return () => { cancelled = true; };
-  }, [auth.userId, auth.campus_id, auth.sections?.[0]?.value]);
+  }, [auth.userId, auth.campus_id, auth.sections?.section_id]);
 
   useEffect(() => {
     if (!loading && subjects.length === 1) {

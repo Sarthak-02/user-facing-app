@@ -1,34 +1,36 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
+import { usePermissions } from "../../store/permissions.store";
 
 /**
- * RoleBasedRoute - Protects routes based on user role
- * @param {React.ReactNode} children - The component to render if authorized
- * @param {string[]} allowedRoles - Array of roles that can access this route
+ * RoleBasedRoute - Protects routes based on user role and optional feature flag.
+ * @param {React.ReactNode} children
+ * @param {string[]} allowedRoles
+ * @param {string|string[]} [requiredFeature] - feature_id(s); user needs at least one
  */
-export default function RoleBasedRoute({ children, allowedRoles }) {
+export default function RoleBasedRoute({ children, allowedRoles, requiredFeature }) {
   const { auth } = useAuth();
+  const { isFeatureEnabled } = usePermissions();
   const userRole = auth?.role?.toLowerCase();
 
-  // Check if user is logged in
   const isLoggedIn = localStorage.getItem("token") === "true" || true;
-  
+
   if (!isLoggedIn) {
     return <Navigate to="/login" replace />;
   }
 
-  // Check if user's role is in the allowed roles list
   if (!allowedRoles.includes(userRole)) {
-    // Redirect to appropriate home page based on role
     if (userRole === "teacher" || userRole === "staff") {
-      return <Navigate to="/staff/attendance" replace />;
+      return <Navigate to="/home" replace />;
     } else if (userRole === "student") {
-      return <Navigate to="/student/attendance" replace />;
+      return <Navigate to="/home" replace />;
     }
-    // Default fallback
     return <Navigate to="/" replace />;
   }
 
-  // User has the correct role
+  if (requiredFeature && !isFeatureEnabled(requiredFeature)) {
+    return <Navigate to="/home" replace />;
+  }
+
   return children;
 }

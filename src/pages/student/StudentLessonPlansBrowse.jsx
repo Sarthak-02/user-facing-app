@@ -111,7 +111,7 @@ export default function StudentLessonPlansBrowse() {
       setSubjectName(resolvedName);
 
       // Fetch the class plan (curriculum) for this subject
-      const studentSectionId = auth.sections?.[0]?.value;
+      const studentSectionId = auth.sections?.section_id;
       const allPlans = await listClassPlans({
         campus_id: auth.campus_id,
         ...(studentSectionId ? { section_id: studentSectionId } : {}),

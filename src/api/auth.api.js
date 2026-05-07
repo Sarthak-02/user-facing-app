@@ -38,6 +38,18 @@ export async function fetchTeacherPermissions(teacher_id) {
     }
 }
 
+export async function fetchStudentPermissions(student_id) {
+    try {
+        const resp = await api.get(`/student/permissions`, {
+            params: { student_id }
+        });
+        return resp.data;
+    } catch (err) {
+        console.log(err.response?.data);
+        throw err.response?.data || err;
+    }
+}
+
 export async function saveFCMToken({ userId, role, token }) {
     try {
         const resp = await api.post("/device-token/register", {

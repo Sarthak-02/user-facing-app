@@ -84,7 +84,7 @@ export default function StudentTopicDetail() {
     let cancelled = false;
     (async () => {
       try {
-        const sid = auth.sections?.[0]?.value;
+        const sid = auth.sections?.section_id;
         const plan = await getClassPlanById(classPlanId, sid ? { section_id: sid } : {});
         const found = (plan?.topics ?? []).find(
           (t) => String(t.id ?? t.class_plan_topic_id) === String(topicId)
@@ -100,7 +100,7 @@ export default function StudentTopicDetail() {
       }
     })();
     return () => { cancelled = true; };
-  }, [topicId, state?.classPlanId, auth.sections?.[0]?.value, t]);
+  }, [topicId, state?.classPlanId, state?.topic, auth.sections?.section_id, t]);
 
   const goBack = () => navigate(`/student/lesson-plans/subject/${subjectId}`);
 

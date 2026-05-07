@@ -847,7 +847,7 @@ export default function Reporting() {
   const { t, i18n } = useTranslation();
   const { auth } = useAuth();
   const campusId = auth.campus_id;
-  const sectionId = auth.sections?.[0]?.value;
+  const sectionId = auth.sections?.section_id;
   const unknownSubject = t("reporting.unknownSubject");
 
   const [dashboardConfig, setDashboardConfig] = useState(null);

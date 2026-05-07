@@ -300,11 +300,11 @@ export default function StudentHome() {
   }, [auth?.details?.student_first_name, t]);
 
   const receiverId = auth.userId;
-  const sectionId = auth.sections?.[0]?.value;
+  const sectionId = auth.sections?.section_id;
   const campusId = auth.campus_id;
 
   const canFetch = Boolean(receiverId && sectionId && campusId);
-
+  console.log("canfetch",receiverId,sectionId,campusId)
   const loadSummary = useCallback(async () => {
     if (!receiverId || !sectionId || !campusId) {
       setSummaryPayload(null);
