@@ -1,4 +1,4 @@
-import { LogOut, User, Phone, Mail, GraduationCap, UserCircle } from "lucide-react";
+import { LogOut, User, Phone, Mail, GraduationCap, UserCircle, ChevronDown } from "lucide-react";
 import { useAuth } from "../../store/auth.store";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -37,7 +37,8 @@ function getPageTitleKey(pathname) {
 }
 
 export default function Header() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const activeLng = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
   const auth = useAuth((state) => state.auth);
   const logout = useAuth((state) => state.logout);
   const navigate = useNavigate();
@@ -54,11 +55,9 @@ export default function Header() {
         setShowProfileDropdown(false);
       }
     }
-
     if (showProfileDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -71,11 +70,8 @@ export default function Header() {
   const handleViewProfile = () => {
     setShowProfileDropdown(false);
     const userRole = auth?.role?.toLowerCase();
-
     if (userRole === "student") {
       navigate("/student/profile");
-    } else if (userRole === "teacher" || userRole === "staff" || userRole === "admin") {
-      navigate("/staff/profile");
     } else {
       navigate("/staff/profile");
     }
@@ -85,38 +81,56 @@ export default function Header() {
     auth?.details?.name?.charAt(0) || auth?.username?.charAt(0) || "U";
 
   return (
-    <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-6 bg-surface border-b border-[var(--color-border)] sticky top-0 z-30">
+    <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-6 bg-[var(--color-surface)] border-b border-[var(--color-border)] shadow-sm sticky top-0 z-30">
+
       {/* Left: Page Title */}
-      <div className="hidden md:flex items-center gap-2 min-w-0">
+      <div className="hidden md:flex items-center gap-3 min-w-0">
         {pageTitle && (
-          <h1 className="text-lg font-semibold text-gray-900 truncate">
-            {pageTitle}
-          </h1>
+          <>
+            <span className="w-[3px] h-5 rounded-full bg-[var(--color-primary-600)] flex-shrink-0" />
+            <h1 className="text-base font-semibold text-gray-900 truncate">
+              {pageTitle}
+            </h1>
+          </>
         )}
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-3 ml-auto">
+      <div className="flex items-center gap-2 ml-auto">
         {/* Notifications */}
         <NotificationDropdown />
 
         {/* Profile */}
         <div className="relative" ref={dropdownRef}>
           <button
-            className="h-9 w-9 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-semibold hover:bg-primary-700 transition-colors ring-2 ring-primary-200 hover:ring-primary-300"
             onClick={() => setShowProfileDropdown(!showProfileDropdown)}
             aria-label={t("header.openProfileMenu")}
+            className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-gray-50 transition-colors border border-transparent hover:border-[var(--color-border)]"
           >
-            {userInitial}
+            <div className="h-8 w-8 rounded-full bg-[var(--color-primary-600)] text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
+              {userInitial}
+            </div>
+            <div className="hidden lg:block text-left">
+              <p className="text-sm font-semibold text-gray-900 truncate max-w-[120px] leading-tight">
+                {auth?.details?.name || "User"}
+              </p>
+              <p className="text-xs text-gray-500 capitalize leading-tight">
+                {auth?.role || ""}
+              </p>
+            </div>
+            <ChevronDown
+              size={14}
+              className={`hidden lg:block text-gray-400 flex-shrink-0 transition-transform duration-200 ${showProfileDropdown ? "rotate-180" : ""}`}
+            />
           </button>
 
           {/* Profile Dropdown */}
           {showProfileDropdown && (
-            <div className="absolute right-0 top-full mt-2 w-72 md:w-80 bg-surface border border-[var(--color-border)] rounded-xl shadow-xl overflow-hidden z-50">
+            <div className="absolute right-0 top-full mt-2 w-72 md:w-80 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-xl overflow-hidden z-50">
               {/* Header */}
-              <div className="px-4 py-4 bg-primary-50 border-b border-[var(--color-border)]">
+              <div className="px-4 py-4 bg-[var(--color-primary-50)] border-b border-[var(--color-border)]">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-primary-600 text-white flex items-center justify-center text-lg font-semibold ring-2 ring-primary-200 flex-shrink-0">
+                  <div className="h-12 w-12 rounded-full bg-[var(--color-primary-600)] text-white flex items-center justify-center text-lg font-semibold ring-2 ring-[var(--color-primary-100)] flex-shrink-0">
                     {userInitial}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -179,11 +193,36 @@ export default function Header() {
                   )}
               </div>
 
+              {/* Language */}
+              <div className="px-4 py-3 border-t border-[var(--color-border)]">
+                <p className="text-xs text-gray-400 mb-2">{t("login.language")}</p>
+                <div className="flex gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-0.5">
+                  {[
+                    { code: "en", label: "EN" },
+                    { code: "hi", label: "हि" },
+                    { code: "kn", label: "ಕ" },
+                  ].map(({ code, label }) => (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => i18n.changeLanguage(code)}
+                      className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
+                        activeLng === code
+                          ? "bg-[var(--color-surface)] text-[var(--color-primary-600)] shadow-sm"
+                          : "text-gray-500 hover:text-gray-800"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Actions */}
               <div className="border-t border-[var(--color-border)]">
                 <button
                   onClick={handleViewProfile}
-                  className="w-full px-4 py-3 flex items-center gap-3 text-primary-600 hover:bg-primary-50 transition-colors text-sm font-medium border-b border-[var(--color-border)]"
+                  className="w-full px-4 py-3 flex items-center gap-3 text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors text-sm font-medium border-b border-[var(--color-border)]"
                 >
                   <UserCircle size={17} />
                   <span>{t("header.viewFullProfile")}</span>
