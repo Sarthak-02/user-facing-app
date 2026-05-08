@@ -5,6 +5,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  /* Keeps body text from auto-shrinking on iPhone rotation / “zoomed out” feel */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html, body {
   overscroll-behavior-y: none;
 }

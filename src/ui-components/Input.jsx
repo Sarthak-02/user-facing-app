@@ -9,7 +9,7 @@ export default function Input({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="text-sm font-medium text-gray-900 ">
+        <label className="text-base font-medium text-gray-900">
           {label}
         </label>
       )}
@@ -17,10 +17,10 @@ export default function Input({
       <input
         {...props}
         className={clsx(
-          "w-full rounded-lg px-3 py-2 text-sm transition",
+          "w-full rounded-lg px-3 py-2.5 min-h-[44px] text-base transition",
           "bg-white border border-gray-300 text-gray-900",
           "focus:outline-none focus:ring-2 focus:ring-primary-600",
-          "placeholder:text-gray-400",
+          "placeholder:text-gray-500",
           {
             "border-error-600 focus:ring-error-600": error,
           },
@@ -29,7 +29,7 @@ export default function Input({
       />
 
       {error && (
-        <p className="text-xs text-error-600">{error}</p>
+        <p className="text-sm text-error-600">{error}</p>
       )}
     </div>
   );

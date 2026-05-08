@@ -29,7 +29,7 @@ export default function TextField({
       default: "border-gray-300 focus-within:ring-blue-500",
       error: "border-red-500 focus-within:ring-red-500",
       success: "border-green-500 focus-within:ring-green-500",
-      disabled: "border-gray-200 bg-gray-100 cursor-not-allowed text-gray-400",
+      disabled: "border-gray-200 bg-gray-100 cursor-not-allowed text-gray-500",
     };
   
     return (
@@ -41,8 +41,8 @@ export default function TextField({
         )}
   
         <div
-          className={`relative flex items-center w-full px-3 py-2 rounded-md
-          sm:px-4 sm:py-2 
+          className={`relative flex items-center w-full min-h-[44px] px-3 py-2 rounded-md
+          sm:px-4 sm:py-2.5
           border focus-within:ring-2 ${variantStyles[variant]}`}
         >
           {icon && (
@@ -58,7 +58,7 @@ export default function TextField({
             onChange={onChange}
             disabled={variant === "disabled"}
             autoComplete={autoComplete}
-            className={`w-full bg-transparent focus:outline-none
+            className={`w-full bg-transparent text-base focus:outline-none
               ${icon ? "pl-10" : ""}
               ${suffix ? "pr-10" : ""}
               ${variant === "disabled" ? "cursor-not-allowed" : ""}`}

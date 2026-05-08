@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, SendHorizontal, ChevronsDown, MessageSquare } from "lucide-react";
 import { Button } from "../../ui-components";
 import Loader from "../../ui-components/Loader";
@@ -9,6 +9,8 @@ import {
   sendChatMessage,
   markConversationRead,
   getConversation,
+  createDirectConversation,
+  pickConversationId,
 } from "../../api/chat.api";
 import {
   conversationTitle,
@@ -61,12 +63,25 @@ function latestCreatedAtIso(msgs) {
 }
 
 /**
- * @param {{ conversationId: string, backTo: string }} props
+ * @param {{
+ *   conversationId?: string,
+ *   draftOtherUserId?: string,
+ *   draftDisplayName?: string,
+ *   backTo: string,
+ * }} props
  */
-export default function ChatThread({ conversationId, backTo }) {
+export default function ChatThread({
+  conversationId,
+  draftOtherUserId = "",
+  draftDisplayName = "",
+  backTo,
+}) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { auth } = useAuth();
   const currentUserId = String(auth?.userId ?? "").trim();
+  const draftPeerId = String(draftOtherUserId || "").trim();
+  const isDraft = Boolean(draftPeerId);
 
   const [title, setTitle] = useState(() => t("chat.defaultThreadTitle"));
   const [messages, setMessages] = useState([]);
@@ -102,6 +117,18 @@ export default function ChatThread({ conversationId, backTo }) {
   }, []);
 
   const loadInitial = useCallback(async () => {
+    if (isDraft) {
+      setTitle(
+        String(draftDisplayName || "").trim() || t("chat.defaultThreadTitle"),
+      );
+      setMessages([]);
+      setLoading(false);
+      setError(null);
+      pollAfterRef.current = "";
+      isInitialScrollRef.current = true;
+      atBottomRef.current = true;
+      return;
+    }
     if (!conversationId) return;
     setTitle(t("chat.defaultThreadTitle"));
     setLoading(true);
@@ -127,19 +154,19 @@ export default function ChatThread({ conversationId, backTo }) {
     } finally {
       setLoading(false);
     }
-  }, [conversationId, currentUserId, t]);
+  }, [isDraft, draftDisplayName, conversationId, currentUserId, t]);
 
   useEffect(() => {
     loadInitial();
   }, [loadInitial]);
 
   useEffect(() => {
-    if (!conversationId || loading) return;
+    if (isDraft || !conversationId || loading) return;
     markConversationRead(conversationId).catch(() => {});
-  }, [conversationId, loading]);
+  }, [isDraft, conversationId, loading]);
 
   useEffect(() => {
-    if (!conversationId || loading) return;
+    if (isDraft || !conversationId || loading) return;
 
     let cancelled = false;
     const tick = async () => {
@@ -166,7 +193,7 @@ export default function ChatThread({ conversationId, backTo }) {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [conversationId, loading]);
+  }, [isDraft, conversationId, loading]);
 
   // Auto-scroll only when near bottom; instant on initial load
   useEffect(() => {
@@ -177,18 +204,46 @@ export default function ChatThread({ conversationId, backTo }) {
     }
   }, [messages, scrollToBottom]);
 
-  // Auto-resize textarea
+  // Auto-resize textarea (capped so the composer does not dominate the screen on mobile)
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, 160) + "px";
+    const maxPx = 120;
+    ta.style.height = `${Math.min(ta.scrollHeight, maxPx)}px`;
   }, [draft]);
 
   const onSend = async (e) => {
     e.preventDefault();
     const text = draft.trim();
-    if (!text || !conversationId || sending) return;
+    if (!text || sending) return;
+
+    if (isDraft) {
+      setSending(true);
+      setError(null);
+      try {
+        const createdConv = await createDirectConversation(draftPeerId);
+        const cid = pickConversationId(createdConv);
+        if (!cid) {
+          setError(t("chat.couldNotStartConversation"));
+          return;
+        }
+        await sendChatMessage(cid, text);
+        setDraft("");
+        navigate(`${backTo}/${cid}`, { replace: true });
+      } catch (err) {
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          t("chat.couldNotStartConversation2");
+        setError(typeof msg === "string" ? msg : t("chat.couldNotStartConversation2"));
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
+
+    if (!conversationId) return;
     setSending(true);
     setError(null);
     try {
@@ -235,7 +290,7 @@ export default function ChatThread({ conversationId, backTo }) {
     return result;
   }, [messages]);
 
-  if (!conversationId) {
+  if (!conversationId && !isDraft) {
     return null;
   }
 
@@ -352,9 +407,9 @@ export default function ChatThread({ conversationId, backTo }) {
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] p-3 pb-24 md:pb-3">
-        <form onSubmit={onSend} className="mx-auto flex max-w-3xl gap-2">
+      {/* Footer — main layout already reserves bottom nav; avoid stacking extra pb here */}
+      <footer className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 md:px-3 md:py-3">
+        <form onSubmit={onSend} className="mx-auto flex max-w-3xl items-end gap-2">
           <textarea
             ref={textareaRef}
             value={draft}
@@ -362,8 +417,8 @@ export default function ChatThread({ conversationId, backTo }) {
             placeholder={t("chat.writeMessage")}
             title={t("chatUi.composerHint")}
             rows={1}
-            className="min-h-[40px] flex-1 resize-none rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-gray-800 outline-none placeholder:text-gray-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            disabled={sending || loading}
+            className="max-h-[120px] min-h-[38px] flex-1 resize-none rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm leading-snug text-gray-800 outline-none placeholder:text-gray-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+            disabled={sending || (!isDraft && loading)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -373,8 +428,8 @@ export default function ChatThread({ conversationId, backTo }) {
           />
           <Button
             type="submit"
-            disabled={sending || loading || !draft.trim()}
-            className="h-10 shrink-0 self-end px-3"
+            disabled={sending || (!isDraft && loading) || !draft.trim()}
+            className="h-10 shrink-0 px-3"
           >
             {sending ? (
               <span className="text-xs">…</span>

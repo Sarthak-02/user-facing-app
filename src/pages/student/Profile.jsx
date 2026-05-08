@@ -123,12 +123,12 @@ export default function StudentProfile() {
                   <h1 className="text-2xl md:text-3xl font-bold text-gray-900 truncate">
                     {studentData?.full_name || t("profile.studentName")}
                   </h1>
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm font-semibold ${isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
                     {studentData?.current_status?.charAt(0).toUpperCase() + studentData?.current_status?.slice(1) || t("common.na")}
                   </span>
                 </div>
-                <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 justify-center sm:justify-start text-sm text-gray-500">
+                <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 justify-center sm:justify-start text-sm text-gray-600">
                   {studentData?.admission_no && (
                     <span className="flex items-center gap-1.5">
                       <BadgeCheck size={14} className="text-primary-500" />
@@ -154,7 +154,7 @@ export default function StudentProfile() {
               <div className="flex-shrink-0">
                 <button
                   onClick={() => setChangePasswordOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:opacity-90 active:scale-95 transition-all text-sm font-medium shadow-sm"
+                  className="flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:opacity-90 transition-all text-sm font-medium shadow-sm motion-reduce:active:scale-100 active:scale-[0.99]"
                 >
                   <Key size={16} />
                   {t("profile.changePassword")}
@@ -183,11 +183,11 @@ export default function StudentProfile() {
               <InfoRow label={t("profile.fields.rollNo")} value={studentData?.roll_no} icon={<Award size={14} />} />
               <InfoRow label={t("profile.fields.admissionDate")} value={formatDate(studentData?.admission_date)} icon={<Calendar size={14} />} />
               <div className="py-3 border-b border-gray-100 last:border-b-0">
-                <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
-                  <span className="text-gray-300"><User size={14} /></span>
+                <p className="text-sm text-gray-600 mb-1 flex items-center gap-1">
+                  <span className="text-gray-400"><User size={14} /></span>
                   {t("profile.fields.status")}
                 </p>
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-sm font-semibold ${isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
                   {studentData?.current_status?.charAt(0).toUpperCase() + studentData?.current_status?.slice(1) || t("common.na")}
                 </span>
@@ -246,7 +246,7 @@ export default function StudentProfile() {
                 <InfoRow label={t("profile.fields.guardianEmail")} value={studentData?.guardian_email} icon={<Mail size={14} />} />
               </div>
               <div className="mt-2 pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-3">{t("profile.guardianAddress")}</p>
+                <p className="text-sm font-semibold text-gray-700 tracking-wide mb-3">{t("profile.guardianAddress")}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
                   <InfoRow label={t("profile.fields.street")} value={studentData?.guardian_address} icon={<MapPin size={14} />} />
                   <InfoRow label={t("profile.fields.city")} value={studentData?.guardian_city} icon={<MapPin size={14} />} />
@@ -286,7 +286,7 @@ function InfoRow({ label, value, icon }) {
   const isEmpty = !value;
   return (
     <div className="py-3 border-b border-gray-100 last:border-b-0">
-      <p className="text-xs text-gray-400 mb-0.5 flex items-center gap-1">
+      <p className="text-sm text-gray-600 mb-0.5 flex items-center gap-1">
         {icon && <span className="text-gray-300">{icon}</span>}
         {label}
       </p>
@@ -300,7 +300,7 @@ function InfoRow({ label, value, icon }) {
 function ContactRow({ icon, value, placeholder }) {
   return (
     <div className="flex items-center gap-2.5 py-2.5 border-b border-gray-100 last:border-b-0">
-      <span className="text-gray-400 flex-shrink-0">{icon}</span>
+      <span className="text-gray-500 flex-shrink-0">{icon}</span>
       <span className={`text-sm break-all ${value ? "text-gray-800 font-medium" : "text-gray-300 italic"}`}>
         {value || placeholder}
       </span>

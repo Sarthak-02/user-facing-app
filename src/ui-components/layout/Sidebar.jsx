@@ -149,7 +149,7 @@ export default function Sidebar({ collapsed, setCollapsed, navItems }) {
                 <p className="text-sm font-medium text-gray-900 truncate leading-tight">
                   {userName}
                 </p>
-                <p className="text-xs text-gray-500 capitalize leading-tight mt-0.5">
+                <p className="text-sm text-gray-600 capitalize leading-tight mt-0.5">
                   {userRole || "User"}
                 </p>
               </div>
@@ -164,7 +164,7 @@ export default function Sidebar({ collapsed, setCollapsed, navItems }) {
           className="pointer-events-none fixed z-[9999] -translate-y-1/2"
           style={{ top: tooltip.y, left: 76 }}
         >
-          <div className="relative bg-gray-900 text-white text-xs font-medium px-2.5 py-1.5 rounded-md shadow-lg whitespace-nowrap">
+          <div className="relative bg-gray-900 text-white text-sm font-medium px-2.5 py-2 rounded-md shadow-lg whitespace-nowrap">
             {tooltip.text}
             <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
           </div>

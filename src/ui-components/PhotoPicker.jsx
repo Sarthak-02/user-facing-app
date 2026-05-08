@@ -93,7 +93,7 @@ export default function PhotoPicker({ entity, entityId, preview, onPhotoUrl, onR
     return (
       <div className="w-full h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2">
         <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
-        <span className="text-xs font-medium text-indigo-600">{t("ui.photoPicker.uploading")}</span>
+        <span className="text-sm font-medium text-indigo-600">{t("ui.photoPicker.uploading")}</span>
       </div>
     );
   }
@@ -134,7 +134,7 @@ export default function PhotoPicker({ entity, entityId, preview, onPhotoUrl, onR
             <button
               type="button"
               onClick={() => { prefetchSignedUrl(); setShowCamera(true); }}
-              className="bg-white rounded-lg px-2.5 py-1.5 shadow border border-gray-200 text-xs font-medium text-gray-600 flex items-center gap-1 hover:bg-gray-50 transition-colors"
+              className="bg-white rounded-lg px-2.5 py-2 min-h-[40px] shadow border border-gray-200 text-sm font-medium text-gray-700 flex items-center gap-1 hover:bg-gray-50 transition-colors"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               {t("ui.photoPicker.retake")}
@@ -142,7 +142,7 @@ export default function PhotoPicker({ entity, entityId, preview, onPhotoUrl, onR
             <button
               type="button"
               onClick={() => { prefetchSignedUrl(); galleryRef.current?.click(); }}
-              className="bg-white rounded-lg px-2.5 py-1.5 shadow border border-gray-200 text-xs font-medium text-gray-600 flex items-center gap-1 hover:bg-gray-50 transition-colors"
+              className="bg-white rounded-lg px-2.5 py-2 min-h-[40px] shadow border border-gray-200 text-sm font-medium text-gray-700 flex items-center gap-1 hover:bg-gray-50 transition-colors"
             >
               <ImageIcon className="h-3.5 w-3.5" />
               {t("ui.photoPicker.gallery")}
@@ -153,7 +153,7 @@ export default function PhotoPicker({ entity, entityId, preview, onPhotoUrl, onR
         /* ── Empty state ──────────────────────────────────────────────── */
         <div className="space-y-2">
           {errorMsg && (
-            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 flex items-center gap-1.5">
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 flex items-center gap-1.5">
               <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
               {errorMsg}
             </p>
@@ -162,18 +162,18 @@ export default function PhotoPicker({ entity, entityId, preview, onPhotoUrl, onR
             <button
               type="button"
               onClick={() => { prefetchSignedUrl(); setShowCamera(true); }}
-              className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-4 text-gray-400 hover:border-indigo-400 hover:text-indigo-500 transition-colors"
+              className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-4 min-h-[88px] text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors"
             >
               <Camera className="h-5 w-5" />
-              <span className="text-xs font-medium">{t("ui.photoPicker.takePhoto")}</span>
+              <span className="text-sm font-medium">{t("ui.photoPicker.takePhoto")}</span>
             </button>
             <button
               type="button"
               onClick={() => { prefetchSignedUrl(); galleryRef.current?.click(); }}
-              className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-4 text-gray-400 hover:border-indigo-400 hover:text-indigo-500 transition-colors"
+              className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-4 min-h-[88px] text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors"
             >
               <ImageIcon className="h-5 w-5" />
-              <span className="text-xs font-medium">{t("ui.photoPicker.fromGallery")}</span>
+              <span className="text-sm font-medium">{t("ui.photoPicker.fromGallery")}</span>
             </button>
           </div>
         </div>

@@ -9,6 +9,12 @@
   "errors": {
     "summaryCouldNotLoad": "सारांश लोड नहीं किया जा सका."
   },
+  "readability": {
+    "title": "टेक्सट का आकार",
+    "hint": "बड़ा टेक्स्ट इस डिवाइस पर पूरे ऐप में लागू होता है। ज़रूरत हो तो ब्राउज़र ज़ूम भी उपयोग कर सकते हैं।",
+    "standard": "सामान्य",
+    "larger": "बड़ा"
+  },
   "common": {
     "cancel": "रद्द करना",
     "save": "बचाना",
@@ -180,6 +186,9 @@
       "markAllPresent": "सभी उपस्थित चिह्नित करें",
       "markAllAbsent": "सभी को अनुपस्थित चिह्नित करें",
       "clearAll": "सभी साफ करें",
+      "markAllPresentShort": "सब उपस्थित",
+      "markAllAbsentShort": "सब अनुपस्थित",
+      "clearAllShort": "साफ़ करें",
       "showing": "{{total}} छात्रों में से {{filtered}} दिखा रहा है"
     },
     "status": {
@@ -192,9 +201,12 @@
     "messages": "संदेशों",
     "new": "नया",
     "newConversation": "नया",
+    "newChatTitle": "नई चैट",
     "search": "खोजना…",
+    "searchContacts": "नाम से खोजें…",
     "startConversation": "एक बातचीत शुरू",
-    "noTeachersFound": "अभी तक कोई शिक्षक नहीं मिला. नीचे एक उपयोगकर्ता आईडी चिपकाएँ.",
+    "noTeachersFound": "अभी तक कोई शिक्षक नहीं मिला। नीचे उपयोगकर्ता आईडी से संदेश भेजें।",
+    "messageByUserId": "उपयोगकर्ता आईडी से संदेश",
     "noStudentsFound": "अभी तक आपकी अनुमति में कोई छात्र नहीं है। नीचे एक उपयोगकर्ता आईडी चिपकाएँ.",
     "pasteUserId": "उपयोगकर्ता आईडी चिपकाएँ",
     "go": "जाना",
@@ -213,7 +225,32 @@
     "failedToSend": "भेजने में विफल.",
     "defaultThreadTitle": "बात करना",
     "defaultTeacherName": "अध्यापक",
-    "defaultStudentName": "विद्यार्थी"
+    "defaultStudentName": "विद्यार्थी",
+    "broadcast": {
+      "openBroadcast": "प्रसारण",
+      "title": "संदेश प्रसारित करें",
+      "back": "इनबॉक्स पर वापस",
+      "recipientsHeading": "प्राप्तकर्ता",
+      "selectAll": "सभी चुनें",
+      "clearAll": "सभी साफ़ करें",
+      "createMessage": "संदेश बनाएँ",
+      "broadcastingTo": "{{count}} प्राप्तकर्ताओं को प्रसारण",
+      "changeRecipients": "प्राप्तकर्ता बदलें",
+      "backToRecipients": "प्राप्तकर्ताओं पर वापस",
+      "maxNote": "प्रति भेजने में अधिकतम {{max}} प्राप्तकर्ता चुन सकते हैं।",
+      "selectedCount": "{{count}} चयनित (अधिकतम {{max}})",
+      "searchPlaceholder": "नाम से खोजें…",
+      "noSearchResults": "आपकी खोज से कोई नाम मेल नहीं खाता।",
+      "emptyRecipientList": "अभी आपकी अनुमतियों में कोई छात्र उपलब्ध नहीं है। पहुँच के लिए व्यवस्थापक से संपर्क करें।",
+      "messageLabel": "संदेश",
+      "messagePlaceholder": "चयनित सभी को भेजने के लिए संदेश लिखें…",
+      "send": "प्रसारण भेजें",
+      "success": "आपका संदेश चयनित प्राप्तकर्ताओं को भेज दिया गया।",
+      "errorNoRecipients": "कम से कम एक प्राप्तकर्ता चुनें।",
+      "errorNoBody": "भेजने के लिए संदेश दर्ज करें।",
+      "errorBodyTooLong": "संदेश अधिकतम {{max}} अक्षरों का होना चाहिए।",
+      "errorSendFailed": "प्रसारण नहीं भेजा जा सका। पुनः प्रयास करें।"
+    }
   },
   "homework": {
     "noHomework": "कोई होमवर्क नहीं मिला",
@@ -1633,7 +1670,9 @@
   },
   "chatUi": {
     "composerHint": "भेजने के लिए एंटर करें · नई लाइन के लिए Shift+Enter",
-    "selectConversation": "चैटिंग शुरू करने के लिए एक वार्तालाप चुनें"
+    "selectConversation": "चैटिंग शुरू करने के लिए एक वार्तालाप चुनें",
+    "pickerRoleStudent": "छात्र",
+    "pickerRoleTeacher": "शिक्षक"
   },
   "pwaInstall": {
     "title": "Digi School ऐप इंस्टॉल करें",

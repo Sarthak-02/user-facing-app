@@ -90,3 +90,16 @@ export function pickConversationId(obj) {
     obj.id ?? obj.conversation_id ?? obj.conversationId ?? ""
   ).trim();
 }
+
+/**
+ * Staff: send one chat body to many users (direct-style delivery per product).
+ * @param {{ recipient_user_ids: string[], body: string }} payload
+ * @returns {Promise<unknown>}
+ */
+export async function broadcastChatMessage(payload) {
+  const res = await api.post("/chat/broadcast", {
+    recipient_user_ids: payload.recipient_user_ids,
+    body: payload.body,
+  });
+  return unwrap(res.data);
+}

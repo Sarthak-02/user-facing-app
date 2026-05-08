@@ -10,7 +10,7 @@ export default function Select({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+        <label className="text-base font-medium text-gray-700 dark:text-gray-300">
           {label}
         </label>
       )}
@@ -18,7 +18,7 @@ export default function Select({
       <select
         {...props}
         className={clsx(
-          "w-full rounded-lg px-3 py-2 text-sm transition",
+          "w-full rounded-lg px-3 py-2.5 min-h-[44px] text-base transition",
           "bg-surface border border-border ",
           "focus:outline-none focus:ring-2 focus:ring-primary-600",
           {
@@ -35,7 +35,7 @@ export default function Select({
       </select>
 
       {error && (
-        <p className="text-xs text-error-600">{error}</p>
+        <p className="text-sm text-error-600">{error}</p>
       )}
     </div>
   );

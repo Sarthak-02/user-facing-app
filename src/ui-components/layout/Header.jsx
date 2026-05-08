@@ -3,6 +3,7 @@ import { useAuth } from "../../store/auth.store";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import NotificationDropdown from "../../components/NotificationDropdown";
+import ReadabilitySettings from "../../components/ReadabilitySettings";
 import { useTranslation } from "react-i18next";
 
 const PAGE_TITLE_KEYS = {
@@ -114,13 +115,13 @@ export default function Header() {
               <p className="text-sm font-semibold text-gray-900 truncate max-w-[120px] leading-tight">
                 {auth?.details?.name || "User"}
               </p>
-              <p className="text-xs text-gray-500 capitalize leading-tight">
+              <p className="text-sm text-gray-600 capitalize leading-tight">
                 {auth?.role || ""}
               </p>
             </div>
             <ChevronDown
               size={14}
-              className={`hidden lg:block text-gray-400 flex-shrink-0 transition-transform duration-200 ${showProfileDropdown ? "rotate-180" : ""}`}
+              className={`hidden lg:block text-gray-500 flex-shrink-0 transition-transform duration-200 motion-reduce:transition-none ${showProfileDropdown ? "rotate-180" : ""}`}
             />
           </button>
 
@@ -137,7 +138,7 @@ export default function Header() {
                     <h3 className="font-semibold text-base truncate text-gray-900">
                       {auth?.details?.name || "User"}
                     </h3>
-                    <p className="text-xs text-gray-500 capitalize mt-0.5">
+                    <p className="text-sm text-gray-600 capitalize mt-0.5">
                       {auth?.role || "User"}
                     </p>
                   </div>
@@ -148,9 +149,9 @@ export default function Header() {
               <div className="px-4 py-3 space-y-3">
                 {auth?.details?.email && (
                   <div className="flex items-start gap-3">
-                    <Mail size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Mail size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-400 mb-0.5">{t("header.email")}</p>
+                      <p className="text-sm text-gray-600 mb-0.5">{t("header.email")}</p>
                       <p className="text-sm text-gray-700 break-all">{auth.details.email}</p>
                     </div>
                   </div>
@@ -158,9 +159,9 @@ export default function Header() {
 
                 {auth?.details?.phone && (
                   <div className="flex items-start gap-3">
-                    <Phone size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Phone size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-400 mb-0.5">{t("header.phone")}</p>
+                      <p className="text-sm text-gray-600 mb-0.5">{t("header.phone")}</p>
                       <p className="text-sm text-gray-700">{auth.details.phone}</p>
                     </div>
                   </div>
@@ -168,9 +169,9 @@ export default function Header() {
 
                 {auth?.role?.toLowerCase() === "student" && auth?.details?.class && (
                   <div className="flex items-start gap-3">
-                    <GraduationCap size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <GraduationCap size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-400 mb-0.5">{t("header.class")}</p>
+                      <p className="text-sm text-gray-600 mb-0.5">{t("header.class")}</p>
                       <p className="text-sm text-gray-700">
                         {auth.details.class}
                         {auth.details.section && ` - ${auth.details.section}`}
@@ -184,18 +185,23 @@ export default function Header() {
                   auth?.role?.toLowerCase() === "admin") &&
                   auth?.details?.designation && (
                     <div className="flex items-start gap-3">
-                      <User size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                      <User size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-400 mb-0.5">{t("header.designation")}</p>
+                        <p className="text-sm text-gray-600 mb-0.5">{t("header.designation")}</p>
                         <p className="text-sm text-gray-700">{auth.details.designation}</p>
                       </div>
                     </div>
                   )}
               </div>
 
+              {/* Text size (same pattern as language below) */}
+              <div className="px-4 py-3 border-t border-[var(--color-border)]">
+                <ReadabilitySettings variant="menu" />
+              </div>
+
               {/* Language */}
               <div className="px-4 py-3 border-t border-[var(--color-border)]">
-                <p className="text-xs text-gray-400 mb-2">{t("login.language")}</p>
+                <p className="text-sm text-gray-600 mb-2">{t("login.language")}</p>
                 <div className="flex gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-0.5">
                   {[
                     { code: "en", label: "EN" },
@@ -206,7 +212,7 @@ export default function Header() {
                       key={code}
                       type="button"
                       onClick={() => i18n.changeLanguage(code)}
-                      className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
+                      className={`flex-1 rounded-md py-2 min-h-[40px] text-sm font-semibold transition-colors ${
                         activeLng === code
                           ? "bg-[var(--color-surface)] text-[var(--color-primary-600)] shadow-sm"
                           : "text-gray-500 hover:text-gray-800"

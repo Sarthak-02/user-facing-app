@@ -388,13 +388,13 @@ function QuickStatContent({ icon, label, value, colorClass, hint }) {
     { className: "contents" },
     createElement(
       "span",
-      { className: `flex h-8 w-8 items-center justify-center rounded-full ${colorClass}` },
-      createElement(icon, { size: 16, strokeWidth: 2 })
+      { className: `flex h-9 w-9 items-center justify-center rounded-full ${colorClass}` },
+      createElement(icon, { size: 18, strokeWidth: 2 })
     ),
-    createElement("p", { className: "text-xl font-bold tabular-nums text-gray-900" }, value),
-    createElement("p", { className: "text-center text-[10px] font-semibold leading-tight text-gray-500" }, label),
+    createElement("p", { className: "text-2xl font-bold tabular-nums leading-none text-gray-900" }, value),
+    createElement("p", { className: "text-center text-xs font-semibold leading-snug text-gray-600" }, label),
     hint
-      ? createElement("p", { className: "text-center text-[9px] font-medium text-primary-500 mt-0.5" }, hint)
+      ? createElement("p", { className: "text-center text-[11px] font-medium leading-snug text-primary-600 mt-0.5 px-0.5" }, hint)
       : null
   );
 }
@@ -405,14 +405,14 @@ function QuickStat({ icon, label, value, colorClass, onClick, hint }) {
       <button
         type="button"
         onClick={onClick}
-        className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-95"
+        className="flex flex-col items-center gap-2 rounded-xl border border-gray-100 bg-white px-3 py-3.5 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-95"
       >
         <QuickStatContent icon={icon} label={label} value={value} colorClass={colorClass} hint={hint} />
       </button>
     );
   }
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-gray-100 bg-white px-3 py-3.5 shadow-sm">
       <QuickStatContent icon={icon} label={label} value={value} colorClass={colorClass} />
     </div>
   );

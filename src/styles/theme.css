@@ -117,3 +117,8 @@
   --color-accent: #2DD4BF;
 }
 
+/* Slightly larger root rem — scales Tailwind text/spacing that use rem */
+html[data-text-scale="comfortable"] {
+  font-size: 112.5%;
+}
+

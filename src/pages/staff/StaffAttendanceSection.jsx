@@ -441,7 +441,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
           );
         })()}
 
-        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex w-full flex-col gap-2 md:flex-row md:items-center md:gap-3">
           <input
             type="text"
             placeholder={t("staffAttendance.searchPlaceholder")}
@@ -564,12 +564,12 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                 markAttendance={markAttendance}
                 editMode={editMode}
                 onStudentClick={readOnly ? setSelectedStudentForHistory : undefined}
-                className={editMode ? "pb-[9.5rem]" : "pb-20"}
+                className={editMode ? "pb-[8rem]" : "pb-20"}
               />
             </div>
 
             {editMode && (
-              <div className="fixed bottom-14 left-0 right-0 z-[45] flex flex-col gap-2 border-t border-border bg-[var(--color-surface)] px-3 py-2 pb-[max(2rem,env(safe-area-inset-bottom,0px))] shadow-[0_-2px_10px_rgba(0,0,0,0.06)] md:hidden">
+              <div className="fixed bottom-14 left-0 right-0 z-[45] flex flex-col gap-2 border-t border-border bg-[var(--color-surface)] px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] shadow-[0_-2px_10px_rgba(0,0,0,0.06)] md:hidden">
                 <div>
                   <div className="mb-1 flex items-center justify-between gap-2 text-xs text-gray-500">
                     <span>{t("staffAttendance.progress")}</span>

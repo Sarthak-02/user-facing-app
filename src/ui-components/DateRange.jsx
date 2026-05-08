@@ -83,7 +83,7 @@ const DateRange = ({
   };
 
   const inputClasses = `
-    w-full px-3 py-2 border border-gray-300 rounded-md text-sm
+    w-full px-3 py-2.5 min-h-[44px] border border-gray-300 rounded-md text-base
     focus:outline-none focus:ring-2 focus:ring-blue-500
     disabled:bg-gray-100 disabled:cursor-not-allowed
   `;
@@ -92,7 +92,7 @@ const DateRange = ({
     <div className={`w-full ${className}`}>
       {/* Main Label */}
       {resolvedLabel && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-base font-medium text-gray-800 mb-2">
           {resolvedLabel}
         </label>
       )}
@@ -104,7 +104,7 @@ const DateRange = ({
         <div className="flex flex-row gap-2 items-end w-full">
           {/* Start Date Input */}
           <div className="flex-1 min-w-0">
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               {t("ui.dateRange.startDate")}
             </label>
             <input
@@ -119,7 +119,7 @@ const DateRange = ({
           </div>
 
           {/* Separator - Centered Arrow */}
-          <div className="flex items-center pb-2 text-gray-400">
+          <div className="flex items-center pb-2 text-gray-500 self-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -138,7 +138,7 @@ const DateRange = ({
 
           {/* End Date Input */}
           <div className="flex-1 min-w-0">
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               {t("ui.dateRange.endDate")}
             </label>
             <input

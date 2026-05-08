@@ -26,6 +26,7 @@ import StudentProfile from "../../pages/student/Profile";
 import StudyChat from "../../pages/student/StudyChat";
 import StudentMessages from "../../pages/student/StudentMessages";
 import StaffMessages from "../../pages/staff/StaffMessages";
+import StaffChatBroadcast from "../../pages/staff/StaffChatBroadcast";
 import StudentReporting from "../../pages/student/Reporting";
 import Announcements from "../../pages/student/Announcements";
 import AnnouncementDetail from "../../pages/student/AnnouncementDetail";
@@ -214,6 +215,22 @@ export const routes = [
         ),
       },
       {
+        path: "staff/chat/broadcast",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_messages">
+            <StaffChatBroadcast />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/chat/new",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_messages">
+            <StaffMessages />
+          </RoleBasedRoute>
+        ),
+      },
+      {
         path: "staff/chat/:conversationId",
         element: (
           <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_messages">
@@ -365,6 +382,14 @@ export const routes = [
       },
       {
         path: "student/chat",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_messages">
+            <StudentMessages />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "student/chat/new",
         element: (
           <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_messages">
             <StudentMessages />

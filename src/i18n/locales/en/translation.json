@@ -9,6 +9,12 @@
   "errors": {
     "summaryCouldNotLoad": "Could not load summary."
   },
+  "readability": {
+    "title": "Text size",
+    "hint": "Larger text applies across the app on this device. You can still use your browser zoom if you need more.",
+    "standard": "Standard",
+    "larger": "Larger"
+  },
   "common": {
     "cancel": "Cancel",
     "save": "Save",
@@ -180,6 +186,9 @@
       "markAllPresent": "Mark All Present",
       "markAllAbsent": "Mark All Absent",
       "clearAll": "Clear All",
+      "markAllPresentShort": "All present",
+      "markAllAbsentShort": "All absent",
+      "clearAllShort": "Clear",
       "showing": "Showing {{filtered}} of {{total}} students"
     },
     "status": {
@@ -192,9 +201,12 @@
     "messages": "Messages",
     "new": "New",
     "newConversation": "New",
+    "newChatTitle": "New chat",
     "search": "Search…",
+    "searchContacts": "Search by name…",
     "startConversation": "Start a conversation",
-    "noTeachersFound": "No teachers found yet. Paste a user ID below.",
+    "noTeachersFound": "No teachers found yet. Use a user ID below if you have one.",
+    "messageByUserId": "Message by user ID",
     "noStudentsFound": "No students in your permissions yet. Paste a user ID below.",
     "pasteUserId": "Paste user ID",
     "go": "Go",
@@ -213,7 +225,32 @@
     "failedToSend": "Failed to send.",
     "defaultThreadTitle": "Chat",
     "defaultTeacherName": "Teacher",
-    "defaultStudentName": "Student"
+    "defaultStudentName": "Student",
+    "broadcast": {
+      "openBroadcast": "Broadcast",
+      "title": "Broadcast message",
+      "back": "Back to inbox",
+      "recipientsHeading": "Recipients",
+      "selectAll": "Select all",
+      "clearAll": "Clear all",
+      "createMessage": "Create message",
+      "broadcastingTo": "Broadcasting to {{count}} recipients",
+      "changeRecipients": "Change recipients",
+      "backToRecipients": "Back to recipients",
+      "maxNote": "You can select at most {{max}} recipients per send.",
+      "selectedCount": "{{count}} selected (max {{max}})",
+      "searchPlaceholder": "Search by name…",
+      "noSearchResults": "No names match your search.",
+      "emptyRecipientList": "No students are available in your permissions yet. Ask an administrator if you need access.",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Write the message you want to send to everyone selected…",
+      "send": "Send broadcast",
+      "success": "Your message was sent to the selected recipients.",
+      "errorNoRecipients": "Select at least one recipient.",
+      "errorNoBody": "Enter a message to send.",
+      "errorBodyTooLong": "Message must be at most {{max}} characters.",
+      "errorSendFailed": "Could not send the broadcast. Try again."
+    }
   },
   "homework": {
     "noHomework": "No homework found",
@@ -1633,7 +1670,9 @@
   },
   "chatUi": {
     "composerHint": "Enter to send · Shift+Enter for new line",
-    "selectConversation": "Select a conversation to start chatting"
+    "selectConversation": "Select a conversation to start chatting",
+    "pickerRoleStudent": "Student",
+    "pickerRoleTeacher": "Teacher"
   },
   "pwaInstall": {
     "title": "Install Digi School App",

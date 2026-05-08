@@ -9,6 +9,12 @@
   "errors": {
     "summaryCouldNotLoad": "ಸಾರಾಂಶವನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ."
   },
+  "readability": {
+    "title": "ಪಠ್ಯದ ಗಾತ್ರ",
+    "hint": "ದೊಡ್ಡ ಅಕ್ಷರಗಳು ಈ ಸಾಧನದಲ್ಲಿ ಒಟ್ಟಾರೆ ಅಪ್ಲಿಕೇಶನ್‌ಗೆ ಅನ್ವಯವಾಗುತ್ತವೆ. ಬೇಕಾದರೆ ಬ್ರೌಸರ್ ಜೂಮ್ ಬಳಸಬಹುದು.",
+    "standard": "ಸಾಮಾನ್ಯ",
+    "larger": "ದೊಡ್ಡದು"
+  },
   "common": {
     "cancel": "ರದ್ದುಮಾಡಿ",
     "save": "ಉಳಿಸಿ",
@@ -180,6 +186,9 @@
       "markAllPresent": "ಪ್ರಸ್ತುತ ಎಲ್ಲವನ್ನು ಗುರುತಿಸಿ",
       "markAllAbsent": "ಎಲ್ಲಾ ಆಬ್ಸೆಂಟ್ ಎಂದು ಗುರುತಿಸಿ",
       "clearAll": "ಎಲ್ಲವನ್ನೂ ತೆರವುಗೊಳಿಸಿ",
+      "markAllPresentShort": "ಎಲ್ಲಾ ಹಾಜರು",
+      "markAllAbsentShort": "ಎಲ್ಲಾ ಗೈರು",
+      "clearAllShort": "ಅಳಿಸಿ",
       "showing": "{{total}} ವಿದ್ಯಾರ್ಥಿಗಳ {{filtered}} ತೋರಿಸಲಾಗುತ್ತಿದೆ"
     },
     "status": {
@@ -192,9 +201,12 @@
     "messages": "ಸಂದೇಶಗಳು",
     "new": "ಹೊಸದು",
     "newConversation": "ಹೊಸದು",
+    "newChatTitle": "ಹೊಸ ಚಾಟ್",
     "search": "ಹುಡುಕಿ...",
+    "searchContacts": "ಹೆಸರಿನಿಂದ ಹುಡುಕಿ…",
     "startConversation": "ಸಂವಾದವನ್ನು ಪ್ರಾರಂಭಿಸಿ",
-    "noTeachersFound": "ಇನ್ನೂ ಯಾವುದೇ ಶಿಕ್ಷಕರು ಕಂಡುಬಂದಿಲ್ಲ. ಕೆಳಗೆ ಬಳಕೆದಾರ ಐಡಿಯನ್ನು ಅಂಟಿಸಿ.",
+    "noTeachersFound": "ಇನ್ನೂ ಯಾವುದೇ ಶಿಕ್ಷಕರು ಕಂಡುಬಂದಿಲ್ಲ. ಬಳಕೆದಾರ ಐಡಿಯೊಂದಿಗೆ ಕೆಳಗೆ ಸಂದೇಶ ಕಳುಹಿಸಿ.",
+    "messageByUserId": "ಬಳಕೆದಾರ ಐಡಿಯಿಂದ ಸಂದೇಶ",
     "noStudentsFound": "ನಿಮ್ಮ ಅನುಮತಿಗಳಲ್ಲಿ ಇನ್ನೂ ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿಗಳು ಇಲ್ಲ. ಕೆಳಗೆ ಬಳಕೆದಾರ ಐಡಿಯನ್ನು ಅಂಟಿಸಿ.",
     "pasteUserId": "ಬಳಕೆದಾರ ID ಅಂಟಿಸಿ",
     "go": "ಹೋಗು",
@@ -213,7 +225,32 @@
     "failedToSend": "ಕಳುಹಿಸಲು ವಿಫಲವಾಗಿದೆ.",
     "defaultThreadTitle": "ಚಾಟ್ ಮಾಡಿ",
     "defaultTeacherName": "ಶಿಕ್ಷಕ",
-    "defaultStudentName": "ವಿದ್ಯಾರ್ಥಿ"
+    "defaultStudentName": "ವಿದ್ಯಾರ್ಥಿ",
+    "broadcast": {
+      "openBroadcast": "ಪ್ರಸಾರ",
+      "title": "ಸಂದೇಶ ಪ್ರಸಾರ",
+      "back": "ಇನ್‌ಬಾಕ್ಸ್‌ಗೆ ಹಿಂದೆ",
+      "recipientsHeading": "ಸ್ವೀಕರಿಸುವವರು",
+      "selectAll": "ಎಲ್ಲರನ್ನು ಆರಿಸಿ",
+      "clearAll": "ಎಲ್ಲವನ್ನೂ ತೆರವುಗೊಳಿಸಿ",
+      "createMessage": "ಸಂದೇಶ ರಚಿಸಿ",
+      "broadcastingTo": "{{count}} ಸ್ವೀಕರಿಸುವವರಿಗೆ ಪ್ರಸಾರ",
+      "changeRecipients": "ಸ್ವೀಕರಿಸುವವರನ್ನು ಬದಲಾಯಿಸಿ",
+      "backToRecipients": "ಸ್ವೀಕರಿಸುವವರಿಗೆ ಹಿಂದೆ",
+      "maxNote": "ಪ್ರತಿ ಕಳುಹಿಸುವಿಕೆಗೆ ಗರಿಷ್ಠ {{max}} ಸ್ವೀಕರಿಸುವವರನ್ನು ಮಾತ್ರ ಆರಿಸಬಹುದು.",
+      "selectedCount": "{{count}} ಆಯ್ಕೆ (ಗರಿಷ್ಠ {{max}})",
+      "searchPlaceholder": "ಹೆಸರಿನಿಂದ ಹುಡುಕಿ…",
+      "noSearchResults": "ನಿಮ್ಮ ಹುಡುಕಾಟಕ್ಕೆ ಯಾವ ಹೆಸರೂ ಹೊಂದಿಕೆಯಾಗಿಲ್ಲ.",
+      "emptyRecipientList": "ನಿಮ್ಮ ಅನುಮತಿಗಳಲ್ಲಿ ಇನ್ನೂ ಯಾವ ವಿದ್ಯಾರ್ಥಿಗಳೂ ಲಭ್ಯವಿಲ್ಲ. ಪ್ರವೇಶಕ್ಕೆ ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+      "messageLabel": "ಸಂದೇಶ",
+      "messagePlaceholder": "ಆಯ್ಕೆಮಾಡಿದ ಎಲ್ಲರಿಗೆ ಕಳುಹಿಸಲು ಸಂದೇಶ ಬರೆಯಿರಿ…",
+      "send": "ಪ್ರಸಾರ ಕಳುಹಿಸಿ",
+      "success": "ನಿಮ್ಮ ಸಂದೇಶವನ್ನು ಆಯ್ಕೆಮಾಡಿದ ಸ್ವೀಕರಿಸುವವರಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ.",
+      "errorNoRecipients": "ಕನಿಷ್ಠ ಒಬ್ಬ ಸ್ವೀಕರಿಸುವವರನ್ನು ಆರಿಸಿ.",
+      "errorNoBody": "ಕಳುಹಿಸಲು ಸಂದೇಶವನ್ನು ನಮೂದಿಸಿ.",
+      "errorBodyTooLong": "ಸಂದೇಶ ಗರಿಷ್ಠ {{max}} ಅಕ್ಷರಗಳಿಗಿಂತ ಹೆಚ್ಚಿರಬಾರದು.",
+      "errorSendFailed": "ಪ್ರಸಾರವನ್ನು ಕಳುಹಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+    }
   },
   "homework": {
     "noHomework": "ಹೋಮ್‌ವರ್ಕ್ ಕಂಡುಬಂದಿಲ್ಲ",
@@ -1633,7 +1670,9 @@
   },
   "chatUi": {
     "composerHint": "ಕಳುಹಿಸಲು ನಮೂದಿಸಿ · ಹೊಸ ಸಾಲಿಗೆ Shift+Enter",
-    "selectConversation": "ಚಾಟ್ ಮಾಡುವುದನ್ನು ಪ್ರಾರಂಭಿಸಲು ಸಂವಾದವನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+    "selectConversation": "ಚಾಟ್ ಮಾಡುವುದನ್ನು ಪ್ರಾರಂಭಿಸಲು ಸಂವಾದವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    "pickerRoleStudent": "ವಿದ್ಯಾರ್ಥಿ",
+    "pickerRoleTeacher": "ಶಿಕ್ಷಕ"
   },
   "pwaInstall": {
     "title": "Digi School ಅಪ್ಲಿಕೇಶನ್ ಸ್ಥಾಪಿಸಿ",

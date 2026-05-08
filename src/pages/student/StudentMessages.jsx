@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { Navigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { MessageSquare } from "lucide-react";
 import ChatInbox from "../../components/chat/ChatInbox";
@@ -8,13 +8,26 @@ const BASE = "/student/chat";
 
 export default function StudentMessages() {
   const { t } = useTranslation();
+  const location = useLocation();
   const { conversationId } = useParams();
+  const [searchParams] = useSearchParams();
+
+  const isNewChatRoute = location.pathname.endsWith(`${BASE}/new`);
+  const draftUserId = isNewChatRoute ? (searchParams.get("with") || "").trim() : "";
+  const draftDisplayName = isNewChatRoute ? (searchParams.get("name") || "").trim() : "";
+
+  if (isNewChatRoute && !draftUserId) {
+    return <Navigate to={BASE} replace />;
+  }
+
+  const threadOpen = Boolean(conversationId) || Boolean(draftUserId);
+
   return (
     <div className="flex min-h-0 flex-1 flex-row">
       {/* Inbox sidebar — hidden on mobile when a thread is open */}
       <div
         className={`flex min-h-0 flex-col border-r border-[var(--color-border)] md:w-80 md:shrink-0 ${
-          conversationId ? "hidden md:flex" : "flex w-full"
+          threadOpen ? "hidden md:flex" : "flex w-full"
         }`}
       >
         <ChatInbox
@@ -25,9 +38,15 @@ export default function StudentMessages() {
       </div>
 
       {/* Thread panel */}
-      {conversationId ? (
+      {threadOpen ? (
         <div className="flex min-h-0 flex-1 flex-col">
-          <ChatThread conversationId={conversationId} backTo={BASE} />
+          <ChatThread
+            key={conversationId || `new-${draftUserId}`}
+            conversationId={conversationId}
+            draftOtherUserId={draftUserId}
+            draftDisplayName={draftDisplayName}
+            backTo={BASE}
+          />
         </div>
       ) : (
         <div className="hidden md:flex md:flex-1 md:items-center md:justify-center md:bg-[var(--color-background)]">

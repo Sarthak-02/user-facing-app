@@ -9,7 +9,7 @@ export default function Badge({ variant = "info", children }) {
   
     return (
       <span
-        className={`rounded-full px-2 py-1 text-xs font-medium ${styles[variant]}`}
+        className={`rounded-full px-2.5 py-1 text-sm font-medium ${styles[variant]}`}
       >
         {children}
       </span>
