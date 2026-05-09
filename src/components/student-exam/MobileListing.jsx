@@ -1,7 +1,7 @@
 import { Badge } from "../../ui-components";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { examListDateRangeLabel } from "./examListDates";
+import { examListDateRangeLabel, getStudentExamListDisplayPhase } from "./examListDates";
 
 function getExamTypeLabel(type, t) {
   if (!type) return "";
@@ -10,12 +10,19 @@ function getExamTypeLabel(type, t) {
 }
 
 const STATUS_CONFIG = {
-  PUBLISHED: {
+  UPCOMING: {
     badge: "info",
     labelKey: "studentExams.upcoming",
     borderColor: "border-l-blue-400",
     bgAccent: "bg-blue-50",
     iconColor: "text-blue-500",
+  },
+  ONGOING: {
+    badge: "warning",
+    labelKey: "studentExams.ongoing",
+    borderColor: "border-l-amber-400",
+    bgAccent: "bg-amber-50",
+    iconColor: "text-amber-600",
   },
   COMPLETED: {
     badge: "success",
@@ -25,7 +32,7 @@ const STATUS_CONFIG = {
     iconColor: "text-green-500",
   },
   DRAFT: {
-    badge: "default",
+    badge: "neutral",
     labelKey: "studentExams.draft",
     borderColor: "border-l-gray-300",
     bgAccent: "bg-gray-50",
@@ -60,7 +67,8 @@ export default function MobileListing({ examList, className }) {
   return (
     <div className={`md:hidden h-full overflow-y-auto space-y-3${className ? ` ${className}` : ""}`}>
       {examList.map((exam) => {
-        const config = STATUS_CONFIG[exam.status] || STATUS_CONFIG.DRAFT;
+        const displayPhase = getStudentExamListDisplayPhase(exam);
+        const config = STATUS_CONFIG[displayPhase] || STATUS_CONFIG.DRAFT;
         const dateLabel = examListDateRangeLabel(exam, i18n.language);
         const subjectCount = exam.subjects?.length || 0;
         const typeLabel = getExamTypeLabel(exam.examType, t);

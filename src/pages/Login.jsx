@@ -98,6 +98,13 @@ export default function LoginPage() {
         }
       }
 
+      if (data.isFirstLogin) {
+        const profilePath =
+          data.role === "STUDENT" ? "/student/profile" : "/staff/profile";
+        navigate(profilePath, { state: { firstLogin: true }, replace: true });
+        return;
+      }
+
       navigate("/home");
     } catch (err) {
       const message =

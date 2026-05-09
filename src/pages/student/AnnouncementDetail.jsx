@@ -187,7 +187,7 @@ export default function AnnouncementDetail() {
           {validAttachments.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Attachments ({validAttachments.length})
+                {t("broadcast.attachmentsWithCount", { count: validAttachments.length })}
               </h3>
               <div className="space-y-2">
                 {validAttachments.map(({ att, href, label, i }) => {

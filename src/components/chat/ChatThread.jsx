@@ -101,10 +101,15 @@ export default function ChatThread({
   const scrollToBottom = useCallback((behavior = "smooth") => {
     const area = scrollAreaRef.current;
     if (area) {
-      area.scrollTo({ top: area.scrollHeight, behavior });
+      area.scrollTo({
+        top: area.scrollHeight,
+        behavior: behavior === "instant" ? "auto" : behavior,
+      });
       return;
     }
-    bottomRef.current?.scrollIntoView({ behavior });
+    bottomRef.current?.scrollIntoView({
+      behavior: behavior === "instant" ? "auto" : behavior,
+    });
   }, []);
 
   const handleScroll = useCallback(() => {
@@ -195,14 +200,18 @@ export default function ChatThread({
     };
   }, [isDraft, conversationId, loading]);
 
-  // Auto-scroll only when near bottom; instant on initial load
+  // Auto-scroll only when near bottom. Skip while loading so we don't scroll the
+  // loader, consume "initial" scroll, then fail to jump once messages render (tall thread).
   useEffect(() => {
+    if (loading) return;
     if (atBottomRef.current) {
       const behavior = isInitialScrollRef.current ? "instant" : "smooth";
       isInitialScrollRef.current = false;
-      scrollToBottom(behavior);
+      const run = () => scrollToBottom(behavior);
+      // After paint so scrollHeight reflects the full thread (fonts/layout).
+      requestAnimationFrame(() => requestAnimationFrame(run));
     }
-  }, [messages, scrollToBottom]);
+  }, [messages, loading, scrollToBottom]);
 
   // Auto-resize textarea (capped so the composer does not dominate the screen on mobile)
   useEffect(() => {

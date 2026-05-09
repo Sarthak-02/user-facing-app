@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Badge } from "../../ui-components";
 import { getStudentExamDetail } from "../../api/exam.api";
+import { getStudentExamListDisplayPhase } from "../../components/student-exam/examListDates";
 import { useAuth } from "../../store/auth.store";
 import Loader from "../../ui-components/Loader";
 
@@ -20,39 +21,13 @@ function formatTime(time) {
   return time;
 }
 
-function getExamDisplayStatus(exam, statistics, root) {
-  const raw =
-    exam?.status ??
-    exam?.exam_status ??
-    exam?.examStatus ??
-    root?.status ??
-    root?.exam_status;
-  let normalized =
-    raw != null && String(raw).trim() !== ""
-      ? String(raw).trim().toUpperCase().replace(/\s+/g, "_")
-      : "";
-
-  if (normalized === "COMPLETE") normalized = "COMPLETED";
-
-  const canInferCompleted =
-    normalized === "PUBLISHED" || normalized === "";
-  if (canInferCompleted && statistics) {
-    const total = Number(statistics.total_subjects);
-    const graded = Number(statistics.graded_subjects);
-    if (total > 0 && graded >= total) return "COMPLETED";
-    const pct = Number(statistics.completion_percentage);
-    if (total > 0 && !Number.isNaN(pct) && pct >= 100) return "COMPLETED";
-  }
-
-  return normalized || "PUBLISHED";
-}
-
-function StatusBadge({ status, t }) {
-  if (status === "COMPLETED") return <Badge variant="success">{t("studentExams.completed")}</Badge>;
-  if (status === "PUBLISHED") return <Badge variant="info">{t("studentExams.upcoming")}</Badge>;
-  if (status === "DRAFT") return <Badge variant="default">{t("studentExams.draft")}</Badge>;
-  if (!status) return <Badge variant="default">—</Badge>;
-  return <Badge variant="default">{t("studentExams.statusUnknown", { status: status || "" })}</Badge>;
+function StatusBadge({ phase, t }) {
+  if (phase === "COMPLETED") return <Badge variant="success">{t("studentExams.completed")}</Badge>;
+  if (phase === "ONGOING") return <Badge variant="warning">{t("studentExams.ongoing")}</Badge>;
+  if (phase === "UPCOMING") return <Badge variant="info">{t("studentExams.upcoming")}</Badge>;
+  if (phase === "DRAFT") return <Badge variant="neutral">{t("studentExams.draft")}</Badge>;
+  if (!phase) return <Badge variant="neutral">—</Badge>;
+  return <Badge variant="neutral">{t("studentExams.statusUnknown", { status: phase || "" })}</Badge>;
 }
 
 function getExamTypeLabel(type, t) {
@@ -312,8 +287,8 @@ export default function StudentExamDetail() {
   }
 
   const { exam, subjects, statistics } = examData;
-  const displayStatus = getExamDisplayStatus(exam, statistics, examData);
-  const isCompleted = displayStatus === "COMPLETED";
+  const displayPhase = getStudentExamListDisplayPhase({ ...exam, subjects });
+  const isCompleted = displayPhase === "COMPLETED";
   const progressPct = statistics
     ? Math.round((statistics.graded_subjects / Math.max(statistics.total_subjects, 1)) * 100)
     : 0;
@@ -336,7 +311,7 @@ export default function StudentExamDetail() {
           </h1>
           <p className="text-xs text-gray-500">{t("studentExamDetail.detailsAndMarks")}</p>
         </div>
-        <StatusBadge status={displayStatus} t={t} />
+        <StatusBadge phase={displayPhase} t={t} />
       </div>
 
       <div className="max-w-3xl mx-auto w-full p-4 space-y-4 pb-4">
@@ -459,10 +434,10 @@ export default function StudentExamDetail() {
             </div>
           )}
 
-          {/* Subject-wise Marks */}
+          {/* Subject-wise details */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-              {t("studentExamDetail.subjectWiseMarks")}
+              {t("studentExamDetail.subjectWiseDetails")}
             </h3>
             {subjects && subjects.length > 0 ? (
               <div className="space-y-3">
@@ -482,7 +457,7 @@ export default function StudentExamDetail() {
           </div>
 
           {/* Upcoming Notice */}
-          {displayStatus === "PUBLISHED" && statistics?.graded_subjects === 0 && (
+          {(displayPhase === "UPCOMING" || displayPhase === "ONGOING") && statistics?.graded_subjects === 0 && (
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

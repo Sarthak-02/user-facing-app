@@ -151,7 +151,9 @@
     "requirements": "ಪಾಸ್ವರ್ಡ್ ಅವಶ್ಯಕತೆಗಳು:",
     "reqMinLength": "ಕನಿಷ್ಠ 6 ಅಕ್ಷರಗಳ ಉದ್ದ",
     "reqDifferent": "ಪ್ರಸ್ತುತ ಪಾಸ್‌ವರ್ಡ್‌ಗಿಂತ ಭಿನ್ನವಾಗಿದೆ",
-    "submit": "ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸಿ"
+    "submit": "ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸಿ",
+    "firstLoginTitle": "ಸ್ವಾಗತ! ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪಾಸ್‌ವರ್ಡ್ ಅನ್ನು ಬದಲಾಯಿಸಿ",
+    "firstLoginNotice": "ನಿಮ್ಮ ಸುರಕ್ಷತೆಗಾಗಿ, ಮುಂದುವರಿಯುವ ಮೊದಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪಾಸ್‌ವರ್ಡ್ ಅನ್ನು ನವೀಕರಿಸಿ."
   },
   "targetSelector": {
     "label": "ಗುರಿ ಪ್ರಕಾರ",
@@ -694,7 +696,15 @@
     "count_one": "{{count}} ಪ್ರಕಟಣೆ",
     "count_other": "{{count}} ಪ್ರಕಟಣೆಗಳು",
     "detailNotFound": "ಪ್ರಕಟಣೆ ಕಂಡುಬಂದಿಲ್ಲ",
-    "detailLoadFailed": "ಪ್ರಕಟಣೆಯನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ"
+    "detailLoadFailed": "ಪ್ರಕಟಣೆಯನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
+    "announcement": "ಪ್ರಕಟಣೆ",
+    "notFound": "ಈ ಪ್ರಕಟಣೆಯನ್ನು ಲೋಡ್ ಮಾಡಲಾಗಲಿಲ್ಲ.",
+    "backToAnnouncements": "ಪ್ರಕಟಣೆಗಳಿಗೆ ಹಿಂದಿರುಗಿ",
+    "attachmentIndex": "ಲಗತ್ತು {{index}}",
+    "attachmentCount_one": "{{count}} ಲಗತ್ತು",
+    "attachmentCount_other": "{{count}} ಲಗತ್ತುಗಳು",
+    "message": "ಸಂದೇಶ",
+    "from": "{{sender}} ರಿಂದ"
   },
   "studentAttendance": {
     "title": "ಹಾಜರಾತಿ",
@@ -750,6 +760,7 @@
   },
   "studentExams": {
     "upcoming": "ಮುಂಬರುವ",
+    "ongoing": "ನಡೆಯುತ್ತಿದೆ",
     "completed": "ಪೂರ್ಣಗೊಂಡಿದೆ",
     "draft": "ಕರಡು",
     "all": "ಎಲ್ಲಾ",
@@ -1457,7 +1468,7 @@
     "gradingProgressSubjects": "{{graded}}/{{total}} ವಿಷಯಗಳು",
     "pendingGrading_one": "{{count}} ವಿಷಯದ ಗ್ರೇಡಿಂಗ್ ಬಾಕಿಯಿದೆ",
     "pendingGrading_other": "{{count}} ವಿಷಯಗಳು ಗ್ರೇಡಿಂಗ್ ಬಾಕಿ ಉಳಿದಿವೆ",
-    "subjectWiseMarks": "ವಿಷಯವಾರು ಅಂಕಗಳು",
+    "subjectWiseDetails": "ವಿಷಯವಾರು ವಿವರಗಳು",
     "noSubjectsScheduled": "ಯಾವುದೇ ವಿಷಯಗಳನ್ನು ನಿಗದಿಪಡಿಸಲಾಗಿಲ್ಲ",
     "examScheduled": "ಪರೀಕ್ಷೆಯನ್ನು ನಿಗದಿಪಡಿಸಲಾಗಿದೆ",
     "examScheduledDescription": "ಈ ಪರೀಕ್ಷೆ ಬರಲಿದೆ. ಪರೀಕ್ಷೆಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಿದ ನಂತರ ಮತ್ತು ನಿಮ್ಮ ಶಿಕ್ಷಕರಿಂದ ಗ್ರೇಡ್ ಮಾಡಿದ ನಂತರ ಅಂಕಗಳು ಲಭ್ಯವಿರುತ್ತವೆ."

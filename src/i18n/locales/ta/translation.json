@@ -151,7 +151,9 @@
     "requirements": "கடவுச்சொல் தேவைகள்:",
     "reqMinLength": "குறைந்தது 6 எழுத்துகள் நீளம்",
     "reqDifferent": "தற்போதைய கடவுச்சொல்லிலிருந்து வேறுபட்டது",
-    "submit": "கடவுச்சொல்லை மாற்றவும்"
+    "submit": "கடவுச்சொல்லை மாற்றவும்",
+    "firstLoginTitle": "வரவேற்கிறோம்! உங்கள் கடவுச்சொல்லை மாற்றவும்",
+    "firstLoginNotice": "உங்கள் பாதுகாப்பிற்காக, தொடர்வதற்கு முன் உங்கள் கடவுச்சொல்லை புதுப்பிக்கவும்."
   },
   "targetSelector": {
     "label": "இலக்கு வகை",
@@ -694,7 +696,15 @@
     "count_one": "{{count}} அறிவிப்பு",
     "count_other": "{{count}} அறிவிப்புகள்",
     "detailNotFound": "அறிவிப்பு கிடைக்கவில்லை",
-    "detailLoadFailed": "அறிவிப்பை ஏற்ற முடியவில்லை"
+    "detailLoadFailed": "அறிவிப்பை ஏற்ற முடியவில்லை",
+    "announcement": "அறிவிப்பு",
+    "notFound": "இந்த அறிவிப்பை ஏற்ற முடியவில்லை.",
+    "backToAnnouncements": "அறிவிப்புகளுக்குத் திரும்பு",
+    "attachmentIndex": "இணைப்பு {{index}}",
+    "attachmentCount_one": "{{count}} இணைப்பு",
+    "attachmentCount_other": "{{count}} இணைப்புகள்",
+    "message": "செய்தி",
+    "from": "{{sender}} இடமிருந்து"
   },
   "studentAttendance": {
     "title": "வருகை",
@@ -750,6 +760,7 @@
   },
   "studentExams": {
     "upcoming": "வரவிருக்கிறது",
+    "ongoing": "நடைபெறுகிறது",
     "completed": "முடிக்கப்பட்டது",
     "draft": "வரைவு",
     "all": "அனைத்து",
@@ -1457,7 +1468,7 @@
     "gradingProgressSubjects": "{{graded}}/{{total}} பாடங்கள்",
     "pendingGrading_one": "{{count}} பாடம் தரப்படுத்தல் நிலுவையில் உள்ளது",
     "pendingGrading_other": "{{count}} பாடங்கள் தரம் நிலுவையில் உள்ளன",
-    "subjectWiseMarks": "பாடம் வாரியாக மதிப்பெண்கள்",
+    "subjectWiseDetails": "பாடம் வாரியாக விவரங்கள்",
     "noSubjectsScheduled": "பாடங்கள் எதுவும் திட்டமிடப்படவில்லை",
     "examScheduled": "தேர்வு திட்டமிடப்பட்டுள்ளது",
     "examScheduledDescription": "இந்த தேர்வு வரவுள்ளது. உங்கள் ஆசிரியரால் தேர்வு முடிந்து மதிப்பெண்கள் கிடைத்த பிறகு மதிப்பெண்கள் கிடைக்கும்."

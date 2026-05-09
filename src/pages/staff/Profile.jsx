@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card } from "../../ui-components";
 import { useAuth } from "../../store/auth.store";
@@ -13,8 +14,18 @@ import ChangePasswordModal from "../../components/ChangePasswordModal";
 export default function StaffProfile() {
   const { t } = useTranslation();
   const { auth } = useAuth();
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isFirstLogin = location.state?.firstLogin === true;
+  const [changePasswordOpen, setChangePasswordOpen] = useState(isFirstLogin);
+  const [showFirstLoginNotice, setShowFirstLoginNotice] = useState(isFirstLogin);
   const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    if (isFirstLogin) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [isFirstLogin, navigate, location.pathname]);
 
   const staffData = useMemo(() => {
     const details = auth.details || {};
@@ -94,8 +105,32 @@ export default function StaffProfile() {
 
       <div className="max-w-5xl mx-auto px-4 md:px-6">
 
+        {showFirstLoginNotice && (
+          <div className="-mt-16 md:-mt-20 mb-4 relative z-20">
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 shadow-sm flex items-start gap-3">
+              <Key size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-900">
+                  {t("changePassword.firstLoginTitle")}
+                </p>
+                <p className="text-sm text-amber-800 mt-0.5">
+                  {t("changePassword.firstLoginNotice")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChangePasswordOpen(true)}
+                className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition text-sm font-medium"
+              >
+                <Key size={14} />
+                {t("profile.changePassword")}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Profile Header Card */}
-        <div className="-mt-16 md:-mt-20 mb-6 relative z-10">
+        <div className={`${showFirstLoginNotice ? "" : "-mt-16 md:-mt-20"} mb-6 relative z-10`}>
           <Card className="p-5 md:p-7 shadow-md">
             <div className="flex flex-col sm:flex-row gap-5 items-center sm:items-end">
 
@@ -294,7 +329,10 @@ export default function StaffProfile() {
 
       <ChangePasswordModal
         open={changePasswordOpen}
-        onClose={() => setChangePasswordOpen(false)}
+        onClose={() => {
+          setChangePasswordOpen(false);
+          setShowFirstLoginNotice(false);
+        }}
       />
     </div>
   );

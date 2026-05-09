@@ -151,7 +151,9 @@
     "requirements": "Password Requirements:",
     "reqMinLength": "At least 6 characters long",
     "reqDifferent": "Different from current password",
-    "submit": "Change Password"
+    "submit": "Change Password",
+    "firstLoginTitle": "Welcome! Please change your password",
+    "firstLoginNotice": "For your security, please update your password before continuing."
   },
   "targetSelector": {
     "label": "Target type",
@@ -694,7 +696,15 @@
     "count_one": "{{count}} announcement",
     "count_other": "{{count}} announcements",
     "detailNotFound": "Announcement not found",
-    "detailLoadFailed": "Failed to load announcement"
+    "detailLoadFailed": "Failed to load announcement",
+    "announcement": "Announcement",
+    "notFound": "This announcement could not be loaded.",
+    "backToAnnouncements": "Back to announcements",
+    "attachmentIndex": "Attachment {{index}}",
+    "attachmentCount_one": "{{count}} attachment",
+    "attachmentCount_other": "{{count}} attachments",
+    "message": "Message",
+    "from": "From {{sender}}"
   },
   "studentAttendance": {
     "title": "Attendance",
@@ -750,6 +760,7 @@
   },
   "studentExams": {
     "upcoming": "Upcoming",
+    "ongoing": "Ongoing",
     "completed": "Completed",
     "draft": "Draft",
     "all": "All",
@@ -1457,7 +1468,7 @@
     "gradingProgressSubjects": "{{graded}}/{{total}} subjects",
     "pendingGrading_one": "{{count}} subject pending grading",
     "pendingGrading_other": "{{count}} subjects pending grading",
-    "subjectWiseMarks": "Subject-wise Marks",
+    "subjectWiseDetails": "Subject-wise Details",
     "noSubjectsScheduled": "No subjects scheduled",
     "examScheduled": "Exam Scheduled",
     "examScheduledDescription": "This exam is upcoming. Marks will be available after the exam is completed and graded by your teacher."

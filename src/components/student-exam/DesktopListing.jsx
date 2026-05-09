@@ -1,7 +1,7 @@
 import { Badge, Card } from "../../ui-components";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { examListDateRangeLabel } from "./examListDates";
+import { examListDateRangeLabel, getStudentExamListDisplayPhase } from "./examListDates";
 
 function getExamTypeLabel(type, t) {
   if (!type) return "";
@@ -10,7 +10,7 @@ function getExamTypeLabel(type, t) {
 }
 
 const STATUS_CONFIG = {
-  PUBLISHED: {
+  UPCOMING: {
     badge: "info",
     labelKey: "studentExams.upcoming",
     borderColor: "border-l-blue-400",
@@ -18,6 +18,15 @@ const STATUS_CONFIG = {
     iconColor: "text-blue-500",
     dotColor: "bg-blue-400",
     typeColor: "text-blue-600 bg-blue-50",
+  },
+  ONGOING: {
+    badge: "warning",
+    labelKey: "studentExams.ongoing",
+    borderColor: "border-l-amber-400",
+    bgAccent: "bg-amber-50",
+    iconColor: "text-amber-600",
+    dotColor: "bg-amber-400",
+    typeColor: "text-amber-700 bg-amber-50",
   },
   COMPLETED: {
     badge: "success",
@@ -29,7 +38,7 @@ const STATUS_CONFIG = {
     typeColor: "text-emerald-600 bg-emerald-50",
   },
   DRAFT: {
-    badge: "default",
+    badge: "neutral",
     labelKey: "studentExams.draft",
     borderColor: "border-l-gray-300",
     bgAccent: "bg-gray-50",
@@ -41,7 +50,8 @@ const STATUS_CONFIG = {
 
 function ExamCard({ exam, onClick }) {
   const { t, i18n } = useTranslation();
-  const config = STATUS_CONFIG[exam.status] || STATUS_CONFIG.DRAFT;
+  const displayPhase = getStudentExamListDisplayPhase(exam);
+  const config = STATUS_CONFIG[displayPhase] || STATUS_CONFIG.DRAFT;
   const dateLabel = examListDateRangeLabel(exam, i18n.language);
   const subjectCount = exam.subjects?.length || 0;
   const examName = exam.customExamType || getExamTypeLabel(exam.examType, t);

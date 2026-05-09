@@ -5,12 +5,17 @@ import DesktopListing from "../../components/student-exam/DesktopListing";
 import MobileListing from "../../components/student-exam/MobileListing";
 import Dropdown from "../../ui-components/Dropdown";
 import { getStudentExamsAll } from "../../api/exam.api";
-import { getExamListDateRange, parseExamDateInput } from "../../components/student-exam/examListDates";
+import {
+  getExamListDateRange,
+  getStudentExamListDisplayPhase,
+  parseExamDateInput,
+} from "../../components/student-exam/examListDates";
 import { useAuth } from "../../store/auth.store";
 import Loader from "../../ui-components/Loader";
 
 const STATUS_OPTIONS = [
-  { value: "PUBLISHED", labelKey: "studentExams.upcoming" },
+  { value: "UPCOMING", labelKey: "studentExams.upcoming" },
+  { value: "ONGOING", labelKey: "studentExams.ongoing" },
   { value: "COMPLETED", labelKey: "studentExams.completed" },
   { value: "", labelKey: "studentExams.all" },
 ];
@@ -26,7 +31,7 @@ export default function StudentExams() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [examTypeFilter, setExamTypeFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("PUBLISHED");
+  const [statusFilter, setStatusFilter] = useState("UPCOMING");
 
   const examTypeOptions = useMemo(() => {
     const options = [{ value: "", label: t("studentExams.allTypes") }];
@@ -66,7 +71,7 @@ export default function StudentExams() {
     let filtered = [...examData];
 
     if (statusFilter) {
-      filtered = filtered.filter((exam) => exam.status === statusFilter);
+      filtered = filtered.filter((exam) => getStudentExamListDisplayPhase(exam) === statusFilter);
     }
 
     if (searchQuery.trim()) {
@@ -98,10 +103,10 @@ export default function StudentExams() {
   const handleClearFilters = () => {
     setSearchQuery("");
     setExamTypeFilter("");
-    setStatusFilter("PUBLISHED");
+    setStatusFilter("UPCOMING");
   };
 
-  const hasActiveFilters = searchQuery || examTypeFilter || statusFilter !== "PUBLISHED";
+  const hasActiveFilters = searchQuery || examTypeFilter || statusFilter !== "UPCOMING";
 
   if (loading) {
     return (

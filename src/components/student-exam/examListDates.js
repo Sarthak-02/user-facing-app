@@ -71,3 +71,41 @@ export function examListDateRangeLabel(exam, locale) {
   if (!end || dateKey(start) === dateKey(end)) return startLabel;
   return `${startLabel} - ${formatExamListDate(end, locale)}`;
 }
+
+function startOfLocalDay(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/**
+ * Student listing schedule phase from exam start/end (local calendar dates).
+ * @returns {"UPCOMING"|"ONGOING"|"COMPLETED"|null} null when range cannot be resolved
+ */
+export function getStudentExamSchedulePhase(exam, refDate = new Date()) {
+  const { start, end } = getExamListDateRange(exam);
+  const startD = parseExamDateInput(start);
+  const endD = parseExamDateInput(end ?? start);
+  if (!startD || !endD) return null;
+
+  const today = startOfLocalDay(refDate);
+  const startNorm = startOfLocalDay(startD);
+  const endNorm = startOfLocalDay(endD);
+
+  if (today < startNorm) return "UPCOMING";
+  if (today > endNorm) return "COMPLETED";
+  return "ONGOING";
+}
+
+/**
+ * Phase shown on cards and used for filters; falls back to API status when dates are missing.
+ */
+export function getStudentExamListDisplayPhase(exam, refDate = new Date()) {
+  const phase = getStudentExamSchedulePhase(exam, refDate);
+  if (phase) return phase;
+  const raw = String(exam?.status ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_");
+  if (raw === "DRAFT") return "DRAFT";
+  if (raw === "COMPLETE" || raw === "COMPLETED") return "COMPLETED";
+  return "UPCOMING";
+}

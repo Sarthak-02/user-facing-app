@@ -151,7 +151,9 @@
     "requirements": "पासवर्ड आवश्यकताएँ:",
     "reqMinLength": "कम से कम 6 अक्षर लंबा",
     "reqDifferent": "वर्तमान पासवर्ड से भिन्न",
-    "submit": "पासवर्ड बदलें"
+    "submit": "पासवर्ड बदलें",
+    "firstLoginTitle": "स्वागत है! कृपया अपना पासवर्ड बदलें",
+    "firstLoginNotice": "अपनी सुरक्षा के लिए, कृपया जारी रखने से पहले अपना पासवर्ड बदलें।"
   },
   "targetSelector": {
     "label": "लक्ष्य प्रकार",
@@ -694,7 +696,15 @@
     "count_one": "{{count}} घोषणा",
     "count_other": "{{count}} घोषणाएँ",
     "detailNotFound": "घोषणा नहीं मिली",
-    "detailLoadFailed": "घोषणा लोड करने में विफल"
+    "detailLoadFailed": "घोषणा लोड करने में विफल",
+    "announcement": "घोषणा",
+    "notFound": "यह घोषणा लोड नहीं हो सकी।",
+    "backToAnnouncements": "घोषणाओं पर लौटें",
+    "attachmentIndex": "अनुलग्नक {{index}}",
+    "attachmentCount_one": "{{count}} अनुलग्नक",
+    "attachmentCount_other": "{{count}} अनुलग्नक",
+    "message": "संदेश",
+    "from": "{{sender}} से"
   },
   "studentAttendance": {
     "title": "उपस्थिति",
@@ -750,6 +760,7 @@
   },
   "studentExams": {
     "upcoming": "आगामी",
+    "ongoing": "जारी",
     "completed": "पुरा होना।",
     "draft": "मसौदा",
     "all": "सभी",
@@ -1457,7 +1468,7 @@
     "gradingProgressSubjects": "{{graded}}/{{total}} विषय",
     "pendingGrading_one": "{{count}} विषय ग्रेडिंग लंबित",
     "pendingGrading_other": "{{count}} विषयों की ग्रेडिंग लंबित है",
-    "subjectWiseMarks": "विषयवार अंक",
+    "subjectWiseDetails": "विषयवार विवरण",
     "noSubjectsScheduled": "कोई विषय निर्धारित नहीं है",
     "examScheduled": "परीक्षा निर्धारित",
     "examScheduledDescription": "यह परीक्षा आने वाली है. परीक्षा पूरी होने और आपके शिक्षक द्वारा ग्रेड किए जाने के बाद अंक उपलब्ध होंगे।"
