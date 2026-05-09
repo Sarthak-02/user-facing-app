@@ -207,6 +207,7 @@ export default function Header() {
                     { code: "en", label: "EN" },
                     { code: "hi", label: "हि" },
                     { code: "kn", label: "ಕ" },
+                    { code: "ta", label: "த" },
                   ].map(({ code, label }) => (
                     <button
                       key={code}

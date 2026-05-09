@@ -53,7 +53,8 @@
     "daysLeft": "{{days}} ದಿನ ಉಳಿದಿದೆ",
     "today": "ಇಂದು",
     "inDays": "{{days}} ದಿನಗಳಲ್ಲಿ",
-    "unreadOverflow": "9+"
+    "unreadOverflow": "9+",
+    "select": "ಆಯ್ಕೆಮಾಡಿ…"
   },
   "login": {
     "subtitle": "ನಿಮ್ಮ ಶಾಲಾ ಖಾತೆಯೊಂದಿಗೆ ಸೈನ್ ಇನ್ ಮಾಡಿ",
@@ -160,7 +161,10 @@
     "entireSchool": "ಇಡೀ ಶಾಲೆ",
     "class": "ವರ್ಗ",
     "section": "ವಿಭಾಗ",
-    "student": "ವಿದ್ಯಾರ್ಥಿ"
+    "student": "ವಿದ್ಯಾರ್ಥಿ",
+    "selectClass": "ವರ್ಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    "selectSection": "ವಿಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    "selectStudent": "ವಿದ್ಯಾರ್ಥಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ"
   },
   "attendance": {
     "rollNo": "ರೋಲ್ ಸಂಖ್ಯೆ: {{rollNo}}",
@@ -560,7 +564,11 @@
     },
     "multiClassSummary": "{{count}} ತರಗತಿಗಳು",
     "multiStudentSummary": "{{count}} ವಿದ್ಯಾರ್ಥಿಗಳು",
-    "selectTargetFallback": "ಗುರಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+    "multiSectionSummary_one": "{{count}} ವಿಭಾಗ",
+    "multiSectionSummary_other": "{{count}} ವಿಭಾಗಗಳು",
+    "selectTargetFallback": "ಗುರಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    "gradingPassingExceedsMaximum": "ಉತ್ತೀರ್ಣ ಅಂಕ ಅಥವಾ GPA ಗರಿಷ್ಠಕ್ಕಿಂತ ಹೆಚ್ಚಿರಬಾರದು.",
+    "gradingPassingGradeAboveMaximum": "ಉತ್ತೀರ್ಣ ಗ್ರೇಡ್ ಈ ಮಾನದಂಡದಲ್ಲಿ ಗರಿಷ್ಠ ಗ್ರೇಡಿಗಿಂತ ಉತ್ತಮವಾಗಿರಬಾರದು."
   },
   "staffExamDetail": {
     "pageTitle": "ಪರೀಕ್ಷೆಯ ವಿವರಗಳು",

@@ -53,7 +53,8 @@
     "daysLeft": "{{days}} दिन शेष",
     "today": "आज",
     "inDays": "{{days}} दिनों में",
-    "unreadOverflow": "9+"
+    "unreadOverflow": "9+",
+    "select": "चुनें…"
   },
   "login": {
     "subtitle": "अपने स्कूल खाते से साइन इन करें",
@@ -160,7 +161,10 @@
     "entireSchool": "संपूर्ण विद्यालय",
     "class": "कक्षा",
     "section": "अनुभाग",
-    "student": "विद्यार्थी"
+    "student": "विद्यार्थी",
+    "selectClass": "कक्षा चुनें",
+    "selectSection": "अनुभाग चुनें",
+    "selectStudent": "विद्यार्थी चुनें"
   },
   "attendance": {
     "rollNo": "रोल नंबर: {{rollNo}}",
@@ -560,7 +564,11 @@
     },
     "multiClassSummary": "{{count}} कक्षाएं",
     "multiStudentSummary": "{{count}} छात्र",
-    "selectTargetFallback": "लक्ष्य चुनें"
+    "multiSectionSummary_one": "{{count}} अनुभाग",
+    "multiSectionSummary_other": "{{count}} अनुभाग",
+    "selectTargetFallback": "लक्ष्य चुनें",
+    "gradingPassingExceedsMaximum": "उत्तीर्ण अंक या GPA अधिकतम से अधिक नहीं हो सकता।",
+    "gradingPassingGradeAboveMaximum": "उत्तीर्ण ग्रेड इस पैमाने पर अधिकतम ग्रेड से ऊँचा नहीं हो सकता।"
   },
   "staffExamDetail": {
     "pageTitle": "परीक्षा विवरण",

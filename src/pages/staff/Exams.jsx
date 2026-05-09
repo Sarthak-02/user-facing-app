@@ -17,14 +17,21 @@ function formatTime(timeString) {
   return timeString + ":00";
 }
 
+function getExamTypeDisplayLabel(examType, t) {
+  if (!examType) return "";
+  const key = `exams.examTypes.${examType}`;
+  const translated = t(key);
+  return translated === key ? examType.replaceAll("_", " ") : translated;
+}
+
 function buildTargets(examData) {
   const targets = [];
-  if (examData.targetType?.value === "CLASS" && Array.isArray(examData.classId) && examData.classId.length > 0) {
-    examData.classId.forEach((classItem) => {
-      targets.push({ targetType: "CLASS", targetId: classItem.value });
+  if (examData.targetType?.value === "CLASS" && examData.classId?.value) {
+    targets.push({ targetType: "CLASS", targetId: examData.classId.value });
+  } else if (examData.targetType?.value === "SECTION" && Array.isArray(examData.sectionId)) {
+    examData.sectionId.forEach((section) => {
+      if (section?.value) targets.push({ targetType: "SECTION", targetId: section.value });
     });
-  } else if (examData.targetType?.value === "SECTION" && examData.sectionId?.value) {
-    targets.push({ targetType: "SECTION", targetId: examData.sectionId.value });
   } else if (examData.targetType?.value === "STUDENT" && examData.studentId) {
     const studentIds = Array.isArray(examData.studentId) ? examData.studentId : [examData.studentId];
     studentIds.forEach((student) => {
@@ -468,7 +475,7 @@ export default function Exams() {
               </p>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900">
-                  {examToPublish.examType.replaceAll("_", " ")}
+                  {getExamTypeDisplayLabel(examToPublish.examType, t)}
                 </h4>
                 {examToPublish.customExamType && (
                   <p className="text-sm text-gray-600">{examToPublish.customExamType}</p>

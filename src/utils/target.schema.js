@@ -2,7 +2,7 @@ export const CLASS_TARGET_SCHEMA = [
     {
         label: "Select Class",
         value: [],
-        multi: true,
+        multi: false,
         type: "class",
         required: true,
         options: [],
@@ -29,7 +29,7 @@ export const SECTION_TARGET_SCHEMA = [
     {
         label: "Select Section",
         value: [],
-        multi: false,
+        multi: true,
         type: "section",
         required: true,
         options: [],

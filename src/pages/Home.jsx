@@ -5,7 +5,7 @@ import StaffHome from "./staff/Home";
 export default function Home() {
   const { auth } = useAuth();
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto pb-nav md:pb-0">
+    <div className="min-h-0 flex-1 overflow-y-auto">
       {auth?.role?.toLowerCase() === "student" ? (
         <StudentHome />
       ) : (

@@ -53,7 +53,8 @@
     "daysLeft": "{{days}}d left",
     "today": "Today",
     "inDays": "In {{days}} days",
-    "unreadOverflow": "9+"
+    "unreadOverflow": "9+",
+    "select": "Select…"
   },
   "login": {
     "subtitle": "Sign in with your school account",
@@ -160,7 +161,10 @@
     "entireSchool": "Entire School",
     "class": "Class",
     "section": "Section",
-    "student": "Student"
+    "student": "Student",
+    "selectClass": "Select class",
+    "selectSection": "Select section",
+    "selectStudent": "Select student"
   },
   "attendance": {
     "rollNo": "Roll No: {{rollNo}}",
@@ -560,7 +564,11 @@
     },
     "multiClassSummary": "{{count}} classes",
     "multiStudentSummary": "{{count}} students",
-    "selectTargetFallback": "Select Target"
+    "multiSectionSummary_one": "{{count}} section",
+    "multiSectionSummary_other": "{{count}} sections",
+    "selectTargetFallback": "Select Target",
+    "gradingPassingExceedsMaximum": "Passing marks or GPA must not be greater than the maximum.",
+    "gradingPassingGradeAboveMaximum": "Passing grade cannot be higher than the maximum grade on this scale."
   },
   "staffExamDetail": {
     "pageTitle": "Exam Details",

@@ -249,6 +249,18 @@ export default function LoginPage() {
               >
                 ಕನ್ನಡ
               </button>
+              <button
+                type="button"
+                onClick={() => i18n.changeLanguage("ta")}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition sm:px-4 ${
+                  activeLng === "ta"
+                    ? "bg-[var(--color-surface)] text-primary-700 shadow-sm dark:text-primary-300"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                }`}
+                aria-pressed={activeLng === "ta"}
+              >
+                தமிழ்
+              </button>
             </div>
           </div>
 
