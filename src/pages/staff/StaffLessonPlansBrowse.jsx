@@ -331,7 +331,8 @@ export default function StaffLessonPlansBrowse() {
   useEffect(() => { fetchClassPlan(); }, [fetchClassPlan]);
 
   const goBack = () => {
-    if ((permissions.sections || []).length > 0) navigate("/staff/lesson-plans");
+    if (subjectsInSection.length > 1) navigate(`/staff/lesson-plans/section/${sectionId}`);
+    else if ((permissions.sections || []).length > 1) navigate("/staff/lesson-plans");
     else navigate("/home");
   };
 
