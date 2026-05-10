@@ -5,16 +5,20 @@ export default function Table({
   columns = [],
   data = [],
   className = "",
-  maxHeight = "70vh", // 👈 configurable
+  /** Pass `null` to let the table grow with content (parent handles scrolling). */
+  maxHeight = "70vh",
 }) {
   const { t } = useTranslation();
+  const hasMaxHeight =
+    maxHeight != null && maxHeight !== false && maxHeight !== "";
   return (
     <div
       className={clsx(
-        "relative overflow-auto rounded-lg border border-border bg-surface",
+        "relative rounded-lg border border-border bg-surface",
+        hasMaxHeight ? "overflow-auto" : "overflow-x-auto",
         className
       )}
-      style={{ maxHeight }}
+      style={hasMaxHeight ? { maxHeight } : undefined}
     >
       <table className="min-w-full text-sm border-collapse">
         <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800">

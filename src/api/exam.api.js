@@ -290,6 +290,219 @@ export async function getExamStudents(examId) {
   }
 }
 
+function parseFilenameFromContentDisposition(header) {
+  if (!header || typeof header !== "string") return null;
+  const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (utf8?.[1]) {
+    try {
+      return decodeURIComponent(utf8[1].trim().replace(/^"+|"+$/g, ""));
+    } catch {
+      return utf8[1].trim().replace(/^"+|"+$/g, "");
+    }
+  }
+  const quoted = /filename="([^"]+)"/i.exec(header);
+  if (quoted?.[1]) return quoted[1].trim();
+  const loose = /filename=([^;\s]+)/i.exec(header);
+  if (loose?.[1]) return loose[1].trim().replace(/^"+|"+$/g, "");
+  return null;
+}
+
+async function blobResponseToErrorPayload(blob) {
+  if (!(blob instanceof Blob)) return blob;
+  const text = await blob.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text || "Request failed" };
+  }
+}
+
+function isGradesUploadFileResponse(contentType, contentDisposition) {
+  const ct = (contentType || "").split(";")[0].trim().toLowerCase();
+  const cd = (contentDisposition || "").toLowerCase();
+  if (cd.includes("attachment")) return true;
+  if (
+    ct.includes("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") ||
+    ct.includes("application/vnd.ms-excel") ||
+    ct.includes("spreadsheet") ||
+    ct.includes("excel")
+  ) {
+    return true;
+  }
+  if (ct.includes("application/octet-stream")) return true;
+  return false;
+}
+
+/** .xlsx is ZIP (PK); legacy .xls is OLE compound document */
+async function blobLooksLikeExcelBinary(blob) {
+  if (!(blob instanceof Blob) || blob.size < 4) return false;
+  const head = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+  const isZip = head[0] === 0x50 && head[1] === 0x4b;
+  const isOle =
+    head[0] === 0xd0 &&
+    head[1] === 0xcf &&
+    head[2] === 0x11 &&
+    head[3] === 0xe0;
+  return isZip || isOle;
+}
+
+function defaultGradesUploadFilename(examId, contentDisposition, rawType) {
+  const fromHeader = parseFilenameFromContentDisposition(contentDisposition);
+  if (fromHeader) return fromHeader;
+  const ct = (rawType || "").toLowerCase();
+  if (ct.includes("ms-excel") && !ct.includes("spreadsheetml")) {
+    return `exam-${examId}-grades-result.xls`;
+  }
+  return `exam-${examId}-grades-result.xlsx`;
+}
+
+/**
+ * POST upload: server usually returns an Excel file (even if Content-Type is wrong).
+ * Magic-byte detection runs before JSON so mislabeled xlsx still downloads.
+ * @returns {Promise<{ kind: 'json', data: object } | { kind: 'file', blob: Blob, filename: string }>}
+ */
+async function interpretGradesUploadResponse(response, examId) {
+  const rawType = response.headers["content-type"] || "";
+  const contentType = rawType.split(";")[0].trim().toLowerCase();
+  const contentDisposition = response.headers["content-disposition"] || "";
+  const blob = response.data;
+
+  if (!(blob instanceof Blob)) {
+    return { kind: "json", data: blob ?? {} };
+  }
+
+  if (blob.size === 0) {
+    return { kind: "json", data: {} };
+  }
+
+  if (await blobLooksLikeExcelBinary(blob)) {
+    const filename = defaultGradesUploadFilename(examId, contentDisposition, rawType);
+    return { kind: "file", blob, filename };
+  }
+
+  if (isGradesUploadFileResponse(contentType, contentDisposition)) {
+    const filename = defaultGradesUploadFilename(examId, contentDisposition, rawType);
+    return { kind: "file", blob, filename };
+  }
+
+  if (contentType.includes("application/json")) {
+    const data = await blobResponseToErrorPayload(blob);
+    return { kind: "json", data };
+  }
+
+  const buf = await blob.arrayBuffer();
+  const text = new TextDecoder("utf-8", { fatal: false }).decode(buf);
+  const trimmed = text.trimStart();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      return { kind: "json", data: JSON.parse(text) };
+    } catch {
+      /* fall through — save bytes as file */
+    }
+  }
+
+  const filename = defaultGradesUploadFilename(examId, contentDisposition, rawType);
+  return {
+    kind: "file",
+    blob: new Blob([buf], {
+      type:
+        rawType.split(";")[0].trim() ||
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }),
+    filename,
+  };
+}
+
+/**
+ * Download server-generated grades Excel template (GET /exam/:exam_id/grades-template).
+ * @param {string} examId
+ * @returns {Promise<{ blob: Blob, filename: string }>}
+ */
+export async function downloadExamGradesTemplate(examId) {
+  try {
+    const response = await api.get(`/exam/${examId}/grades-template`, {
+      responseType: "blob",
+    });
+
+    const contentType = (response.headers["content-type"] || "").toLowerCase();
+    if (contentType.includes("application/json")) {
+      const payload = await blobResponseToErrorPayload(response.data);
+      throw payload;
+    }
+
+    const filename =
+      parseFilenameFromContentDisposition(
+        response.headers["content-disposition"]
+      ) || `exam-${examId}-grades-template.xlsx`;
+
+    return { blob: response.data, filename };
+  } catch (err) {
+    if (err.response?.data instanceof Blob) {
+      const payload = await blobResponseToErrorPayload(err.response.data);
+      console.error("Error downloading grades template:", payload);
+      throw payload;
+    }
+    console.error("Error downloading grades template:", err.response?.data || err);
+    throw err.response?.data || err;
+  }
+}
+
+/**
+ * Upload filled grades Excel; parsing and persistence are handled by the server
+ * (POST /exam/:exam_id/grades-upload).
+ * Multipart body: required fields `exam_id`, `file`.
+ * Successful responses are normally an Excel file (download in the browser).
+ * @param {string} examId
+ * @param {File} file
+ * @returns {Promise<
+ *   | { kind: 'json', data: object }
+ *   | { kind: 'file', blob: Blob, filename: string }
+ *   | { kind: 'row_errors', blob: Blob, filename: string, errorRowCount?: number }
+ * >}
+ */
+export async function uploadExamGradesTemplate(examId, file) {
+  try {
+    const formData = new FormData();
+    formData.append("exam_id", examId);
+    formData.append("file", file);
+
+    const response = await api.post(
+      `/exam/${examId}/grades-upload`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        responseType: "blob",
+      }
+    );
+    return interpretGradesUploadResponse(response, examId);
+  } catch (err) {
+    const res = err.response;
+    if (res?.data instanceof Blob) {
+      const interpreted = await interpretGradesUploadResponse(res, examId);
+      if (interpreted.kind === "file") {
+        if (res.status === 422) {
+          const raw = res.headers["x-upload-error-rows"];
+          const n = raw != null ? Number(raw) : NaN;
+          return {
+            kind: "row_errors",
+            blob: interpreted.blob,
+            filename: interpreted.filename,
+            errorRowCount: Number.isFinite(n) ? n : undefined,
+          };
+        }
+        return interpreted;
+      }
+      if (interpreted.kind === "json") {
+        throw interpreted.data ?? { message: "Upload failed" };
+      }
+    }
+    console.error("Error uploading grades Excel:", err.response?.data || err);
+    throw err.response?.data || err;
+  }
+}
+
 /**
  * Submit marks for a student in an exam
  * @param {string} examId - The ID of the exam

@@ -1,25 +1,53 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Button, Table } from "../../ui-components";
-import { bulkSubmitExamMarks, getExamGradesAll } from "../../api/exam.api";
+import {
+  bulkSubmitExamMarks,
+  downloadExamGradesTemplate,
+  getExamGradesAll,
+  uploadExamGradesTemplate,
+} from "../../api/exam.api";
 import { useExamDetail } from "../../store/examDetail.store";
 import { usePermissions } from "../../store/permissions.store";
 import Loader from "../../ui-components/Loader";
 
-// Mock students data for testing
-const MOCK_STUDENTS = [
-  { id: "st1", name: "Aarav Sharma", rollNumber: "001" },
-  { id: "st2", name: "Diya Singh", rollNumber: "002" },
-  { id: "st3", name: "Kabir Verma", rollNumber: "003" },
-  { id: "st4", name: "Ananya Patel", rollNumber: "004" },
-  { id: "st5", name: "Rohan Kumar", rollNumber: "005" },
-  { id: "st6", name: "Priya Gupta", rollNumber: "006" },
-  { id: "st7", name: "Arjun Mehta", rollNumber: "007" },
-  { id: "st8", name: "Ishita Reddy", rollNumber: "008" },
-];
-
 const LETTER_GRADES = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F"];
+
+function buildEmptyMarks(examData, studentList) {
+  const initialMarks = {};
+  studentList.forEach((student) => {
+    initialMarks[student.id] = {};
+    examData.subjects.forEach((subject) => {
+      initialMarks[student.id][subject.subjectId] = { value: "", remarks: "" };
+    });
+  });
+  return initialMarks;
+}
+
+function mergeGradesApiIntoMarks(marksTemplate, apiData) {
+  const next = structuredClone(marksTemplate);
+  const submittedSubjectIds = new Set();
+  if (!apiData?.subjects || !Array.isArray(apiData.subjects)) {
+    return { marks: next, submittedSubjectIds };
+  }
+  apiData.subjects.forEach((subject) => {
+    if (subject.has_grades_marked) {
+      submittedSubjectIds.add(subject.subject_id);
+    }
+    if (subject.grades && Array.isArray(subject.grades)) {
+      subject.grades.forEach((grade) => {
+        if (next[grade.student_id]?.[subject.subject_id]) {
+          next[grade.student_id][subject.subject_id] = {
+            value: grade.grades_obtained || "",
+            remarks: grade.remarks || "",
+          };
+        }
+      });
+    }
+  });
+  return { marks: next, submittedSubjectIds };
+}
 
 function getExamTypeLabel(type, t) {
   const key = `exams.examTypes.${type}`;
@@ -51,6 +79,10 @@ export default function EnterMarks() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
+
+  const excelInputRef = useRef(null);
+  const [templateDownloading, setTemplateDownloading] = useState(false);
+  const [excelUploading, setExcelUploading] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -87,57 +119,27 @@ export default function EnterMarks() {
           setSelectedSubject(examData.subjects[0].subjectId);
         }
 
-        // Initialize marks data
-        const initialMarks = {};
-        transformedStudents.forEach((student) => {
-          initialMarks[student.id] = {};
-          examData.subjects.forEach((subject) => {
-            initialMarks[student.id][subject.subjectId] = {
-              value: "",
-              remarks: "",
-            };
-          });
-        });
+        const initialMarks = buildEmptyMarks(examData, transformedStudents);
 
         // Fetch existing grades from API
         try {
           const gradesResponse = await getExamGradesAll(examId);
-          
+
           if (gradesResponse.success && gradesResponse.data) {
-            const apiData = gradesResponse.data;
-            const submittedSubjectIds = new Set();
-            
-            // Process each subject and its grades
-            if (apiData.subjects && Array.isArray(apiData.subjects)) {
-              apiData.subjects.forEach(subject => {
-                // Track subjects that have grades marked
-                if (subject.has_grades_marked) {
-                  submittedSubjectIds.add(subject.subject_id);
-                }
-                
-                // Pre-populate marks for students who have grades
-                if (subject.grades && Array.isArray(subject.grades)) {
-                  subject.grades.forEach(grade => {
-                    if (initialMarks[grade.student_id] && initialMarks[grade.student_id][subject.subject_id]) {
-                      initialMarks[grade.student_id][subject.subject_id] = {
-                        value: grade.grades_obtained || "",
-                        remarks: grade.remarks || "",
-                      };
-                    }
-                  });
-                }
-              });
-            }
-            
-            // Update submitted subjects set
+            const { marks, submittedSubjectIds } = mergeGradesApiIntoMarks(
+              initialMarks,
+              gradesResponse.data
+            );
             setSubmittedSubjects(submittedSubjectIds);
+            setMarksData(marks);
+            setLoading(false);
+            return;
           }
         } catch (gradesError) {
           console.error("Error fetching existing grades:", gradesError);
-          // Don't block loading if grades fetch fails, just log the error
-          // User can still enter new marks
         }
 
+        setSubmittedSubjects(new Set());
         setMarksData(initialMarks);
         setLoading(false);
       } catch (err) {
@@ -262,6 +264,110 @@ export default function EnterMarks() {
   const handleGoBack = () => {
     navigate(`/staff/exams/${examId}`);
   };
+
+  const handleDownloadGradesTemplate = useCallback(async () => {
+    if (!examId) return;
+    setSubmitError(null);
+    setTemplateDownloading(true);
+    try {
+      const { blob, filename } = await downloadExamGradesTemplate(examId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setSuccessMessage(t("enterMarks.templateDownloaded"));
+      setTimeout(() => setSuccessMessage(""), 4000);
+    } catch (err) {
+      const msg =
+        err?.message ||
+        err?.error?.message ||
+        (typeof err === "string" ? err : null);
+      setSubmitError(msg || t("enterMarks.templateDownloadFailed"));
+    } finally {
+      setTemplateDownloading(false);
+    }
+  }, [examId, t]);
+
+  const refreshMarksFromServer = useCallback(async () => {
+    if (!examId || !exam || !students.length) return;
+    const gradesResponse = await getExamGradesAll(examId);
+    if (!gradesResponse.success || !gradesResponse.data) return;
+    const empty = buildEmptyMarks(exam, students);
+    const { marks, submittedSubjectIds } = mergeGradesApiIntoMarks(
+      empty,
+      gradesResponse.data
+    );
+    setMarksData(marks);
+    setSubmittedSubjects(submittedSubjectIds);
+  }, [examId, exam, students]);
+
+  const handleExcelUpload = useCallback(
+    async (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file || !examId) return;
+
+      setSubmitError(null);
+      setSuccessMessage("");
+      setExcelUploading(true);
+
+      try {
+        const result = await uploadExamGradesTemplate(examId, file);
+
+        const triggerBlobDownload = (blob, filename) => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = filename;
+          link.rel = "noopener";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        };
+
+        if (result.kind === "row_errors") {
+          triggerBlobDownload(result.blob, result.filename);
+          const msg =
+            result.errorRowCount != null && result.errorRowCount > 0
+              ? t("enterMarks.excelUploadRowErrorsWithCount", {
+                  count: result.errorRowCount,
+                })
+              : t("enterMarks.excelUploadRowErrors");
+          setSubmitError(msg);
+          return;
+        }
+
+        await refreshMarksFromServer();
+
+        if (result.kind === "file") {
+          triggerBlobDownload(result.blob, result.filename);
+          setSuccessMessage(t("enterMarks.excelUploadResultDownloaded"));
+        } else {
+          const msg =
+            result.data?.message ||
+            result.data?.data?.message ||
+            t("enterMarks.excelUploadSuccess");
+          setSuccessMessage(msg);
+        }
+        setTimeout(() => setSuccessMessage(""), 6000);
+      } catch (err) {
+        const msg =
+          err?.message ||
+          err?.error?.message ||
+          (typeof err === "string" ? err : null);
+        setSubmitError(msg || t("enterMarks.excelUploadFailed"));
+      } finally {
+        setExcelUploading(false);
+      }
+    },
+    [examId, refreshMarksFromServer, t]
+  );
 
   // Filter students
   const filteredStudents = students.filter((student) =>
@@ -487,7 +593,7 @@ export default function EnterMarks() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col p-4 gap-4 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 gap-4">
       {/* Header */}
       <div className="flex-shrink-0">
         <div className="flex items-center gap-4 mb-4">
@@ -562,6 +668,37 @@ export default function EnterMarks() {
               </select>
             </div>
           </div>
+
+          <div className="mt-4 pt-4 border-t border-gray-200 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+            <p className="text-sm text-gray-600 flex-1 min-w-[200px]">
+              {t("enterMarks.excelBulkHint")}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                loading={templateDownloading}
+                onClick={handleDownloadGradesTemplate}
+              >
+                {t("enterMarks.downloadTemplate")}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                loading={excelUploading}
+                onClick={() => excelInputRef.current?.click()}
+              >
+                {t("enterMarks.uploadExcel")}
+              </Button>
+              <input
+                ref={excelInputRef}
+                type="file"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                className="hidden"
+                onChange={handleExcelUpload}
+              />
+            </div>
+          </div>
         </Card>
 
         {/* Success/Error Messages */}
@@ -613,13 +750,13 @@ export default function EnterMarks() {
         )}
       </div>
 
-      {/* Desktop: Table View */}
-      <div className="hidden md:block pb-20">
-        <Table columns={tableColumns} data={filteredStudents} maxHeight="50vh" />
+      {/* Desktop: Table View — page scrolls; no nested max-height scroll */}
+      <div className="hidden md:block pb-8">
+        <Table columns={tableColumns} data={filteredStudents} maxHeight={null} />
       </div>
 
       {/* Mobile: Card View */}
-      <div className="md:hidden flex-1 overflow-y-auto min-h-0 pb-32">
+      <div className="md:hidden pb-32">
         <div className="space-y-4">
           {filteredStudents.map((student) => (
             <Card key={student.id}>

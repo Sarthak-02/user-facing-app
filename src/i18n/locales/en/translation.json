@@ -614,7 +614,17 @@
     "validationPassFail": "{{name}}: Must be either PASS or FAIL",
     "successSubject": "Marks for {{subject}} submitted successfully!",
     "submitFailedSubject": "Failed to submit marks for {{subject}}. Please try again.",
-    "mobileRollNo": "Roll No: {{roll}}"
+    "mobileRollNo": "Roll No: {{roll}}",
+    "excelBulkHint": "Download the template, enter marks in Excel, then upload the file. The server will process the sheet and update marks here.",
+    "downloadTemplate": "Download Excel template",
+    "uploadExcel": "Upload Excel",
+    "templateDownloaded": "Template downloaded.",
+    "templateDownloadFailed": "Could not download the template. Please try again.",
+    "excelUploadSuccess": "Excel uploaded successfully. Marks have been refreshed from the server.",
+    "excelUploadResultDownloaded": "Result file downloaded. Marks have been refreshed from the server.",
+    "excelUploadRowErrors": "Grades were not saved. An Excel file showing which rows need fixing was downloaded — correct those rows and upload again.",
+    "excelUploadRowErrorsWithCount": "Grades were not saved ({{count}} row(s) with errors). An Excel file with details was downloaded — correct those rows and upload again.",
+    "excelUploadFailed": "Could not upload the Excel file. Check the file and try again."
   },
   "staffPicker": {
     "noSections": "No class or section assignments were found. If you just logged in, try refreshing after permissions load.",
