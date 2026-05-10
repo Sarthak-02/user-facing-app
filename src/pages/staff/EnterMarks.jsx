@@ -25,20 +25,31 @@ function buildEmptyMarks(examData, studentList) {
   return initialMarks;
 }
 
+function normalizeSubjectId(subjectId) {
+  return subjectId != null ? String(subjectId) : "";
+}
+
+/** Merge GET /exam/grades/all — `has_grades_marked` means scores are in (same signal as Exam Detail “View results”). */
 function mergeGradesApiIntoMarks(marksTemplate, apiData) {
   const next = structuredClone(marksTemplate);
   const submittedSubjectIds = new Set();
+
   if (!apiData?.subjects || !Array.isArray(apiData.subjects)) {
     return { marks: next, submittedSubjectIds };
   }
   apiData.subjects.forEach((subject) => {
+    const sid = normalizeSubjectId(subject.subject_id);
+    if (!sid) return;
+
     if (subject.has_grades_marked) {
-      submittedSubjectIds.add(subject.subject_id);
+      submittedSubjectIds.add(sid);
     }
     if (subject.grades && Array.isArray(subject.grades)) {
       subject.grades.forEach((grade) => {
-        if (next[grade.student_id]?.[subject.subject_id]) {
-          next[grade.student_id][subject.subject_id] = {
+        const studentKey =
+          grade.student_id != null ? String(grade.student_id) : "";
+        if (studentKey && next[studentKey]?.[sid]) {
+          next[studentKey][sid] = {
             value: grade.grades_obtained || "",
             remarks: grade.remarks || "",
           };
@@ -73,8 +84,10 @@ export default function EnterMarks() {
   // Store marks for each student and subject
   const [marksData, setMarksData] = useState({});
 
-  // Track which subjects have been submitted
+  // Track which subjects have been submitted (has_grades_marked from API)
   const [submittedSubjects, setSubmittedSubjects] = useState(new Set());
+  /** Submitted subjects the user has tapped "Edit marks" on. */
+  const [subjectsInEditMode, setSubjectsInEditMode] = useState(() => new Set());
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -244,9 +257,26 @@ export default function EnterMarks() {
 
       // Submit marks for this subject
       await bulkSubmitExamMarks(grades);
-      
-      // Mark subject as submitted
-      setSubmittedSubjects(prev => new Set([...prev, subjectId]));
+
+      const gradesResponse = await getExamGradesAll(examId);
+      if (gradesResponse.success && gradesResponse.data) {
+        const merged = mergeGradesApiIntoMarks(
+          buildEmptyMarks(exam, students),
+          gradesResponse.data
+        );
+        setMarksData(merged.marks);
+        setSubmittedSubjects(merged.submittedSubjectIds);
+      } else {
+        const sid = normalizeSubjectId(subjectId);
+        setSubmittedSubjects((prev) => new Set([...prev, sid]));
+      }
+
+      setSubjectsInEditMode((prev) => {
+        const next = new Set(prev);
+        next.delete(normalizeSubjectId(subjectId));
+        return next;
+      });
+
       setSuccessMessage(t("enterMarks.successSubject", { subject: subject.subjectName }));
       
       // Clear success message after 3 seconds
@@ -304,6 +334,7 @@ export default function EnterMarks() {
     );
     setMarksData(marks);
     setSubmittedSubjects(submittedSubjectIds);
+    setSubjectsInEditMode(new Set());
   }, [examId, exam, students]);
 
   const handleExcelUpload = useCallback(
@@ -395,6 +426,30 @@ export default function EnterMarks() {
     return getSubjectCompletionPercentage(subjectId) === 100;
   }, [getSubjectCompletionPercentage]);
 
+  /** Submitted scores stay read-only until the user taps Edit marks. */
+  const isMarksReadOnly = useCallback(
+    (subjectId) => {
+      const id = normalizeSubjectId(subjectId);
+      if (!submittedSubjects.has(id)) return false;
+      return !subjectsInEditMode.has(id);
+    },
+    [submittedSubjects, subjectsInEditMode]
+  );
+
+  const isSubmittedAwaitingEditTap = useCallback(
+    (subjectId) => {
+      const id = normalizeSubjectId(subjectId);
+      return submittedSubjects.has(id) && !subjectsInEditMode.has(id);
+    },
+    [submittedSubjects, subjectsInEditMode]
+  );
+
+  const beginEditingSubmittedSubject = useCallback((subjectId) => {
+    const id = normalizeSubjectId(subjectId);
+    if (!id) return;
+    setSubjectsInEditMode((prev) => new Set(prev).add(id));
+  }, []);
+
   // Define table columns using useMemo to avoid recreating on every render
   const tableColumns = useMemo(() => {
     if (!exam || !selectedSubject) return [];
@@ -424,7 +479,7 @@ export default function EnterMarks() {
             <div>
               <div className="flex items-center justify-center gap-2">
                 <span>{t("enterMarks.marks")}</span>
-                {submittedSubjects.has(subject.subjectId) && (
+                {submittedSubjects.has(normalizeSubjectId(subject.subjectId)) && (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-4 w-4 text-green-500"
@@ -446,20 +501,34 @@ export default function EnterMarks() {
               </div>
             </div>
             <button
-              onClick={() => handleSubmitSubject(subject.subjectId)}
-              disabled={!isSubjectComplete(subject.subjectId) || isSubmitting}
+              type="button"
+              onClick={() =>
+                isSubmittedAwaitingEditTap(subject.subjectId)
+                  ? beginEditingSubmittedSubject(subject.subjectId)
+                  : handleSubmitSubject(subject.subjectId)
+              }
+              disabled={
+                !isSubmittedAwaitingEditTap(subject.subjectId) &&
+                (!isSubjectComplete(subject.subjectId) || isSubmitting)
+              }
               className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
-                submittedSubjects.has(subject.subjectId)
-                  ? "bg-green-100 text-green-700 hover:bg-green-200"
+                isSubmittedAwaitingEditTap(subject.subjectId)
+                  ? "bg-white border border-gray-300 text-gray-800 hover:bg-gray-50"
+                  : submittedSubjects.has(normalizeSubjectId(subject.subjectId))
+                  ? isSubjectComplete(subject.subjectId)
+                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   : isSubjectComplete(subject.subjectId)
                   ? "bg-blue-500 text-white hover:bg-blue-600"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
-              {submittedSubjects.has(subject.subjectId)
-                ? t("enterMarks.submitted")
+              {isSubmittedAwaitingEditTap(subject.subjectId)
+                ? t("enterMarks.editMarksShort")
                 : isSubmitting
                 ? t("enterMarks.submittingShort")
+                : submittedSubjects.has(normalizeSubjectId(subject.subjectId))
+                ? t("enterMarks.saveMarksShort")
                 : t("enterMarks.submit")}
             </button>
           </div>
@@ -478,9 +547,9 @@ export default function EnterMarks() {
                     e.preventDefault();
                   }
                 }}
-                disabled={submittedSubjects.has(subject.subjectId)}
+                disabled={isMarksReadOnly(subject.subjectId)}
                 className={`w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center ${
-                  submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                  isMarksReadOnly(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                 }`}
                 placeholder={`/${exam.maxValue}`}
                 min="0"
@@ -501,9 +570,9 @@ export default function EnterMarks() {
                     e.preventDefault();
                   }
                 }}
-                disabled={submittedSubjects.has(subject.subjectId)}
+                disabled={isMarksReadOnly(subject.subjectId)}
                 className={`w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center ${
-                  submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                  isMarksReadOnly(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                 }`}
                 placeholder={`/${exam.maxValue}`}
                 min="0"
@@ -517,9 +586,9 @@ export default function EnterMarks() {
                 onChange={(e) =>
                   handleMarkChange(student.id, subject.subjectId, e.target.value)
                 }
-                disabled={submittedSubjects.has(subject.subjectId)}
+                disabled={isMarksReadOnly(subject.subjectId)}
                 className={`w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center ${
-                  submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                  isMarksReadOnly(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                 }`}
               >
                 <option value="">--</option>
@@ -537,9 +606,9 @@ export default function EnterMarks() {
                 onChange={(e) =>
                   handleMarkChange(student.id, subject.subjectId, e.target.value)
                 }
-                disabled={submittedSubjects.has(subject.subjectId)}
+                disabled={isMarksReadOnly(subject.subjectId)}
                 className={`w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center ${
-                  submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                  isMarksReadOnly(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                 }`}
               >
                 <option value="">--</option>
@@ -551,7 +620,21 @@ export default function EnterMarks() {
         ),
       },
     ];
-  }, [exam, selectedSubject, marksData, submittedSubjects, isSubmitting, getSubjectCompletionPercentage, isSubjectComplete, handleSubmitSubject, handleMarkChange, t]);
+  }, [
+    exam,
+    selectedSubject,
+    marksData,
+    submittedSubjects,
+    isSubmitting,
+    getSubjectCompletionPercentage,
+    isSubjectComplete,
+    handleSubmitSubject,
+    handleMarkChange,
+    isMarksReadOnly,
+    isSubmittedAwaitingEditTap,
+    beginEditingSubmittedSubject,
+    t,
+  ]);
 
 
   if (loading) {
@@ -669,36 +752,39 @@ export default function EnterMarks() {
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-gray-200 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
-            <p className="text-sm text-gray-600 flex-1 min-w-[200px]">
-              {t("enterMarks.excelBulkHint")}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                loading={templateDownloading}
-                onClick={handleDownloadGradesTemplate}
-              >
-                {t("enterMarks.downloadTemplate")}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                loading={excelUploading}
-                onClick={() => excelInputRef.current?.click()}
-              >
-                {t("enterMarks.uploadExcel")}
-              </Button>
-              <input
-                ref={excelInputRef}
-                type="file"
-                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                className="hidden"
-                onChange={handleExcelUpload}
-              />
+          {/* Hide Excel bulk actions for submitted subjects until user taps Edit marks */}
+          {!isMarksReadOnly(selectedSubject) && (
+            <div className="mt-4 pt-4 border-t border-gray-200 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+              <p className="text-sm text-gray-600 flex-1 min-w-[200px]">
+                {t("enterMarks.excelBulkHint")}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  loading={templateDownloading}
+                  onClick={handleDownloadGradesTemplate}
+                >
+                  {t("enterMarks.downloadTemplate")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  loading={excelUploading}
+                  onClick={() => excelInputRef.current?.click()}
+                >
+                  {t("enterMarks.uploadExcel")}
+                </Button>
+                <input
+                  ref={excelInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  className="hidden"
+                  onChange={handleExcelUpload}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </Card>
 
         {/* Success/Error Messages */}
@@ -774,11 +860,11 @@ export default function EnterMarks() {
                     <div key={subject.subjectId} className="space-y-2">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          {submittedSubjects.has(subject.subjectId) && (
+                          {submittedSubjects.has(normalizeSubjectId(subject.subjectId)) && (
                             <>
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5 text-green-500"
+                                className={`h-5 w-5 ${isSubmittedAwaitingEditTap(subject.subjectId) ? "text-green-500" : "text-blue-500"}`}
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -790,7 +876,13 @@ export default function EnterMarks() {
                                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                                 />
                               </svg>
-                              <span className="text-sm font-medium text-green-700">{t("enterMarks.alreadySubmitted")}</span>
+                              <span
+                                className={`text-sm font-medium ${isSubmittedAwaitingEditTap(subject.subjectId) ? "text-green-700" : "text-blue-700"}`}
+                              >
+                                {isSubmittedAwaitingEditTap(subject.subjectId)
+                                  ? t("enterMarks.marksEditableAfterSubmit")
+                                  : t("enterMarks.editingMarksHint")}
+                              </span>
                             </>
                           )}
                         </div>
@@ -809,9 +901,9 @@ export default function EnterMarks() {
                               e.preventDefault();
                             }
                           }}
-                          disabled={submittedSubjects.has(subject.subjectId)}
+                          disabled={isMarksReadOnly(subject.subjectId)}
                           className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                            isMarksReadOnly(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                           }`}
                           placeholder={t("enterMarks.placeholderMarksOutOf", { max: exam.maxValue })}
                           min="0"
@@ -832,9 +924,9 @@ export default function EnterMarks() {
                               e.preventDefault();
                             }
                           }}
-                          disabled={submittedSubjects.has(subject.subjectId)}
+                          disabled={isMarksReadOnly(subject.subjectId)}
                           className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                            isMarksReadOnly(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                           }`}
                           placeholder={t("enterMarks.placeholderGpaOutOf", { max: exam.maxValue })}
                           min="0"
@@ -848,9 +940,9 @@ export default function EnterMarks() {
                           onChange={(e) =>
                             handleMarkChange(student.id, subject.subjectId, e.target.value)
                           }
-                          disabled={submittedSubjects.has(subject.subjectId)}
+                          disabled={isMarksReadOnly(subject.subjectId)}
                           className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                            isMarksReadOnly(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                           }`}
                         >
                           <option value="">{t("enterMarks.selectGrade")}</option>
@@ -868,9 +960,9 @@ export default function EnterMarks() {
                           onChange={(e) =>
                             handleMarkChange(student.id, subject.subjectId, e.target.value)
                           }
-                          disabled={submittedSubjects.has(subject.subjectId)}
+                          disabled={isMarksReadOnly(subject.subjectId)}
                           className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            submittedSubjects.has(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                            isMarksReadOnly(subject.subjectId) ? 'bg-gray-100 cursor-not-allowed' : ''
                           }`}
                         >
                           <option value="">{t("enterMarks.selectResult")}</option>
@@ -913,26 +1005,46 @@ export default function EnterMarks() {
           </div>
         </div>
 
-        {/* Submit Button */}
+        {/* Submit / Edit marks / Save */}
         <div className="flex justify-center">
           <Button
-            onClick={() => handleSubmitSubject(selectedSubject)}
-            disabled={!isSubjectComplete(selectedSubject) || isSubmitting}
+            variant="primary"
+            onClick={() =>
+              isSubmittedAwaitingEditTap(selectedSubject)
+                ? beginEditingSubmittedSubject(selectedSubject)
+                : handleSubmitSubject(selectedSubject)
+            }
+            disabled={
+              !isSubmittedAwaitingEditTap(selectedSubject) &&
+              (!isSubjectComplete(selectedSubject) || isSubmitting)
+            }
             className="w-full max-w-md"
           >
-            {submittedSubjects.has(selectedSubject)
-              ? t("enterMarks.submittedCheck")
-              : isSubmitting
+            {isSubmitting
               ? t("enterMarks.submitting")
+              : isSubmittedAwaitingEditTap(selectedSubject)
+              ? t("enterMarks.editMarksFor", {
+                  subject:
+                    exam.subjects.find((s) => s.subjectId === selectedSubject)?.subjectName ||
+                    t("enterMarks.marksFallback"),
+                })
+              : submittedSubjects.has(normalizeSubjectId(selectedSubject))
+              ? t("enterMarks.saveMarksFor", {
+                  subject:
+                    exam.subjects.find((s) => s.subjectId === selectedSubject)?.subjectName ||
+                    t("enterMarks.marksFallback"),
+                })
               : t("enterMarks.submitMarksFor", {
-                  subject: exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || t("enterMarks.marksFallback"),
+                  subject:
+                    exam.subjects.find((s) => s.subjectId === selectedSubject)?.subjectName ||
+                    t("enterMarks.marksFallback"),
                 })}
           </Button>
         </div>
       </div>
 
-      {/* Mobile: Fixed bottom bar with progress & submit */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-200 p-3 sm:p-4 shadow-lg">
+      {/* Mobile: Fixed bar above app BottomNav (h-14 + safe area); avoids sitting under z-50 BottomNav */}
+      <div className="md:hidden fixed left-0 right-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-40 bg-white border-t border-gray-200 p-3 sm:p-4 shadow-lg">
         {/* Progress Indicator */}
         <div className="mb-3">
           <div className="flex items-center justify-between mb-2">
@@ -957,18 +1069,38 @@ export default function EnterMarks() {
           </div>
         </div>
 
-        {/* Submit Button */}
+        {/* Submit / Edit marks / Save */}
         <Button
-          onClick={() => handleSubmitSubject(selectedSubject)}
-          disabled={!isSubjectComplete(selectedSubject) || isSubmitting}
+          variant="primary"
+          onClick={() =>
+            isSubmittedAwaitingEditTap(selectedSubject)
+              ? beginEditingSubmittedSubject(selectedSubject)
+              : handleSubmitSubject(selectedSubject)
+          }
+          disabled={
+            !isSubmittedAwaitingEditTap(selectedSubject) &&
+            (!isSubjectComplete(selectedSubject) || isSubmitting)
+          }
           className="w-full max-w-md"
         >
-          {submittedSubjects.has(selectedSubject)
-            ? t("enterMarks.submittedCheck")
-            : isSubmitting
+          {isSubmitting
             ? t("enterMarks.submitting")
+            : isSubmittedAwaitingEditTap(selectedSubject)
+            ? t("enterMarks.editMarksFor", {
+                subject:
+                  exam.subjects.find((s) => s.subjectId === selectedSubject)?.subjectName ||
+                  t("enterMarks.marksFallback"),
+              })
+            : submittedSubjects.has(normalizeSubjectId(selectedSubject))
+            ? t("enterMarks.saveMarksFor", {
+                subject:
+                  exam.subjects.find((s) => s.subjectId === selectedSubject)?.subjectName ||
+                  t("enterMarks.marksFallback"),
+              })
             : t("enterMarks.submitMarksFor", {
-                subject: exam.subjects.find(s => s.subjectId === selectedSubject)?.subjectName || t("enterMarks.marksFallback"),
+                subject:
+                  exam.subjects.find((s) => s.subjectId === selectedSubject)?.subjectName ||
+                  t("enterMarks.marksFallback"),
               })}
         </Button>
       </div>
