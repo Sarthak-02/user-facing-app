@@ -18,6 +18,9 @@ export default function Dropdown({
   const [searchQuery, setSearchQuery] = useState("");
   const ref = useRef(null);
 
+  // When multi=true the parent may pass null/object before any selection; normalise to array.
+  const safeSelected = multi ? (Array.isArray(selected) ? selected : []) : selected;
+
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e) {
@@ -31,11 +34,11 @@ export default function Dropdown({
 
   const handleSelect = (option) => {
     if (multi) {
-      const isSelected = selected?.some((item) => item.value === option.value);
+      const isSelected = safeSelected.some((item) => item.value === option.value);
       if (isSelected) {
-        onChange(selected.filter((item) => item.value !== option.value));
+        onChange(safeSelected.filter((item) => item.value !== option.value));
       } else {
-        onChange([...(selected || []), option]);
+        onChange([...safeSelected, option]);
       }
     } else {
       onChange(option);
@@ -45,8 +48,8 @@ export default function Dropdown({
 
   const renderLabel = () => {
     if (multi) {
-      if (!selected?.length) return resolvedPlaceholder;
-      return selected.map((item) => item.label).join(", ");
+      if (!safeSelected.length) return resolvedPlaceholder;
+      return safeSelected.map((item) => item.label).join(", ");
     }
 
     return selected ? selected.label : resolvedPlaceholder;
@@ -58,18 +61,16 @@ export default function Dropdown({
 
   const handleSelectAll = () => {
     const allSelected = filteredOptions.every((opt) =>
-      selected?.some((item) => item.value === opt.value)
+      safeSelected.some((item) => item.value === opt.value)
     );
 
     if (allSelected) {
-      // Deselect all filtered options
-      const remainingSelected = selected?.filter(
+      const remainingSelected = safeSelected.filter(
         (item) => !filteredOptions.some((opt) => opt.value === item.value)
-      ) || [];
+      );
       onChange(remainingSelected);
     } else {
-      // Select all filtered options
-      const newSelections = [...(selected || [])];
+      const newSelections = [...safeSelected];
       filteredOptions.forEach((opt) => {
         if (!newSelections.some((item) => item.value === opt.value)) {
           newSelections.push(opt);
@@ -80,7 +81,7 @@ export default function Dropdown({
   };
 
   const allFilteredSelected = multi && filteredOptions.length > 0 &&
-    filteredOptions.every((opt) => selected?.some((item) => item.value === opt.value));
+    filteredOptions.every((opt) => safeSelected.some((item) => item.value === opt.value));
 
   return (
     <div className={`${width} relative`} ref={ref}>
@@ -103,7 +104,7 @@ export default function Dropdown({
           <span className="text-gray-500 ml-2">▼</span>
         </button>
 
-        {(multi ? selected?.length > 0 : selected) && (
+        {(multi ? safeSelected.length > 0 : selected) && (
           <button
             type="button"
             onClick={(e) => {
@@ -152,7 +153,7 @@ export default function Dropdown({
           {filteredOptions.length > 0 ? (
             filteredOptions.map((opt) => {
               const active = multi
-                ? selected?.some((item) => item.value === opt.value)
+                ? safeSelected.some((item) => item.value === opt.value)
                 : selected?.value === opt.value;
 
               return (

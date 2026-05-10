@@ -28,7 +28,7 @@ export const SECTION_TARGET_SCHEMA = [
     },
     {
         label: "Select Section",
-        value: [],
+        value: null,
         multi: true,
         type: "section",
         required: true,

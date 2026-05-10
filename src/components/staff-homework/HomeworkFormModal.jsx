@@ -48,12 +48,15 @@ export default function HomeworkFormModal({
   const [attachmentError, setAttachmentError] = useState("");
 
   const subjects = useMemo(() => {
-    if (!formData.sectionId?.value) return [];
+    const hasSection = formData.targetType?.value === "SECTION"
+      ? Array.isArray(formData.sectionId) && formData.sectionId.length > 0
+      : !!formData.sectionId?.value;
+    if (!hasSection) return [];
     return permissions?.teacher_subjects.map((subject) => ({
       label: subject,
       value: subject,
     }));
-  }, [permissions, formData.sectionId]);
+  }, [permissions, formData.sectionId, formData.targetType]);
 
   const targetSchema = useMemo(() => {
     const data = {
@@ -64,7 +67,7 @@ export default function HomeworkFormModal({
           label: class_name,
         })),
         onChange: (option) =>
-          setFormData((prev) => ({ ...prev, classId: option, sectionId: null, studentId: [] })),
+          setFormData((prev) => ({ ...prev, classId: option, sectionId: prev.targetType?.value === "SECTION" ? [] : null, studentId: [] })),
       },
       section: {
         selected: formData.sectionId,
@@ -119,7 +122,7 @@ export default function HomeworkFormModal({
           const targetId = firstTarget.target_id || firstTarget.targetId || firstTarget.section_id || "";
           const section = permissions.sections.find((s) => s.section_id === targetId);
           if (section) {
-            sectionId = { value: section.section_id, label: section.section_name };
+            sectionId = [{ value: section.section_id, label: section.section_name }];
             const classObj = permissions.classes.find((c) => c.class_id === section.class_id);
             if (classObj) classId = { value: classObj.class_id, label: classObj.class_name };
           }
@@ -225,7 +228,7 @@ export default function HomeworkFormModal({
     setFormData((prev) => ({
       ...prev,
       targetType: type,
-      sectionId: null,
+      sectionId: type?.value === "SECTION" ? [] : null,
       studentId: [],
       classId: null,
       subject: null,
@@ -293,7 +296,7 @@ export default function HomeworkFormModal({
     formData.subject?.value &&
     formData.description.trim() &&
     formData.dueDate &&
-    ((formData.targetType?.value === "SECTION" && formData.classId?.value && formData.sectionId?.value) ||
+    ((formData.targetType?.value === "SECTION" && formData.classId?.value && Array.isArray(formData.sectionId) && formData.sectionId.length > 0) ||
       (formData.targetType?.value === "STUDENT" &&
         formData.classId?.value &&
         formData.sectionId?.value &&
