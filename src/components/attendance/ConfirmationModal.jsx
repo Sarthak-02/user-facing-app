@@ -6,6 +6,7 @@ export default function ConfirmationModal({
   showConfirmation,
   setShowConfirmation,
   handleSubmit,
+  isSubmitting = false,
   presentCount = 0,
   absentCount = 0,
   totalCount = 0,
@@ -25,12 +26,13 @@ export default function ConfirmationModal({
         <div className="flex gap-3 justify-end pt-2">
           <Button
             variant="secondary"
+            disabled={isSubmitting}
             onClick={() => setShowConfirmation(false)}
           >
             {t("common.cancel")}
           </Button>
 
-          <Button variant="primary" onClick={handleSubmit}>
+          <Button variant="primary" loading={isSubmitting} onClick={handleSubmit}>
             {t("attendance.confirm.submit")}
           </Button>
         </div>

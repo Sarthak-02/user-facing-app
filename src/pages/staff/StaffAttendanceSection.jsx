@@ -59,6 +59,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
   const [noAttendanceFound, setNoAttendanceFound] = useState(false);
   const [submittedAttendanceData, setSubmittedAttendanceData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const sectionTitle = useMemo(() => {
     const row = sectionRows.find((r) => String(r.sectionId) === String(selectedClass));
@@ -197,6 +198,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
   }, [searchQuery, students]);
 
   async function handleSubmit() {
+    setIsSubmitting(true);
     try {
       const records = Object.entries(attendance).map(([key, value]) => ({
         student_id: key,
@@ -267,6 +269,8 @@ export default function StaffAttendanceSection({ readOnly = false }) {
     } catch (error) {
       console.error("Error in handleSubmit:", error);
       setShowConfirmation(false);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -344,6 +348,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
           showConfirmation={showConfirmation}
           setShowConfirmation={setShowConfirmation}
           handleSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
           presentCount={presentCount}
           absentCount={absentCount}
           totalCount={students.length}

@@ -29,7 +29,7 @@ export default function Loader({
   // Overlay loader (for blocking UI during API calls)
   if (overlay) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+      <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
         <div className="pointer-events-auto">{loaderContent}</div>
       </div>
     );
