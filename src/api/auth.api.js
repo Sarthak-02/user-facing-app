@@ -52,12 +52,16 @@ export async function fetchStudentPermissions(student_id) {
 
 export async function saveFCMToken({ userId, role, token }) {
     try {
-        const resp = await api.post("/device-token/register", {
-            user_id: userId,
-            role,
-            token,
-            platform: "web"
-        });
+        const resp = await api.post(
+            "/device-token/register",
+            {
+                user_id: userId,
+                role,
+                token,
+                platform: "web"
+            },
+            { skipGlobalPostLoader: true }
+        );
         return resp?.data || {};
     } catch (err) {
         console.log(err.response?.data);

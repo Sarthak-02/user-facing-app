@@ -523,13 +523,21 @@ export default function EnterMarks() {
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
-              {isSubmittedAwaitingEditTap(subject.subjectId)
-                ? t("enterMarks.editMarksShort")
-                : isSubmitting
-                ? t("enterMarks.submittingShort")
-                : submittedSubjects.has(normalizeSubjectId(subject.subjectId))
-                ? t("enterMarks.saveMarksShort")
-                : t("enterMarks.submit")}
+              {isSubmittedAwaitingEditTap(subject.subjectId) ? (
+                t("enterMarks.editMarksShort")
+              ) : isSubmitting ? (
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  <span
+                    className="inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
+                    aria-hidden
+                  />
+                  {t("enterMarks.submittingShort")}
+                </span>
+              ) : submittedSubjects.has(normalizeSubjectId(subject.subjectId)) ? (
+                t("enterMarks.saveMarksShort")
+              ) : (
+                t("enterMarks.submit")
+              )}
             </button>
           </div>
         ),
@@ -1009,6 +1017,7 @@ export default function EnterMarks() {
         <div className="flex justify-center">
           <Button
             variant="primary"
+            loading={isSubmitting}
             onClick={() =>
               isSubmittedAwaitingEditTap(selectedSubject)
                 ? beginEditingSubmittedSubject(selectedSubject)
@@ -1072,6 +1081,7 @@ export default function EnterMarks() {
         {/* Submit / Edit marks / Save */}
         <Button
           variant="primary"
+          loading={isSubmitting}
           onClick={() =>
             isSubmittedAwaitingEditTap(selectedSubject)
               ? beginEditingSubmittedSubject(selectedSubject)
