@@ -341,6 +341,7 @@ export default function Exams() {
 
       {/* Mobile Header */}
       <div className="md:hidden flex-shrink-0">
+        <h1 className="text-xl font-bold text-gray-900 mb-3">{t("staffExamsPage.title")}</h1>
         <Card className="p-4">
           <div className="grid grid-cols-2 gap-2">
             <Dropdown
@@ -430,7 +431,7 @@ export default function Exams() {
       {/* Floating Action Button (Mobile Only) */}
       <button
         onClick={handleCreateExam}
-        className="md:hidden fixed bottom-20 right-6 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 active:bg-blue-700 transition-all duration-200 flex items-center justify-center z-40 hover:scale-110 active:scale-95"
+        className="md:hidden fixed bottom-20 right-6 w-14 h-14 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 active:bg-primary-800 transition-all duration-200 flex items-center justify-center z-40 hover:scale-110 active:scale-95"
         aria-label={t("ui.createNewExam")}
       >
         <svg

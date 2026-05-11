@@ -52,13 +52,13 @@ export default function ExamDetail() {
   const { examId } = useParams();
   const navigate = useNavigate();
   const { permissions } = usePermissions();
-  const { setExamDetail, setExamStudents } = useExamDetail();
+  const { setExamDetail, setExamStudents, setGradesData } = useExamDetail();
 
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [fetchingStudents, setFetchingStudents] = useState(false);
-  const [allSubjectsGraded, setAllSubjectsGraded] = useState(false);
+  const [enterMarksError, setEnterMarksError] = useState(null);
 
   useEffect(() => {
     const fetchExamDetail = async () => {
@@ -68,23 +68,7 @@ export default function ExamDetail() {
       try {
         const data = await getExamDetail(examId, permissions);
         setExam(data);
-        // Store exam detail in the store
         setExamDetail(data);
-
-        // Fetch grades to check if all subjects are graded
-        try {
-          const gradesResponse = await getExamGradesAll(examId);
-          if (gradesResponse.success && gradesResponse.data?.subjects) {
-            const subjects = gradesResponse.data.subjects;
-            // Check if all subjects have grades marked
-            const allGraded = subjects.length > 0 && subjects.every(subject => subject.has_grades_marked === true);
-            setAllSubjectsGraded(allGraded);
-          }
-        } catch (gradesError) {
-          console.error("Error fetching grades status:", gradesError);
-          // Don't block if grades fetch fails
-          setAllSubjectsGraded(false);
-        }
       } catch (err) {
         console.error("Error fetching exam detail:", err);
         setError(err.message || t("staffExamDetail.loadFailed"));
@@ -98,28 +82,44 @@ export default function ExamDetail() {
     }
   }, [examId, permissions, setExamDetail, t]);
 
+  const allSubjectsGraded =
+    exam?.subjects?.length > 0 && exam.subjects.every((s) => s.hasGradesMarked);
+
   const handleGoBack = () => {
     navigate("/staff/exams");
   };
 
-  // const handleViewResults = () => {
-  //   // TODO: Implement view results functionality
-  //   alert("View results functionality will be implemented");
-  // };
-
   const handleEnterMarks = async () => {
+    setEnterMarksError(null);
     try {
       setFetchingStudents(true);
+
+      if (allSubjectsGraded) {
+        const gradesResponse = await getExamGradesAll(examId);
+        if (gradesResponse.success && gradesResponse.data) {
+          setGradesData(gradesResponse.data);
+          const subjectWithGrades = gradesResponse.data.subjects?.find(s => s.grades?.length > 0);
+          if (subjectWithGrades) {
+            const students = subjectWithGrades.grades.map(grade => ({
+              student_id: grade.student_id,
+              student_name: grade.student_name,
+              student_roll_no: grade.student_roll_no,
+              student_photo_url: grade.student_photo_url,
+              student_admission_no: grade.student_admission_no,
+            }));
+            setExamStudents(students, students.length);
+            navigate(`/staff/exams/${examId}/enter-marks`);
+            return;
+          }
+        }
+      }
+
       const response = await getExamStudents(examId);
-      
-      // Store students in the store
       setExamStudents(response.data || [], response.count || 0);
-      
-      // Navigate to enter marks page (no need to pass state)
       navigate(`/staff/exams/${examId}/enter-marks`);
     } catch (err) {
       console.error("Error fetching students for exam:", err);
-      alert(t("staffExamDetail.fetchStudentsFailed"));
+      setEnterMarksError(t("staffExamDetail.fetchStudentsFailed"));
     } finally {
       setFetchingStudents(false);
     }
@@ -207,7 +207,7 @@ export default function ExamDetail() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <div className="bg-gray-50 rounded-lg">
+              <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-sm text-gray-600 mb-1">{t("exams.columns.target")}</p>
                 <p className="text-base font-semibold text-gray-900">
                   {exam.class}
@@ -215,14 +215,14 @@ export default function ExamDetail() {
                 </p>
               </div>
 
-              <div className=" bg-gray-50 rounded-lg">
+              <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-sm text-gray-600 mb-1">{t("exams.columns.subjects")}</p>
                 <p className="text-base font-semibold text-gray-900">
                   {t("exams.subjectsCount", { count: exam.subjects?.length || 0 })}
                 </p>
               </div>
 
-              <div className="bg-gray-50 rounded-lg">
+              <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-sm text-gray-600 mb-1">{t("exams.columns.dateRange")}</p>
                 <p className="text-base font-semibold text-gray-900">
                   {exam.startDate && exam.endDate
@@ -247,9 +247,19 @@ export default function ExamDetail() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
                   <div>
                     <p className="text-xs text-gray-600 mb-1">{t("exams.subjectLabel")}</p>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {subject.subjectName}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {subject.subjectName}
+                      </p>
+                      {subject.hasGradesMarked && (
+                        <span className="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Graded
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <p className="text-xs text-gray-600 mb-1">{t("exams.examDate")}</p>
@@ -287,7 +297,7 @@ export default function ExamDetail() {
         </h3>
         <div className="space-y-2">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <div className="bg-gray-50 rounded-lg">
+            <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-sm text-gray-600 mb-1">{t("exams.gradingType")}</p>
               <p className="text-base font-semibold text-gray-900">
                 {getGradingTypeLabel(exam.gradingType, t)}
@@ -296,17 +306,17 @@ export default function ExamDetail() {
 
             {exam.gradingType !== "PASS_FAIL" && (
               <>
-                <div className="bg-gray-50 rounded-lg">
+                <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-sm text-gray-600 mb-1">{t("exams.maximumMarks")}</p>
                   <p className="text-base font-semibold text-gray-900">
-                    {exam.maxMarks || t("common.na")}
+                    {exam.maxValue || t("common.na")}
                   </p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg">
+                <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-sm text-gray-600 mb-1">{t("exams.passingMarks")}</p>
                   <p className="text-base font-semibold text-gray-900">
-                    {exam.passingMarks || t("common.na")}
+                    {exam.passingValue || t("common.na")}
                   </p>
                 </div>
               </>
@@ -339,7 +349,8 @@ export default function ExamDetail() {
       {/* Actions Card */}
       {(exam.status === "PUBLISHED" || exam.status === "COMPLETED") && (
         <Card>
-          <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col md:flex-row gap-3">
             <Button onClick={handleEnterMarks} className="flex-1" disabled={fetchingStudents}>
               {fetchingStudents ? (
                 <>
@@ -420,6 +431,10 @@ export default function ExamDetail() {
               </svg>
               View Results
             </Button> */}
+            </div>
+            {enterMarksError && (
+              <p className="text-sm text-red-600">{enterMarksError}</p>
+            )}
           </div>
         </Card>
       )}

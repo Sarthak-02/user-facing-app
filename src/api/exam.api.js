@@ -89,8 +89,9 @@ function transformExamData(apiExam, permissions = null) {
     subjectId: sub.id,
     subjectName: sub.subjectName,
     examDate: sub.examDate ? new Date(sub.examDate).toISOString().split('T')[0] : '',
-    startTime: sub.examStartTime ? sub.examStartTime.substring(0, 5) : '', // Convert HH:MM:SS to HH:MM
-    endTime: sub.examEndTime ? sub.examEndTime.substring(0, 5) : '', // Convert HH:MM:SS to HH:MM
+    startTime: sub.examStartTime ? sub.examStartTime.substring(0, 5) : '',
+    endTime: sub.examEndTime ? sub.examEndTime.substring(0, 5) : '',
+    hasGradesMarked: sub.hasGradesMarked ?? false,
   }));
 
   // Extract grading values

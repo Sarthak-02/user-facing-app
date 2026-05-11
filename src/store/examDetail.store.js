@@ -5,6 +5,7 @@ const initialValue = {
   exam: null,
   students: [],
   studentCount: 0,
+  gradesData: null,
 };
 
 export const useExamDetail = create(
@@ -32,6 +33,17 @@ export const useExamDetail = create(
             ...get().examDetail,
             students,
             studentCount: count || students?.length || 0,
+          },
+          error: null,
+        });
+      },
+
+      // Set grades data (from exam/grades/all)
+      setGradesData: (gradesData) => {
+        set({
+          examDetail: {
+            ...get().examDetail,
+            gradesData,
           },
           error: null,
         });

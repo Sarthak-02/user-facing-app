@@ -100,7 +100,6 @@ export default function MobileListing({ examList, onEdit, onPublish, onView, cla
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {getStatusBadge(exam.status)}
-              {getDateBadge(exam.startDate, exam.endDate)}
             </div>
           </div>
 
