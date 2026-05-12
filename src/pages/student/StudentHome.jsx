@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card } from "../../ui-components";
 import Modal from "../../ui-components/Modal";
-import Loader from "../../ui-components/Loader";
+import { StudentHomeShimmer } from "../../ui-components/Shimmer";
 import { useAuth } from "../../store/auth.store";
 import {
   getReceiverSummary,
@@ -457,11 +457,7 @@ export default function StudentHome() {
   }
 
   if (loading && !summaryPayload) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-[var(--color-background)] p-4">
-        <Loader />
-      </div>
-    );
+    return <StudentHomeShimmer />;
   }
 
   if (error && !summaryPayload) {
@@ -492,12 +488,6 @@ export default function StudentHome() {
     <>
     <div className="min-h-full bg-[var(--color-background)] p-4 pb-30 md:p-6">
       <div className="mx-auto max-w-5xl space-y-4">
-        {loading ? (
-          <div className="flex justify-center py-2">
-            <Loader />
-          </div>
-        ) : null}
-
         {/* Hero card */}
         <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-5 shadow-lg md:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

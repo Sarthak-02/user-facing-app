@@ -5,7 +5,7 @@ import DesktopListing from "../../components/student-announcements/DesktopListin
 import MobileListing from "../../components/student-announcements/MobileListing";
 import { getReceivedBroadcasts } from "../../api/broadcast.api";
 import { useAuth } from "../../store/auth.store";
-import Loader from "../../ui-components/Loader";
+import { StudentAnnouncementsShimmer } from "../../ui-components/Shimmer";
 import { ANNOUNCEMENT_CATEGORY_OPTIONS } from "../../constants/announcementCategories";
 
 export default function Announcements() {
@@ -64,11 +64,7 @@ export default function Announcements() {
   }, [items, categoryFilter]);
 
   if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <StudentAnnouncementsShimmer />;
   }
 
   if (error) {

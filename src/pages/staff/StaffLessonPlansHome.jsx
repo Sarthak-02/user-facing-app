@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "../../store/permissions.store";
 import { ChevronRight } from "lucide-react";
-import Loader from "../../ui-components/Loader";
+import { LessonPlanPickerShimmer } from "../../ui-components/Shimmer";
 
 const CLASS_COLORS = [
   { badgeBg: "bg-teal-500", border: "border-l-teal-400" },
@@ -67,11 +67,7 @@ export default function StaffLessonPlansHome() {
   }, [rows, navigate]);
 
   if (rows.length === 1) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <LessonPlanPickerShimmer />;
   }
 
   if (rows.length === 0) {

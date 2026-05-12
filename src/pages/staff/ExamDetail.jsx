@@ -5,7 +5,7 @@ import { Card, Badge, Button } from "../../ui-components";
 import { getExamDetail, getExamStudents, getExamGradesAll } from "../../api/exam.api";
 import { usePermissions } from "../../store/permissions.store";
 import { useExamDetail } from "../../store/examDetail.store";
-import Loader from "../../ui-components/Loader";
+import { ExamDetailShimmer } from "../../ui-components/Shimmer";
 
 function formatDate(date, locale) {
   if (!date) return "";
@@ -126,11 +126,7 @@ export default function ExamDetail() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <ExamDetailShimmer />;
   }
 
   if (error || !exam) {

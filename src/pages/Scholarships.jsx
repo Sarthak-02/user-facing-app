@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExternalLink, GraduationCap, Calendar, Search, SlidersHorizontal, X, ChevronRight, Building2, Award } from "lucide-react";
 import { getScholarships } from "../api/scholarships.api";
-import { Badge, Loader, Dropdown, Modal } from "../ui-components";
+import { Badge, Dropdown, Modal } from "../ui-components";
+import { ScholarshipsShimmer } from "../ui-components/Shimmer";
 import Button from "../ui-components/Button";
 
 function statusBadgeVariant(status) {
@@ -477,11 +478,7 @@ export default function Scholarships() {
   }
 
   if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center pb-16 md:pb-0">
-        <Loader />
-      </div>
-    );
+    return <ScholarshipsShimmer />;
   }
 
   if (error) {

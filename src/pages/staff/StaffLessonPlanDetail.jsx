@@ -7,7 +7,7 @@ import { useAuth } from "../../store/auth.store";
 import { getLessonPlanById } from "../../api/lessonPlans.api";
 import LessonPlanFormModal from "../../components/lesson-plans/LessonPlanFormModal";
 import { ArrowLeft } from "lucide-react";
-import Loader from "../../ui-components/Loader";
+import { LessonPlanDetailShimmer } from "../../ui-components/Shimmer";
 
 function formatDate(d, locale) {
   if (!d) return "—";
@@ -110,11 +110,7 @@ export default function StaffLessonPlanDetail() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <LessonPlanDetailShimmer />;
   }
 
   if (error || !plan) {

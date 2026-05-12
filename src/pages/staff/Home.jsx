@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card } from "../../ui-components";
 import Modal from "../../ui-components/Modal";
-import Loader from "../../ui-components/Loader";
+import { StaffHomeShimmer } from "../../ui-components/Shimmer";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
 import {
@@ -585,11 +585,7 @@ export default function StaffHome() {
   }
 
   if (loading && !summaryPayload) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-[var(--color-background)] p-4">
-        <Loader />
-      </div>
-    );
+    return <StaffHomeShimmer />;
   }
 
   if (error && !summaryPayload) {
@@ -619,12 +615,6 @@ export default function StaffHome() {
     <>
       <div className="min-h-full bg-[var(--color-background)] p-4 pb-30 md:p-6">
         <div className="mx-auto max-w-5xl space-y-4">
-          {loading ? (
-            <div className="flex justify-center py-2">
-              <Loader />
-            </div>
-          ) : null}
-
           {/* Hero card */}
           <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-5 shadow-lg">
             <div className="flex items-center gap-4">

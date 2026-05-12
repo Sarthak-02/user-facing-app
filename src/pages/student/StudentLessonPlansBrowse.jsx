@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import Loader from "../../ui-components/Loader";
+import { LessonPlanBrowseContentShimmer } from "../../ui-components/Shimmer";
 
 function formatDate(d, locale) {
   if (!d) return null;
@@ -196,9 +196,7 @@ export default function StudentLessonPlansBrowse() {
       {/* Body */}
       <div className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader />
-          </div>
+          <LessonPlanBrowseContentShimmer />
         ) : loadError ? (
           <div className="flex flex-col items-center justify-center py-20 px-4">
             <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-3">

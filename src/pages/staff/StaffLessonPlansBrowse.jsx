@@ -14,7 +14,7 @@ import {
 import TopicFormModal from "../../components/lesson-plans/TopicFormModal";
 import MasterPlanModal from "../../components/lesson-plans/MasterPlanModal";
 import CloneFromClassModal from "../../components/lesson-plans/CloneFromClassModal";
-import Loader from "../../ui-components/Loader";
+import { LessonPlanBrowseContentShimmer } from "../../ui-components/Shimmer";
 import {
   ArrowLeft,
   Plus,
@@ -466,9 +466,7 @@ export default function StaffLessonPlansBrowse() {
 
       {/* Content */}
       {loading ? (
-        <div className="flex flex-1 items-center justify-center py-16">
-          <Loader />
-        </div>
+        <LessonPlanBrowseContentShimmer />
       ) : loadError ? (
         <p className="mt-6 text-sm text-error-600">{loadError}</p>
       ) : !classPlan ? (

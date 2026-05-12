@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, Loader, Button } from "../../ui-components";
+import { Card, Button } from "../../ui-components";
+import { StudentReportingShimmer } from "../../ui-components/Shimmer";
 import { getStudentGradesReport, getReportDashboardConfig } from "../../api/student.api";
 import { useAuth } from "../../store/auth.store";
 import {
@@ -1106,7 +1107,7 @@ export default function Reporting() {
   }, [items]);
 
   if (loading) {
-    return <div className="flex flex-1 items-center justify-center"><Loader /></div>;
+    return <StudentReportingShimmer />;
   }
 
   if (error) {

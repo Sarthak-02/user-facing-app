@@ -9,6 +9,7 @@ import { createHomework, getHomeworkDetail, getTeacherHomeworkAll, generateHomew
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
 import { ArrowLeft } from "lucide-react";
+import { StaffHomeworkListingShimmer } from "../../ui-components/Shimmer";
 
 function homeworkAppliesToSection(homework, sectionId, sectionRecord, permissions) {
   if (!sectionId || !sectionRecord) return false;
@@ -543,14 +544,7 @@ export default function TeacherHomework() {
       </div>
 
       {/* Loading State */}
-      {isLoading && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-gray-600">{t("staffHomework.loadingList")}</p>
-          </div>
-        </div>
-      )}
+      {isLoading && <StaffHomeworkListingShimmer />}
 
       {/* Error State */}
       {loadError && !isLoading && (

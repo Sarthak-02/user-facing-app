@@ -82,11 +82,15 @@ export async function listTeachersBySection(campusId, sectionId) {
  * @returns {Promise<object>} Raw response body (use {@link unwrapTeacherSummaryResponse} to read payload)
  */
 export async function postTeacherSummary({ campusId, teacherId, teacherSections }) {
-  const response = await api.post("/teacher/summary", {
-    campus_id: campusId,
-    teacher_id: teacherId,
-    teacher_sections: teacherSections,
-  });
+  const response = await api.post(
+    "/teacher/summary",
+    {
+      campus_id: campusId,
+      teacher_id: teacherId,
+      teacher_sections: teacherSections,
+    },
+    { skipGlobalPostLoader: true }
+  );
   return response.data;
 }
 

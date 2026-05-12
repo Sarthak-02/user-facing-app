@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Card, Badge, Button } from "../../ui-components";
 import Modal from "../../ui-components/Modal";
 import { getHomeworkDetail, deleteHomework } from "../../api/homework.api";
-import Loader from "../../ui-components/Loader";
+import { HomeworkDetailShimmer } from "../../ui-components/Shimmer";
 
 function formatDate(date, locale) {
   if (!date) return "";
@@ -91,11 +91,7 @@ export default function HomeworkDetail() {
 
 
   if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <HomeworkDetailShimmer />;
   }
 
   if (error || !homework) {

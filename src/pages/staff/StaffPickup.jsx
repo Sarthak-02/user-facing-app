@@ -16,7 +16,12 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../store/auth.store";
 import { usePermissions } from "../../store/permissions.store";
-import { Badge, Loader, Modal } from "../../ui-components";
+import { Badge, Modal } from "../../ui-components";
+import {
+  StaffPendingPickupShimmer,
+  StudentPickupPanelShimmer,
+  StaffPickupLogShimmer,
+} from "../../ui-components/Shimmer";
 import Button from "../../ui-components/Button";
 import PhotoPicker from "../../ui-components/PhotoPicker";
 import {
@@ -485,11 +490,7 @@ function StudentPickupPanel({ student, onConfirm }) {
   }, [student?.student_id, t]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-8">
-        <Loader />
-      </div>
-    );
+    return <StudentPickupPanelShimmer />;
   }
 
   if (error) {
@@ -1007,9 +1008,7 @@ export default function StaffPickup() {
         {activeTab === "pending" && (
           <div className="p-4">
             {pendingLoading ? (
-              <div className="flex justify-center py-10">
-                <Loader />
-              </div>
+              <StaffPendingPickupShimmer />
             ) : pendingError ? (
               <div className="text-center py-10">
                 <AlertCircle className="h-8 w-8 text-red-300 mx-auto mb-2" />
@@ -1163,9 +1162,7 @@ export default function StaffPickup() {
         {activeTab === "log" && (
           <div className="p-4">
             {logsLoading ? (
-              <div className="flex justify-center py-10">
-                <Loader />
-              </div>
+              <StaffPickupLogShimmer />
             ) : logsError ? (
               <div className="text-center py-10">
                 <AlertCircle className="h-8 w-8 text-red-300 mx-auto mb-2" />

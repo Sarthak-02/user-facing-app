@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, Loader, Button } from "../../ui-components";
+import { Card, Button } from "../../ui-components";
+import { StaffReportingShimmer } from "../../ui-components/Shimmer";
 import {
   getTeacherSectionSummary,
   getTeacherSectionGrades,
@@ -643,11 +644,7 @@ export default function TeacherReporting() {
   }
 
   if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <StaffReportingShimmer />;
   }
 
   if (error) {

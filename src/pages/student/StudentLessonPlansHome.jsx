@@ -24,7 +24,7 @@ import {
   BookMarked,
   ChevronRight,
 } from "lucide-react";
-import Loader from "../../ui-components/Loader";
+import { LessonPlanPickerShimmer } from "../../ui-components/Shimmer";
 
 function normalizeSubjectEntry(s) {
   if (!s) return null;
@@ -170,20 +170,8 @@ export default function StudentLessonPlansHome() {
     }
   }, [loading, subjects, navigate]);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
-  }
-
-  if (subjects.length === 1) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+  if (loading || subjects.length === 1) {
+    return <LessonPlanPickerShimmer />;
   }
 
   if (subjects.length === 0) {

@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../../ui-components";
 import { getReceivedBroadcasts } from "../../api/broadcast.api";
 import { useAuth } from "../../store/auth.store";
-import Loader from "../../ui-components/Loader";
+import { AnnouncementDetailShimmer } from "../../ui-components/Shimmer";
 
 function formatDateTime(date, locale) {
   if (!date) return "";
@@ -79,11 +79,7 @@ export default function AnnouncementDetail() {
   const handleGoBack = () => navigate("/student/announcements");
 
   if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <AnnouncementDetailShimmer />;
   }
 
   if (error || !announcement) {

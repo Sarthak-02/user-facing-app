@@ -14,7 +14,8 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useAuth } from "../../store/auth.store";
-import { Badge, Loader, Modal } from "../../ui-components";
+import { Badge, Modal } from "../../ui-components";
+import { PickupPersonsShimmer, PickupRequestsShimmer } from "../../ui-components/Shimmer";
 import Button from "../../ui-components/Button";
 import PhotoPicker from "../../ui-components/PhotoPicker";
 import {
@@ -756,9 +757,7 @@ export default function StudentPickup() {
             </div>
 
             {personsLoading ? (
-              <div className="flex justify-center py-10">
-                <Loader />
-              </div>
+              <PickupPersonsShimmer />
             ) : personsError ? (
               <div className="text-center py-10">
                 <AlertCircle className="h-8 w-8 text-red-300 mx-auto mb-2" />
@@ -903,9 +902,7 @@ export default function StudentPickup() {
             </div>
 
             {requestsLoading ? (
-              <div className="flex justify-center py-10">
-                <Loader />
-              </div>
+              <PickupRequestsShimmer />
             ) : requestsError ? (
               <div className="text-center py-10">
                 <AlertCircle className="h-8 w-8 text-red-300 mx-auto mb-2" />

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, Button } from "../../ui-components";
+import { BroadcastListShimmer } from "../../ui-components/Shimmer";
 import DesktopListing from "../../components/staff-broadcast/DesktopListing";
 import MobileListing from "../../components/staff-broadcast/MobileListing";
 import BroadcastFormModal from "../../components/staff-broadcast/BroadcastFormModal";
@@ -259,14 +260,7 @@ export default function BroadcastPage() {
       </div>
 
       {/* Loading State */}
-      {isLoading && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-gray-600">{t("broadcast.loadingList")}</p>
-          </div>
-        </div>
-      )}
+      {isLoading && <BroadcastListShimmer />}
 
       {/* Error State */}
       {loadError && !isLoading && (

@@ -15,7 +15,7 @@ import {
   BookmarkCheck,
   StickyNote,
 } from "lucide-react";
-import Loader from "../../ui-components/Loader";
+import { TopicDetailShimmer } from "../../ui-components/Shimmer";
 
 function formatDate(d, locale) {
   if (!d) return null;
@@ -105,11 +105,7 @@ export default function StudentTopicDetail() {
   const goBack = () => navigate(`/student/lesson-plans/subject/${subjectId}`);
 
   if (loading && !topic) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <TopicDetailShimmer />;
   }
 
   if (error || !topic) {

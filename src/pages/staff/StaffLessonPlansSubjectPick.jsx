@@ -24,7 +24,7 @@ import {
   Microscope,
   BookMarked,
 } from "lucide-react";
-import Loader from "../../ui-components/Loader";
+import { LessonPlanPickerShimmer } from "../../ui-components/Shimmer";
 
 const FALLBACK_CONFIGS = [
   { Icon: BookMarked, iconBg: "bg-blue-100", iconColor: "text-blue-600", border: "border-l-blue-400" },
@@ -129,11 +129,7 @@ export default function StaffLessonPlansSubjectPick() {
   }
 
   if (subjects.length === 1) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <LessonPlanPickerShimmer />;
   }
 
   if (subjects.length === 0) {

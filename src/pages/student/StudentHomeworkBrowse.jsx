@@ -6,7 +6,7 @@ import DesktopListing from "../../components/homework/DesktopListing";
 import MobileListing from "../../components/homework/MobileListing";
 import { getStudentHomeworkAll } from "../../api/homework.api";
 import { useAuth } from "../../store/auth.store";
-import Loader from "../../ui-components/Loader";
+import { HomeworkListingShimmer } from "../../ui-components/Shimmer";
 import { ArrowLeft } from "lucide-react";
 
 export default function StudentHomeworkBrowse() {
@@ -96,11 +96,7 @@ export default function StudentHomeworkBrowse() {
   }
 
   if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <HomeworkListingShimmer />;
   }
 
   if (error) {

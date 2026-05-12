@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Badge, Button } from "../../ui-components";
 import { getHomeworkDetail } from "../../api/homework.api";
-import Loader from "../../ui-components/Loader";
+import { HomeworkDetailShimmer } from "../../ui-components/Shimmer";
 
 function formatDate(date, locale) {
   if (!date) return "";
@@ -102,11 +102,7 @@ export default function HomeworkDetail() {
   const handleGoBack = () => navigate(location.state?.from || "/student/homework");
 
   if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <HomeworkDetailShimmer />;
   }
 
   if (error || !homework) {
