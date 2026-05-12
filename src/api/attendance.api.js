@@ -106,3 +106,15 @@ export async function getTodaySchedule(payload) {
     throw err.response?.data || err;
   }
 }
+
+// Silent check used by offline sync — no loader triggered
+export async function checkAttendanceTaken(sectionId, date) {
+  try {
+    const response = await api.get(
+      `attendance/details?section_id=${sectionId}&date=${date}&period=OVERALL`
+    );
+    return response.data?.data?.is_attendance_taken === true;
+  } catch {
+    return false;
+  }
+}

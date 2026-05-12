@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Pencil, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Pencil, ChevronLeft, ChevronRight, Calendar, WifiOff, CheckCircle, AlertTriangle, X } from "lucide-react";
 import AttendanceSummary from "../../components/attendance/AttendanceSummary";
 import BulkActionsMenu from "../../components/attendance/BulkActionsMenu";
 import ConfirmationModal from "../../components/attendance/ConfirmationModal";
@@ -15,6 +15,8 @@ import { submitAttendance, editAttendance, getAttendanceDetails } from "../../ap
 import { useAuth } from "../../store/auth.store";
 import { useLoader } from "../../store/loader.store";
 import { useTeacherSectionRows } from "../../hooks/useTeacherSectionRows";
+import { useAttendanceDraft } from "../../store/attendanceDraft.store";
+import { usePendingSync } from "../../hooks/usePendingSync";
 
 const PERIOD = "OVERALL";
 
@@ -60,6 +62,15 @@ export default function StaffAttendanceSection({ readOnly = false }) {
   const [submittedAttendanceData, setSubmittedAttendanceData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [syncMessage, setSyncMessage] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (syncMessage?.type === "synced" || syncMessage?.type === "conflict") {
+      const timer = setTimeout(() => setSyncMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [syncMessage]);
 
   const sectionTitle = useMemo(() => {
     const row = sectionRows.find((r) => String(r.sectionId) === String(selectedClass));
@@ -139,8 +150,6 @@ export default function StaffAttendanceSection({ readOnly = false }) {
                 attendanceMap[record.student_id] = record.attendance_status;
               }
             });
-            setAttendance(attendanceMap);
-            setNoAttendanceFound(false);
 
             const {
               teacher_id = "",
@@ -162,6 +171,20 @@ export default function StaffAttendanceSection({ readOnly = false }) {
               section_name,
               is_attendance_taken,
             });
+
+            // Restore local draft if attendance hasn't been submitted yet
+            if (!is_attendance_taken && !readOnly) {
+              const draft = useAttendanceDraft.getState().getDraft(selectedClass, fetchDateKey);
+              if (draft && Object.keys(draft.records).length > 0) {
+                setAttendance(draft.records);
+              } else {
+                setAttendance(attendanceMap);
+              }
+            } else {
+              setAttendance(attendanceMap);
+            }
+
+            setNoAttendanceFound(false);
           } else {
             setAttendance({});
             setStudents([]);
@@ -179,12 +202,30 @@ export default function StaffAttendanceSection({ readOnly = false }) {
     };
 
     fetchAttendanceDetails();
-  }, [selectedClass, fetchDateKey]);
+  }, [selectedClass, fetchDateKey, refreshKey]);
 
   const editMode = useMemo(() => {
     if (readOnly) return false;
     return isToday(selectedDate) && (submittedAttendanceData?.is_attendance_taken === false || isEditing);
   }, [readOnly, submittedAttendanceData, selectedDate, isEditing]);
+
+  const saveDraftIfEditing = useCallback((records) => {
+    if (editMode) {
+      useAttendanceDraft.getState().saveDraft(selectedClass, fetchDateKey, records);
+    }
+  }, [editMode, selectedClass, fetchDateKey]);
+
+  usePendingSync({
+    onSyncSuccess: (submission) => {
+      setSyncMessage({ type: "synced" });
+      if (submission.sectionId === selectedClass && submission.date === fetchDateKey) {
+        setRefreshKey((k) => k + 1);
+      }
+    },
+    onConflict: () => {
+      setSyncMessage({ type: "conflict" });
+    },
+  });
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
@@ -199,33 +240,24 @@ export default function StaffAttendanceSection({ readOnly = false }) {
 
   async function handleSubmit() {
     setIsSubmitting(true);
-    try {
-      const records = Object.entries(attendance).map(([key, value]) => ({
-        student_id: key,
-        status: value,
-      }));
+    const records = Object.entries(attendance).map(([key, value]) => ({
+      student_id: key,
+      status: value,
+    }));
 
+    const submitPayload = isEditing
+      ? { session_id: submittedAttendanceData.attendanceSessionId, teacher_id: userId, records }
+      : { section_id: selectedClass, teacher_id: userId, date: toLocalISOString(selectedDate), period: PERIOD, records };
+
+    try {
       const response = isEditing
-        ? await editAttendance({
-            session_id: submittedAttendanceData.attendanceSessionId,
-            teacher_id: userId,
-            records,
-          })
-        : await submitAttendance({
-            section_id: selectedClass,
-            teacher_id: userId,
-            date: toLocalISOString(selectedDate),
-            period: PERIOD,
-            records,
-          });
+        ? await editAttendance(submitPayload)
+        : await submitAttendance(submitPayload);
 
       if (response.success) {
-        const params = {
-          section_id: selectedClass,
-          date: fetchDateKey,
-          period: PERIOD,
-        };
+        useAttendanceDraft.getState().clearDraft(selectedClass, fetchDateKey);
 
+        const params = { section_id: selectedClass, date: fetchDateKey, period: PERIOD };
         const updatedData = await getAttendanceDetails(params);
 
         if (updatedData.success === true && updatedData.data?.students) {
@@ -267,42 +299,58 @@ export default function StaffAttendanceSection({ readOnly = false }) {
       setShowConfirmation(false);
       setIsEditing(false);
     } catch (error) {
-      console.error("Error in handleSubmit:", error);
-      setShowConfirmation(false);
+      if (!navigator.onLine) {
+        useAttendanceDraft.getState().queueSubmission({
+          type: isEditing ? "edit" : "submit",
+          sectionId: selectedClass,
+          date: fetchDateKey,
+          payload: submitPayload,
+        });
+        setSyncMessage({ type: "queued" });
+        setShowConfirmation(false);
+        setIsEditing(false);
+      } else {
+        console.error("Error in handleSubmit:", error);
+        setShowConfirmation(false);
+      }
     } finally {
       setIsSubmitting(false);
     }
   }
 
   const markAttendance = (id, status) => {
-    setAttendance((prev) => ({
-      ...prev,
-      [id]: status,
-    }));
+    setAttendance((prev) => {
+      const next = { ...prev, [id]: status };
+      saveDraftIfEditing(next);
+      return next;
+    });
   };
 
   const markAllPresent = () => {
-    const allPresent = {};
-    filteredStudents.forEach((student) => {
-      allPresent[student.student_id] = "PRESENT";
+    setAttendance((prev) => {
+      const next = { ...prev };
+      filteredStudents.forEach((student) => { next[student.student_id] = "PRESENT"; });
+      saveDraftIfEditing(next);
+      return next;
     });
-    setAttendance((prev) => ({ ...prev, ...allPresent }));
   };
 
   const markAllAbsent = () => {
-    const allAbsent = {};
-    filteredStudents.forEach((student) => {
-      allAbsent[student.student_id] = "ABSENT";
+    setAttendance((prev) => {
+      const next = { ...prev };
+      filteredStudents.forEach((student) => { next[student.student_id] = "ABSENT"; });
+      saveDraftIfEditing(next);
+      return next;
     });
-    setAttendance((prev) => ({ ...prev, ...allAbsent }));
   };
 
   const clearAll = () => {
-    const clearedAttendance = { ...attendance };
-    filteredStudents.forEach((student) => {
-      delete clearedAttendance[student.student_id];
+    setAttendance((prev) => {
+      const next = { ...prev };
+      filteredStudents.forEach((student) => { delete next[student.student_id]; });
+      saveDraftIfEditing(next);
+      return next;
     });
-    setAttendance(clearedAttendance);
   };
 
   const presentCount = Object.values(attendance).filter((s) => s === "PRESENT").length;
@@ -379,6 +427,29 @@ export default function StaffAttendanceSection({ readOnly = false }) {
             {t("staffAttendance.pastRecords")}
           </NavLink>
         </div>
+
+        {syncMessage && (
+          <div className={[
+            "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium",
+            syncMessage.type === "queued"
+              ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+              : syncMessage.type === "synced"
+              ? "border-success-200 bg-success-50 text-success-800 dark:border-success-800 dark:bg-success-950 dark:text-success-300"
+              : "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300",
+          ].join(" ")}>
+            {syncMessage.type === "queued" && <WifiOff className="h-4 w-4 shrink-0" />}
+            {syncMessage.type === "synced" && <CheckCircle className="h-4 w-4 shrink-0" />}
+            {syncMessage.type === "conflict" && <AlertTriangle className="h-4 w-4 shrink-0" />}
+            <span className="flex-1">
+              {syncMessage.type === "queued" && "Saved offline — will submit automatically when reconnected."}
+              {syncMessage.type === "synced" && "Offline attendance submitted successfully."}
+              {syncMessage.type === "conflict" && "Attendance was already submitted. Your offline changes were not applied."}
+            </span>
+            <button type="button" onClick={() => setSyncMessage(null)} className="shrink-0 opacity-60 hover:opacity-100">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         {readOnly && (() => {
           const isViewingToday = historyDateInput === todayInputMax;
