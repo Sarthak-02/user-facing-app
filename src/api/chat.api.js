@@ -65,14 +65,36 @@ export async function listMessages(conversationId, query = {}) {
 /**
  * @param {string} conversationId
  * @param {string} body
+ * @param {Array<{file_url:string,file_name:string,file_type:string,file_size:number}>} [attachments]
  * @returns {Promise<object>}
  */
-export async function sendChatMessage(conversationId, body) {
+export async function sendChatMessage(conversationId, body, attachments) {
+  const payload = {};
+  if (body) payload.body = body;
+  if (attachments?.length) payload.attachments = attachments;
   const res = await api.post(
     `/chat/conversations/${conversationId}/messages`,
-    { body }
+    payload
   );
   return unwrap(res.data);
+}
+
+/**
+ * Get a signed URL for uploading a chat attachment.
+ * @param {string} fileName
+ * @param {string} mimeType
+ * @param {string} [campusId]
+ * @returns {Promise<{upload_url:string, file_url:string}>}
+ */
+export async function getChatAttachmentUploadUrl(fileName, mimeType, campusId) {
+  const payload = { file_name: fileName, mime_type: mimeType };
+  if (campusId) payload.campus_id = campusId;
+  const res = await api.post("/chat/attachments/upload-url", payload);
+  const data = unwrap(res.data);
+  return {
+    upload_url: data?.upload_url ?? data?.uploadUrl ?? data?.signed_url ?? data?.signedUrl ?? "",
+    file_url: data?.public_url ?? data?.file_url ?? data?.fileUrl ?? data?.url ?? "",
+  };
 }
 
 /**

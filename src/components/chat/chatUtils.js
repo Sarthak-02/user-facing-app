@@ -149,7 +149,13 @@ export function conversationTitle(c, currentUserId) {
 export function conversationLastMessage(c) {
   const lm = c?.last_message;
   if (!lm) return "";
-  return typeof lm.body === "string" ? lm.body : "";
+  if (typeof lm.body === "string" && lm.body) return lm.body;
+  const atts = lm?.attachments ?? lm?.files ?? lm?.media;
+  if (Array.isArray(atts) && atts.length > 0) {
+    const isImage = atts[0]?.file_type?.startsWith("image/");
+    return isImage ? "📷 Photo" : "📎 Attachment";
+  }
+  return "";
 }
 
 /** @param {object} c */
@@ -170,6 +176,12 @@ export function conversationUpdatedAt(c) {
     c?.lastActivityAt ||
     ""
   );
+}
+
+/** @param {object} m */
+export function messageAttachments(m) {
+  const raw = m?.attachments ?? m?.files ?? m?.media;
+  return Array.isArray(raw) ? raw : [];
 }
 
 /**

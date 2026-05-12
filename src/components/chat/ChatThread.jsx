@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronLeft, SendHorizontal, ChevronsDown, MessageSquare } from "lucide-react";
+import { ChevronLeft, SendHorizontal, ChevronsDown, MessageSquare, Paperclip, X, FileText, Loader2 } from "lucide-react";
 import { Button } from "../../ui-components";
 import Loader from "../../ui-components/Loader";
 import { useAuth } from "../../store/auth.store";
@@ -11,10 +11,12 @@ import {
   getConversation,
   createDirectConversation,
   pickConversationId,
+  getChatAttachmentUploadUrl,
 } from "../../api/chat.api";
 import {
   conversationTitle,
   isMessageFromCurrentUser,
+  messageAttachments,
   messageBody,
   messageCreatedAt,
   messageDateLabel,
@@ -50,6 +52,13 @@ function mergeMessages(prev, incoming) {
     }
   }
   return sortChrono([...map.values()]);
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function latestCreatedAtIso(msgs) {
@@ -90,11 +99,14 @@ export default function ChatThread({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   const bottomRef = useRef(null);
   const scrollAreaRef = useRef(null);
   const pollAfterRef = useRef("");
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
   const atBottomRef = useRef(true);
   const isInitialScrollRef = useRef(true);
 
@@ -222,10 +234,55 @@ export default function ChatThread({
     ta.style.height = `${Math.min(ta.scrollHeight, maxPx)}px`;
   }, [draft]);
 
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const results = await Promise.allSettled(
+        files.map(async (file) => {
+          const { upload_url, file_url } = await getChatAttachmentUploadUrl(
+            file.name,
+            file.type
+          );
+          await fetch(upload_url, {
+            method: "PUT",
+            body: file,
+            headers: { "Content-Type": file.type },
+          });
+          return {
+            file_url,
+            file_name: file.name,
+            file_type: file.type,
+            file_size: file.size,
+          };
+        })
+      );
+      const succeeded = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
+      const failed = results.filter((r) => r.status === "rejected");
+      if (succeeded.length) setPendingAttachments((prev) => [...prev, ...succeeded]);
+      if (failed.length) {
+        const msg = failed[0].reason?.message || "Some files failed to upload";
+        setError(typeof msg === "string" ? msg : "Some files failed to upload");
+      }
+    } catch (err) {
+      const msg = err?.message || "Failed to upload file";
+      setError(typeof msg === "string" ? msg : "Failed to upload file");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removePendingAttachment = (index) => {
+    setPendingAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const onSend = async (e) => {
     e.preventDefault();
     const text = draft.trim();
-    if (!text || sending) return;
+    if ((!text && !pendingAttachments.length) || sending || uploading) return;
 
     if (isDraft) {
       setSending(true);
@@ -237,8 +294,9 @@ export default function ChatThread({
           setError(t("chat.couldNotStartConversation"));
           return;
         }
-        await sendChatMessage(cid, text);
+        await sendChatMessage(cid, text, pendingAttachments.length ? pendingAttachments : undefined);
         setDraft("");
+        setPendingAttachments([]);
         navigate(`${backTo}/${cid}`, { replace: true });
       } catch (err) {
         const msg =
@@ -256,8 +314,9 @@ export default function ChatThread({
     setSending(true);
     setError(null);
     try {
-      const created = await sendChatMessage(conversationId, text);
+      const created = await sendChatMessage(conversationId, text, pendingAttachments.length ? pendingAttachments : undefined);
       setDraft("");
+      setPendingAttachments([]);
       atBottomRef.current = true;
       if (created && typeof created === "object") {
         const outgoing = isMessageFromCurrentUser(created, currentUserId)
@@ -284,20 +343,47 @@ export default function ChatThread({
     }
   };
 
-  // Insert date separators between messages from different days
+  // Insert date separators and compute per-message grouping metadata
   const rowsWithSeparators = useMemo(() => {
     const result = [];
     let lastLabel = null;
-    for (const m of messages) {
+    const GROUP_MS = 5 * 60 * 1000;
+
+    for (let i = 0; i < messages.length; i++) {
+      const m = messages[i];
       const label = messageDateLabel(messageCreatedAt(m));
       if (label && label !== lastLabel) {
         result.push({ _isSeparator: true, label });
         lastLabel = label;
       }
-      result.push(m);
+
+      const sentByMe = isMessageFromCurrentUser(m, currentUserId);
+      const prev = messages[i - 1] ?? null;
+      const next = messages[i + 1] ?? null;
+      const prevLabel = prev ? messageDateLabel(messageCreatedAt(prev)) : null;
+      const nextLabel = next ? messageDateLabel(messageCreatedAt(next)) : null;
+
+      const groupedWithPrev =
+        prev &&
+        prevLabel === label &&
+        isMessageFromCurrentUser(prev, currentUserId) === sentByMe &&
+        new Date(messageCreatedAt(m)) - new Date(messageCreatedAt(prev)) < GROUP_MS;
+
+      const groupedWithNext =
+        next &&
+        nextLabel === label &&
+        isMessageFromCurrentUser(next, currentUserId) === sentByMe &&
+        new Date(messageCreatedAt(next)) - new Date(messageCreatedAt(m)) < GROUP_MS;
+
+      result.push({
+        _msg: m,
+        _sentByMe: sentByMe,
+        _isGroupStart: !groupedWithPrev,
+        _isGroupEnd: !groupedWithNext,
+      });
     }
     return result;
-  }, [messages]);
+  }, [messages, currentUserId]);
 
   if (!conversationId && !isDraft) {
     return null;
@@ -328,7 +414,7 @@ export default function ChatThread({
           onScroll={handleScroll}
           className="h-full overflow-y-auto overflow-x-hidden px-4 py-4"
         >
-          <div className="mx-auto max-w-3xl space-y-1">
+          <div className="mx-auto max-w-3xl">
             {loading ? (
               <div className="flex justify-center py-16">
                 <Loader />
@@ -336,17 +422,22 @@ export default function ChatThread({
             ) : null}
 
             {error ? (
-              <div className="rounded-lg border border-red-100 bg-red-50 p-3">
-                <p className="text-xs text-red-500">{error}</p>
+              <div className="mb-2 flex items-start gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2.5">
+                <p className="flex-1 text-xs text-red-500">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="shrink-0 text-red-400 hover:text-red-600"
+                >
+                  <X size={13} />
+                </button>
               </div>
             ) : null}
 
             {!loading && messages.length === 0 && !error ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <MessageSquare size={36} className="mb-3 text-gray-300" />
-                <p className="text-sm text-gray-400">
-                  {t("chat.noMessages")}
-                </p>
+                <p className="text-sm text-gray-400">{t("chat.noMessages")}</p>
               </div>
             ) : null}
 
@@ -366,32 +457,87 @@ export default function ChatThread({
                     </div>
                   );
                 }
-                const m = item;
-                const sentByMe = isMessageFromCurrentUser(m, currentUserId);
+
+                const { _msg: m, _sentByMe: sentByMe, _isGroupStart, _isGroupEnd } = item;
                 const body = messageBody(m);
                 const when = messageTimeLabel(messageCreatedAt(m));
+                const attachments = messageAttachments(m);
+
                 return (
                   <div
                     key={messageId(m) || `${when}-${body.slice(0, 12)}-${idx}`}
-                    className={`flex w-full py-0.5 ${sentByMe ? "justify-end" : "justify-start"}`}
+                    className={`flex w-full ${_isGroupStart ? "mt-2" : "mt-0.5"} ${sentByMe ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[78%] rounded-2xl px-3.5 py-2 text-sm ${
+                      className={`max-w-[78%] px-3.5 py-2 text-sm transition-shadow ${
+                        _isGroupEnd
+                          ? sentByMe
+                            ? "rounded-2xl rounded-br-sm"
+                            : "rounded-2xl rounded-bl-sm"
+                          : "rounded-2xl"
+                      } ${
                         sentByMe
-                          ? "rounded-br-sm bg-primary-600 text-white"
-                          : "rounded-bl-sm border border-gray-200 bg-white text-gray-800 shadow-sm"
+                          ? "bg-primary-600 text-white"
+                          : "border border-gray-200 bg-white text-gray-800 shadow-sm"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words leading-relaxed">
-                        {body}
-                      </p>
-                      <p
-                        className={`mt-1 text-[10px] ${
-                          sentByMe ? "text-white/60" : "text-gray-400"
-                        }`}
-                      >
-                        {when}
-                      </p>
+                      {body ? (
+                        <p className="whitespace-pre-wrap break-words leading-relaxed">
+                          {body}
+                        </p>
+                      ) : null}
+
+                      {attachments.length > 0 && (
+                        <div className={`flex flex-col gap-1.5 ${body ? "mt-2" : ""}`}>
+                          {attachments.map((att, ai) =>
+                            att.file_type?.startsWith("image/") ? (
+                              <a
+                                key={ai}
+                                href={att.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block"
+                              >
+                                <img
+                                  src={att.file_url}
+                                  alt={att.file_name}
+                                  className="max-h-48 max-w-full rounded-xl object-contain"
+                                />
+                              </a>
+                            ) : (
+                              <a
+                                key={ai}
+                                href={att.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs ${
+                                  sentByMe
+                                    ? "bg-white/20 text-white hover:bg-white/30"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                }`}
+                              >
+                                <FileText size={13} className="shrink-0" />
+                                <span className="min-w-0 flex-1 truncate">{att.file_name}</span>
+                                {att.file_size ? (
+                                  <span className="shrink-0 opacity-60">
+                                    {formatFileSize(att.file_size)}
+                                  </span>
+                                ) : null}
+                              </a>
+                            )
+                          )}
+                        </div>
+                      )}
+
+                      {_isGroupEnd && (
+                        <p
+                          className={`mt-1 text-[10px] ${
+                            sentByMe ? "text-white/60" : "text-gray-400"
+                          }`}
+                        >
+                          {when}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
@@ -418,35 +564,96 @@ export default function ChatThread({
 
       {/* Footer — main layout already reserves bottom nav; avoid stacking extra pb here */}
       <footer className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 md:px-3 md:py-3">
-        <form onSubmit={onSend} className="mx-auto flex max-w-3xl items-end gap-2">
-          <textarea
-            ref={textareaRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder={t("chat.writeMessage")}
-            title={t("chatUi.composerHint")}
-            rows={1}
-            className="max-h-[120px] min-h-[38px] flex-1 resize-none rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm leading-snug text-gray-800 outline-none placeholder:text-gray-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            disabled={sending || (!isDraft && loading)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                onSend(e);
-              }
-            }}
-          />
-          <Button
-            type="submit"
-            disabled={sending || (!isDraft && loading) || !draft.trim()}
-            className="h-10 shrink-0 px-3"
-          >
-            {sending ? (
-              <span className="text-xs">…</span>
-            ) : (
-              <SendHorizontal size={16} />
-            )}
-          </Button>
-        </form>
+        <div className="mx-auto max-w-3xl">
+          {/* Pending attachment chips */}
+          {pendingAttachments.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {pendingAttachments.map((att, i) =>
+                att.file_type?.startsWith("image/") ? (
+                  <div key={i} className="relative inline-flex items-end">
+                    <img
+                      src={att.file_url}
+                      alt={att.file_name}
+                      className="h-16 w-16 rounded-lg object-cover border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePendingAttachment(i)}
+                      className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gray-600 text-white hover:bg-gray-800"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    key={i}
+                    className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700"
+                  >
+                    <FileText size={12} className="shrink-0 text-gray-400" />
+                    <span className="max-w-[100px] truncate">{att.file_name}</span>
+                    {att.file_size ? (
+                      <span className="shrink-0 text-gray-400">{formatFileSize(att.file_size)}</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => removePendingAttachment(i)}
+                      className="ml-0.5 text-gray-400 hover:text-gray-700"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+
+          <form onSubmit={onSend} className="flex items-end gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <button
+              type="button"
+              disabled={uploading || sending || (!isDraft && loading)}
+              onClick={() => fileInputRef.current?.click()}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-40"
+              aria-label="Attach file"
+            >
+              {uploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
+            </button>
+            <textarea
+              ref={textareaRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={t("chat.writeMessage")}
+              title={t("chatUi.composerHint")}
+              rows={1}
+              className="max-h-[120px] min-h-[38px] flex-1 resize-none rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm leading-snug text-gray-800 outline-none placeholder:text-gray-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+              disabled={sending || (!isDraft && loading)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  onSend(e);
+                }
+              }}
+            />
+            <Button
+              type="submit"
+              disabled={sending || uploading || (!isDraft && loading) || (!draft.trim() && !pendingAttachments.length)}
+              className="h-10 shrink-0 px-3"
+            >
+              {sending ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <SendHorizontal size={16} />
+              )}
+            </Button>
+          </form>
+        </div>
       </footer>
     </div>
   );

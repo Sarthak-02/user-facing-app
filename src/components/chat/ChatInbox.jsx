@@ -104,11 +104,33 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
     }
   }, [t]);
 
+  const refreshConversations = useCallback(async () => {
+    try {
+      const list = await listConversations();
+      const sorted = [...list].sort(
+        (a, b) =>
+          new Date(conversationUpdatedAt(b) || 0).getTime() -
+          new Date(conversationUpdatedAt(a) || 0).getTime()
+      );
+      setConversations(sorted);
+    } catch {
+      /* ignore transient poll errors */
+    }
+  }, []);
+
   // Refetch when the open thread changes so a newly created conversation appears after first send
   // (draft route uses activeId ""; navigating to /chat/:id updates activeId and triggers reload).
   useEffect(() => {
     loadConversations();
   }, [activeId, loadConversations]);
+
+  // Poll so unread counts and new conversations appear without a page navigate.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") refreshConversations();
+    }, 8000);
+    return () => window.clearInterval(id);
+  }, [refreshConversations]);
 
   // Student: teachers in my section (existing API). Staff: students from permissions only — no list-by-section.
   useEffect(() => {
@@ -281,7 +303,7 @@ export default function ChatInbox({ mode, threadBase, activeId = "" }) {
                   const title = conversationTitle(c, currentUserId);
                   const isActive = cid === activeId;
                   const lastMsg = conversationLastMessage(c);
-                  const unread = conversationUnreadCount(c);
+                  const unread = isActive ? 0 : conversationUnreadCount(c);
                   const hasUnread = unread > 0;
                   return (
                     <li key={cid} className="border-b border-[var(--color-border)]/80 last:border-0">
