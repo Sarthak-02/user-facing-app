@@ -323,7 +323,7 @@ export async function deleteClassPlan(classPlanId) {
 
 /**
  * Seed a class plan from a master plan.
- * @param {{ board: string, subject: string, class_id: string, academic_year: string, campus_id: string, teacher_id: string, is_published?: boolean }} body
+ * @param {{ board: string, subject: string, class_name: string, campus_id: string, teacher_id: string, is_published?: boolean }} body
  */
 export async function seedClassPlanFromMaster(body) {
   const response = await api.post("/class-plans/seed-from-master", body);

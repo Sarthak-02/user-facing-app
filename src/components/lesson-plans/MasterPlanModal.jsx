@@ -4,28 +4,18 @@ import { Download } from "lucide-react";
 import { seedClassPlanFromMaster } from "../../api/lessonPlans.api";
 import { useTranslation } from "react-i18next";
 
-/** Derive academic year from today: April onward = new year */
-function getCurrentAcademicYear() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  if (month >= 4) return `${year}-${String(year + 1).slice(-2)}`;
-  return `${year - 1}-${String(year).slice(-2)}`;
-}
-
 /**
  * @param {{
  *   open: boolean,
  *   onClose: () => void,
  *   onSeeded: (plan: object) => void,
- *   context: { teacherId: string, campusId: string, classId: string, subjectName: string, academicYear: string },
+ *   context: { teacherId: string, campusId: string, className: string, subjectName: string },
  * }} props
  */
 export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
   const { t } = useTranslation();
   const [board, setBoard] = useState("");
   const [subject, setSubject] = useState("");
-  const [academicYear, setAcademicYear] = useState("");
   const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,7 +23,6 @@ export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
     if (!open) return;
     setBoard("");
     setSubject(context.subjectName || "");
-    setAcademicYear(context.academicYear || getCurrentAcademicYear());
     setError("");
   }, [open, context]);
 
@@ -42,8 +31,7 @@ export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
     setError("");
     if (!board.trim()) { setError(t("lessonPlans.masterPlan.errorBoardRequired")); return; }
     if (!subject.trim()) { setError(t("lessonPlans.masterPlan.errorSubjectRequired")); return; }
-    if (!academicYear.trim()) { setError(t("lessonPlans.masterPlan.errorYearRequired")); return; }
-    if (!context.classId) {
+    if (!context.className) {
       setError(t("lessonPlans.masterPlan.errorFailed"));
       return;
     }
@@ -52,16 +40,15 @@ export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
       const plan = await seedClassPlanFromMaster({
         board: board.trim(),
         subject: subject.trim(),
-        class_id: context.classId,
-        academic_year: academicYear.trim(),
+        class_name: context.className,
         campus_id: context.campusId,
         teacher_id: context.teacherId,
-        is_published: false,
+        is_published: true,
       });
       onSeeded(plan);
     } catch (err) {
       console.error(err);
-      setError(err?.message || t("lessonPlans.masterPlan.errorFailed"));
+      setError(err?.response?.data?.message || err?.message || t("lessonPlans.masterPlan.errorFailed"));
     } finally {
       setSeeding(false);
     }
@@ -100,18 +87,6 @@ export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
             required
           />
         </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            {t("lessonPlans.masterPlan.academicYear")} <span className="text-error-500">*</span>
-          </label>
-          <Input
-            value={academicYear}
-            onChange={(e) => setAcademicYear(e.target.value)}
-            placeholder={t("lessonPlans.masterPlan.academicYearPlaceholder")}
-            required
-          />
-        </div>
-
         {error && <p className="text-sm text-error-600">{error}</p>}
 
         <div className="flex justify-end gap-2 pt-1">
