@@ -13,7 +13,6 @@ import {
 } from "../../api/lessonPlans.api";
 import TopicFormModal from "../../components/lesson-plans/TopicFormModal";
 import MasterPlanModal from "../../components/lesson-plans/MasterPlanModal";
-import CloneFromClassModal from "../../components/lesson-plans/CloneFromClassModal";
 import { LessonPlanBrowseContentShimmer } from "../../ui-components/Shimmer";
 import {
   ArrowLeft,
@@ -26,7 +25,6 @@ import {
   Pencil,
   Trash2,
   Download,
-  Copy,
 } from "lucide-react";
 
 /** Derive academic year from today's date: April onward starts new year */
@@ -247,8 +245,6 @@ export default function StaffLessonPlansBrowse() {
   // Master plan seed modal
   const [masterPlanOpen, setMasterPlanOpen] = useState(false);
 
-  // Clone from another class modal
-  const [cloneModalOpen, setCloneModalOpen] = useState(false);
 
   // Publish
   const [publishing, setPublishing] = useState(false);
@@ -275,6 +271,7 @@ export default function StaffLessonPlansBrowse() {
     () => ({
       teacherId: permissions.teacher_id,
       campusId: auth.campus_id || "",
+      campusType: auth.campus?.campus_type || "",
       classId,
       className,
       sectionId: sectionId || "",
@@ -282,7 +279,7 @@ export default function StaffLessonPlansBrowse() {
       subjectName,
       academicYear,
     }),
-    [permissions.teacher_id, auth.campus_id, classId, className, sectionId, subjectId, subjectName, academicYear]
+    [permissions.teacher_id, auth.campus_id, auth.campus?.campus_type, classId, className, sectionId, subjectId, subjectName, academicYear]
   );
 
   const chapters = useMemo(
@@ -486,10 +483,6 @@ export default function StaffLessonPlansBrowse() {
               <Download className="h-4 w-4" />
               {t("lessonPlansBrowse.pullFromMasterPlan")}
             </Button>
-            <Button variant="secondary" className="gap-2" onClick={() => setCloneModalOpen(true)}>
-              <Copy className="h-4 w-4" />
-              {t("lessonPlansBrowse.cloneFromClass")}
-            </Button>
             <Button className="gap-2" loading={creatingPlan} onClick={handleCreateBlankPlan}>
               <Plus className="h-4 w-4" />
               {t("lessonPlansBrowse.createBlankPlan")}
@@ -564,19 +557,6 @@ export default function StaffLessonPlansBrowse() {
         context={context}
       />
 
-      {/* Clone from another class modal */}
-      <CloneFromClassModal
-        open={cloneModalOpen}
-        onClose={() => setCloneModalOpen(false)}
-        onCloned={(plan) => {
-          setClassPlan(plan);
-          setCloneModalOpen(false);
-          fetchClassPlan();
-        }}
-        context={context}
-        sections={permissions.sections || []}
-        classes={permissions.classes || []}
-      />
 
       {/* Delete topic confirmation */}
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} className="max-w-md">

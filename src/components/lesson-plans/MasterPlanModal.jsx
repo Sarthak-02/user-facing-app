@@ -21,7 +21,7 @@ export default function MasterPlanModal({ open, onClose, onSeeded, context }) {
 
   useEffect(() => {
     if (!open) return;
-    setBoard("");
+    setBoard(context.campusType || "");
     setSubject(context.subjectName || "");
     setError("");
   }, [open, context]);
