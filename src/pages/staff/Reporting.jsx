@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  FileDown,
   RefreshCw,
   TrendingUp,
   Users,
@@ -269,6 +270,197 @@ function ExamLineChart({ title, description, points }) {
   );
 }
 
+// ─── PDF generation ──────────────────────────────────────────────────────────
+
+async function generateStudentPDF(student, examGroups, totalGraded, totalPassed, pctAvgAll) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const PW = 210;
+  const ML = 15;
+  const MR = 15;
+  const CW = PW - ML - MR;
+  let y = 20;
+
+  // Header
+  doc.setFillColor(59, 130, 246);
+  doc.rect(0, 0, PW, 14, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text("STUDENT PERFORMANCE REPORT", ML, 9);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text(new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), PW - MR, 9, { align: "right" });
+
+  y = 26;
+  doc.setTextColor(17, 24, 39);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text(student.name, ML, y);
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(107, 114, 128);
+  doc.text("Academic Report", ML, y);
+  y += 8;
+
+  // Divider
+  doc.setDrawColor(229, 231, 235);
+  doc.line(ML, y, PW - MR, y);
+  y += 8;
+
+  // Summary stat boxes
+  const boxW = (CW - 8) / 3;
+  const boxH = 18;
+  const stats = [
+    { label: "EXAMS", value: String(examGroups.length) },
+    {
+      label: "PASS RATE",
+      value: totalGraded > 0 ? `${Math.round((totalPassed / totalGraded) * 100)}%` : "—",
+    },
+    {
+      label: "AVG SCORE",
+      value: pctAvgAll != null ? `${pctAvgAll.toFixed(1)}%` : "—",
+    },
+  ];
+  stats.forEach((s, i) => {
+    const bx = ML + i * (boxW + 4);
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(bx, y, boxW, boxH, 2, 2, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(17, 24, 39);
+    doc.text(s.value, bx + boxW / 2, y + 9, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(107, 114, 128);
+    doc.text(s.label, bx + boxW / 2, y + 15, { align: "center" });
+  });
+  y += boxH + 10;
+
+  // Divider
+  doc.setDrawColor(229, 231, 235);
+  doc.line(ML, y, PW - MR, y);
+  y += 8;
+
+  // Grade breakdown
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(55, 65, 81);
+  doc.text("GRADE BREAKDOWN", ML, y);
+  y += 7;
+
+  for (const g of examGroups) {
+    // Page overflow guard
+    if (y > 265) { doc.addPage(); y = 20; }
+
+    // Exam header band
+    doc.setFillColor(243, 244, 246);
+    doc.rect(ML, y, CW, 8, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(17, 24, 39);
+    doc.text(g.exam_name, ML + 3, y + 5.5);
+    if (g.pctAvg != null) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(59, 130, 246);
+      doc.text(`Avg: ${g.pctAvg.toFixed(1)}%`, PW - MR - 3, y + 5.5, { align: "right" });
+    }
+    y += 8;
+
+    // Pass / below line
+    if (g.gradedCount > 0) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(16, 185, 129);
+      doc.text(`✓ Passed: ${g.passCount}`, ML + 3, y + 4);
+      if (g.belowCount > 0) {
+        doc.setTextColor(239, 68, 68);
+        doc.text(`✗ Below target: ${g.belowCount}`, ML + 40, y + 4);
+      }
+      y += 7;
+    }
+
+    // Table header
+    const cols = { subject: ML, score: ML + 110, result: ML + 140 };
+    doc.setFillColor(249, 250, 251);
+    doc.rect(ML, y, CW, 6, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(107, 114, 128);
+    doc.text("SUBJECT", cols.subject + 2, y + 4.2);
+    doc.text("SCORE", cols.score, y + 4.2);
+    doc.text("RESULT", cols.result, y + 4.2);
+    y += 6;
+
+    // Table rows
+    g.rows.forEach((row, idx) => {
+      if (y > 272) { doc.addPage(); y = 20; }
+      if (idx % 2 === 0) {
+        doc.setFillColor(255, 255, 255);
+      } else {
+        doc.setFillColor(252, 252, 253);
+      }
+      doc.rect(ML, y, CW, 7, "F");
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(17, 24, 39);
+      const subj = row.subject_name ?? "—";
+      doc.text(subj.length > 38 ? subj.slice(0, 38) + "…" : subj, cols.subject + 2, y + 5);
+
+      doc.setFont("helvetica", "bold");
+      if (!row.is_graded) {
+        doc.setTextColor(156, 163, 175);
+        doc.setFont("helvetica", "italic");
+        doc.text("Pending", cols.score, y + 5);
+      } else {
+        doc.setTextColor(17, 24, 39);
+        const scoreStr = formatGrade(row, null);
+        doc.text(scoreStr, cols.score, y + 5);
+      }
+
+      const passes = row.is_graded ? gradePasses(row) : null;
+      if (passes === true) {
+        doc.setTextColor(16, 185, 129);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5);
+        doc.text("Pass", cols.result, y + 5);
+      } else if (passes === false) {
+        doc.setTextColor(239, 68, 68);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5);
+        doc.text("Below", cols.result, y + 5);
+      } else {
+        doc.setTextColor(156, 163, 175);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.text("—", cols.result, y + 5);
+      }
+      y += 7;
+    });
+
+    // Row border
+    doc.setDrawColor(229, 231, 235);
+    doc.line(ML, y, PW - MR, y);
+    y += 6;
+  }
+
+  // Footer
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(156, 163, 175);
+    doc.text(`Page ${p} of ${totalPages}`, PW / 2, 290, { align: "center" });
+  }
+
+  doc.save(`${student.name.replace(/\s+/g, "_")}_report.pdf`);
+}
+
 // ─── Student Detail Panel ─────────────────────────────────────────────────────
 
 function StudentDetailPanel({ student, onClose }) {
@@ -309,12 +501,22 @@ function StudentDetailPanel({ student, onClose }) {
               <p className="text-xs text-gray-500">{t("reporting.studentReport")}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => generateStudentPDF(student, examGroups, totalGraded, totalPassed, pctAvgAll)}
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 active:bg-gray-100"
+              title="Download PDF report"
+            >
+              <FileDown size={14} strokeWidth={2} />
+              PDF
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Quick stats */}

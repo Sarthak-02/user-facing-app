@@ -24,6 +24,34 @@ import {
   UserCheck,
 } from "lucide-react";
 
+const SUBJECT_COLOR_PALETTE = [
+  { cardBg: "bg-blue-50", iconBg: "bg-blue-200", iconColor: "text-blue-800", borderLeft: "border-l-blue-500", pill: "bg-blue-200 text-blue-900", accent: "text-blue-800" },
+  { cardBg: "bg-violet-50", iconBg: "bg-violet-200", iconColor: "text-violet-800", borderLeft: "border-l-violet-500", pill: "bg-violet-200 text-violet-900", accent: "text-violet-800" },
+  { cardBg: "bg-emerald-50", iconBg: "bg-emerald-200", iconColor: "text-emerald-800", borderLeft: "border-l-emerald-500", pill: "bg-emerald-200 text-emerald-900", accent: "text-emerald-800" },
+  { cardBg: "bg-amber-50", iconBg: "bg-amber-200", iconColor: "text-amber-800", borderLeft: "border-l-amber-500", pill: "bg-amber-200 text-amber-900", accent: "text-amber-800" },
+  { cardBg: "bg-rose-50", iconBg: "bg-rose-200", iconColor: "text-rose-800", borderLeft: "border-l-rose-500", pill: "bg-rose-200 text-rose-900", accent: "text-rose-800" },
+  { cardBg: "bg-cyan-50", iconBg: "bg-cyan-200", iconColor: "text-cyan-800", borderLeft: "border-l-cyan-500", pill: "bg-cyan-200 text-cyan-900", accent: "text-cyan-800" },
+  { cardBg: "bg-orange-50", iconBg: "bg-orange-200", iconColor: "text-orange-800", borderLeft: "border-l-orange-500", pill: "bg-orange-200 text-orange-900", accent: "text-orange-800" },
+  { cardBg: "bg-indigo-50", iconBg: "bg-indigo-200", iconColor: "text-indigo-800", borderLeft: "border-l-indigo-500", pill: "bg-indigo-200 text-indigo-900", accent: "text-indigo-800" },
+];
+
+function subjectColors(name) {
+  const n = (name || "").toLowerCase();
+  if (/math|maths|arithmetic|algebra|geometry|calculus|statistics/.test(n)) return SUBJECT_COLOR_PALETTE[0];
+  if (/physics/.test(n)) return SUBJECT_COLOR_PALETTE[5];
+  if (/chemistry|chemical/.test(n)) return SUBJECT_COLOR_PALETTE[1];
+  if (/biology|bio/.test(n)) return SUBJECT_COLOR_PALETTE[2];
+  if (/science|evs/.test(n)) return SUBJECT_COLOR_PALETTE[5];
+  if (/english|literature|reading|writing/.test(n)) return SUBJECT_COLOR_PALETTE[1];
+  if (/hindi|urdu|tamil|telugu|kannada|malayalam|bengali|marathi|sanskrit|language/.test(n)) return SUBJECT_COLOR_PALETTE[6];
+  if (/history|social|civics|political/.test(n)) return SUBJECT_COLOR_PALETTE[3];
+  if (/computer|ict|coding|programming|technology/.test(n)) return SUBJECT_COLOR_PALETTE[7];
+  if (/art|craft|drawing|paint/.test(n)) return SUBJECT_COLOR_PALETTE[4];
+  let h = 0;
+  for (const c of n) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return SUBJECT_COLOR_PALETTE[Math.abs(h) % SUBJECT_COLOR_PALETTE.length];
+}
+
 const JS_DAY_TO_API_DAY_ID = {
   0: "day-7",
   1: "day-1",
@@ -173,10 +201,16 @@ function buildTodaysPeriods(timetable, now = new Date(), sectionMeta = null, slo
     } else if (slot?.label) {
       subject = slot.label.split(" - ")[0] || "—";
     }
+    const rawSubjectId =
+      entry.subjectId ??
+      entry.subject_id ??
+      (entry.subject && typeof entry.subject === "object" ? entry.subject.id : null) ??
+      null;
     return {
       start,
       end,
       subject,
+      subjectId: rawSubjectId != null && String(rawSubjectId).length > 0 ? String(rawSubjectId) : null,
       room: entry.room?.trim?.() || "—",
       slotType: slot?.type,
       sectionName,
@@ -420,7 +454,7 @@ function QuickStat({ icon, label, value, colorClass, onClick, hint }) {
 
 export default function StaffHome() {
   const { auth } = useAuth();
-  const { isFeatureEnabled } = usePermissions();
+  const { isFeatureEnabled, getSubjectsBySection } = usePermissions();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [summaryPayload, setSummaryPayload] = useState(null);
@@ -428,7 +462,6 @@ export default function StaffHome() {
   const [error, setError] = useState(null);
 
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [isSubjectsModalOpen, setIsSubjectsModalOpen] = useState(false);
   const [isHomeworkModalOpen, setIsHomeworkModalOpen] = useState(false);
   const [isAnnouncementsModalOpen, setIsAnnouncementsModalOpen] = useState(false);
 
@@ -525,7 +558,7 @@ export default function StaffHome() {
     loadSummary();
   }, [loadSummary]);
 
-  const { summary, periods, currentPeriodIndex, subjects } = useMemo(() => {
+  const { summary, periods, currentPeriodIndex } = useMemo(() => {
     const now = new Date();
     const greeting = `${t(greetingKeyForHour(now.getHours()))},`;
     const dayLine = formatDisplayDate(now, i18n.language);
@@ -534,13 +567,11 @@ export default function StaffHome() {
       t(`home.slots.${type}`)
     );
     const idx = currentPeriodIndexFor(periodsToday);
-    const subjectRows = subjectsFromSummaryPayload(summaryPayload);
 
     return {
       summary: { greeting, firstName, dayLine },
       periods: periodsToday,
       currentPeriodIndex: idx,
-      subjects: subjectRows,
     };
   }, [summaryPayload, firstName, t, i18n.language]);
 
@@ -559,6 +590,16 @@ export default function StaffHome() {
     if (next) return { kind: "next", period: next };
     return null;
   }, [periods, currentPeriodIndex]);
+
+  const sectionSubjectLookup = useMemo(() => {
+    const map = new Map();
+    const uniqueSectionIds = [...new Set(periods.filter((p) => p.sectionId).map((p) => p.sectionId))];
+    for (const sectionId of uniqueSectionIds) {
+      const subs = getSubjectsBySection(sectionId);
+      map.set(sectionId, new Map(subs.map((s) => [(s.subject_name || "").toLowerCase(), s.subject_id])));
+    }
+    return map;
+  }, [periods, getSubjectsBySection]);
 
   const upcomingHomework = useMemo(
     () => upcomingHomeworkFromPayload(summaryPayload),
@@ -686,14 +727,16 @@ export default function StaffHome() {
               onClick={() => setIsScheduleModalOpen(true)}
               hint={t("home.staff.tapToView")}
             />
-            <QuickStat
-              icon={BookOpen}
-              label={t("home.staff.stats.subjects")}
-              value={subjects.length}
-              colorClass="bg-emerald-100 text-emerald-600"
-              onClick={() => setIsSubjectsModalOpen(true)}
-              hint={t("home.staff.tapToView")}
-            />
+            {messagesEnabled ? (
+              <QuickStat
+                icon={MessageCircle}
+                label={t("home.staff.messages.title")}
+                value={messagesUnreadTotal}
+                colorClass="bg-primary-100 text-primary-600"
+                onClick={() => navigate("/staff/chat")}
+                hint={t("home.staff.tapToView")}
+              />
+            ) : null}
             <QuickStat
               icon={Bell}
               label={t("home.staff.stats.homeworkDue")}
@@ -711,31 +754,6 @@ export default function StaffHome() {
               hint={t("home.staff.tapToView")}
             />
           </div>
-
-          {/* Messages quick link */}
-          {messagesEnabled ? (
-            <button
-              type="button"
-              onClick={() => navigate("/staff/chat")}
-              className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm transition-all hover:border-primary-300 hover:shadow-md active:scale-[0.99]"
-            >
-              <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600">
-                <MessageCircle size={16} />
-                {messagesUnreadTotal > 0 ? (
-                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[9px] font-bold text-white">
-                    {messagesUnreadTotal > 9 ? t("common.unreadOverflow") : messagesUnreadTotal}
-                  </span>
-                ) : null}
-              </span>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="text-sm font-semibold text-gray-900">{t("home.staff.messages.title")}</p>
-                <p className="text-xs text-gray-400">
-                  {messagesUnreadTotal > 0 ? t("home.staff.messages.unread", { count: messagesUnreadTotal }) : t("home.staff.messages.noNew")}
-                </p>
-              </div>
-              <ChevronRight size={16} className="shrink-0 text-gray-400" />
-            </button>
-          ) : null}
 
           {/* Quick nav links */}
           <div className="grid grid-cols-2 gap-2.5">
@@ -762,127 +780,119 @@ export default function StaffHome() {
         onClose={() => setIsScheduleModalOpen(false)}
         className="max-w-sm"
       >
-        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.staff.todaysSchedule")}</h2>
+        <div className="mb-4 pr-6">
+          <h2 className="text-base font-bold text-gray-900">{t("home.staff.todaysSchedule")}</h2>
+          {lessonPlansEnabled && periods.some(
+            (p) =>
+              !STAFF_NON_CLASS_SLOT_TYPES.has(p.slotType) &&
+              p.sectionId &&
+              sectionSubjectLookup.get(p.sectionId)?.get((p.subject || "").toLowerCase())
+          ) ? (
+            <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-emerald-600">
+              <Layers size={11} aria-hidden />
+              Tap a class to open its lesson plan
+            </p>
+          ) : null}
+        </div>
         {periods.length === 0 ? (
           <p className="py-4 text-center text-sm text-gray-500">{t("home.staff.noClassesScheduled")}</p>
         ) : (
-          <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
+          <ul className="max-h-[60vh] space-y-2.5 overflow-y-auto">
             {periods.map((p, i) => {
               const isCurrent = i === currentPeriodIndex;
               const isPast = !isCurrent && timeToMinutes(p.end) < currentNowMinutes;
-              return (
-                <li
-                  key={`${p.sectionId || ""}-${p.start}-${p.end}-${p.subject}-${i}`}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                    isCurrent
-                      ? "border-l-[3px] border-sky-500 bg-sky-50 pl-[9px]"
-                      : isPast
-                        ? "border border-gray-100 bg-gray-50 opacity-60"
-                        : "border border-gray-100 bg-white"
-                  }`}
-                >
-                  <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                      isCurrent
-                        ? "bg-sky-500 text-white"
-                        : isPast
-                          ? "bg-gray-200 text-gray-400"
-                          : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {i + 1}
+              const isNonClass = STAFF_NON_CLASS_SLOT_TYPES.has(p.slotType);
+              const matchedSubjectId =
+                p.sectionId && p.subject
+                  ? sectionSubjectLookup.get(p.sectionId)?.get(p.subject.toLowerCase())
+                  : undefined;
+              const lessonPlanHref =
+                lessonPlansEnabled && matchedSubjectId && p.sectionId && !isNonClass
+                  ? `/staff/lesson-plans/section/${p.sectionId}/subject/${matchedSubjectId}`
+                  : null;
+              const colors = isNonClass ? null : subjectColors(p.subject);
+
+              const cardClass = [
+                "flex items-center gap-3 rounded-xl border border-gray-200 border-l-4 px-3 py-2.5 transition-all",
+                isCurrent
+                  ? "border-l-sky-500 bg-sky-50"
+                  : isNonClass
+                    ? "border-l-gray-300 bg-gray-100"
+                    : lessonPlanHref
+                      ? `${colors.borderLeft} ${colors.cardBg} hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]`
+                      : `${colors.borderLeft} ${colors.cardBg}`,
+              ].filter(Boolean).join(" ");
+
+              const itemContent = (
+                <>
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                    isCurrent ? "bg-sky-500" : isNonClass ? "bg-gray-200" : colors.iconBg
+                  }`}>
+                    <BookOpen
+                      size={16}
+                      className={isCurrent ? "text-white" : isNonClass ? "text-gray-500" : colors.iconColor}
+                      aria-hidden
+                    />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className={`truncate font-semibold ${isCurrent ? "text-sky-900" : "text-gray-900"}`}>
-                      {periodSubjectLabel(p, t)}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <p className={`font-semibold text-sm ${isCurrent ? "text-sky-900" : "text-gray-900"}`}>
+                        {periodSubjectLabel(p, t)}
+                      </p>
                       {isCurrent ? (
-                        <span className="ml-2 inline-flex items-center gap-1 rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-sky-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
                           {t("home.staff.period.now")}
                         </span>
                       ) : null}
-                    </p>
-                    {p.sectionName ? (
-                      <p className="text-xs text-gray-900">{t("home.staff.period.section", { name: p.sectionName })}{p.room !== "—" ? ` · ${p.room}` : ""}</p>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      {p.sectionName ? (
+                        <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+                          isCurrent ? "bg-sky-100 text-sky-700" : colors?.pill || "bg-gray-100 text-gray-600"
+                        }`}>
+                          {p.sectionName}
+                        </span>
+                      ) : null}
+                      <span className="font-mono text-xs tabular-nums text-gray-800">{p.start}–{p.end}</span>
+                      {p.room && p.room !== "—" ? (
+                        <span className="text-xs text-gray-700">{p.room}</span>
+                      ) : null}
+                    </div>
+                    {lessonPlanHref && !isPast ? (
+                      <p className={`mt-1.5 flex items-center gap-1 text-[11px] font-semibold ${colors.accent}`}>
+                        <Layers size={11} aria-hidden />
+                        Lesson Plan
+                      </p>
                     ) : null}
                   </div>
-                  <p className="shrink-0 font-mono text-xs font-semibold tabular-nums text-gray-900">
-                    {p.start}–{p.end}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Modal>
-
-      {/* Subjects modal */}
-      <Modal
-        open={isSubjectsModalOpen}
-        onClose={() => setIsSubjectsModalOpen(false)}
-        className="max-w-sm"
-      >
-        <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.staff.yourSubjects")}</h2>
-        {subjects.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-500">{t("home.staff.noSubjectsFound")}</p>
-        ) : (
-          <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
-            {subjects.map((s) => {
-              const lessonPlansHref =
-                lessonPlansEnabled && s.subjectId && s.sectionIds.length === 1
-                  ? `/staff/lesson-plans/section/${s.sectionIds[0]}/subject/${s.subjectId}`
-                  : null;
-              const inner = (
-                <>
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                    <Layers size={14} aria-hidden />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900">{s.name}</p>
-                    {s.sectionLabels.length > 0 ? (
-                      <p className="text-xs text-gray-400">{s.sectionLabels.join(" · ")}</p>
-                    ) : null}
-                  </div>
-                  {lessonPlansHref ? (
-                    <ChevronRight size={14} className="shrink-0 text-gray-300" aria-hidden />
+                  {lessonPlanHref ? (
+                    <ChevronRight size={16} className={`shrink-0 ${colors.iconColor}`} aria-hidden />
                   ) : null}
                 </>
               );
 
-              if (lessonPlansHref) {
-                return (
-                  <li key={`${s.subjectId}-${s.name}`}>
-                    <Link
-                      to={lessonPlansHref}
-                      onClick={() => setIsSubjectsModalOpen(false)}
-                      className="flex items-center gap-3 rounded-lg border border-gray-100 p-3 transition-all hover:border-emerald-300 hover:bg-emerald-50/50"
-                    >
-                      {inner}
-                    </Link>
-                  </li>
-                );
-              }
-              return (
+              return lessonPlanHref ? (
+                <li key={`${p.sectionId || ""}-${p.start}-${p.end}-${p.subject}-${i}`}>
+                  <Link
+                    to={lessonPlanHref}
+                    onClick={() => setIsScheduleModalOpen(false)}
+                    className={cardClass}
+                  >
+                    {itemContent}
+                  </Link>
+                </li>
+              ) : (
                 <li
-                  key={`${s.subjectId || s.name}-${s.sectionIds.join(",")}`}
-                  className="flex items-center gap-3 rounded-lg border border-gray-100 p-3"
+                  key={`${p.sectionId || ""}-${p.start}-${p.end}-${p.subject}-${i}`}
+                  className={cardClass}
                 >
-                  {inner}
+                  {itemContent}
                 </li>
               );
             })}
           </ul>
         )}
-        {lessonPlansEnabled ? (
-          <Link
-            to="/staff/lesson-plans"
-            onClick={() => setIsSubjectsModalOpen(false)}
-            className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
-          >
-            {t("home.staff.allLessonPlans")}
-            <ChevronRight size={14} />
-          </Link>
-        ) : null}
       </Modal>
 
       {/* Homework modal */}
