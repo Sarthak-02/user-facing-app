@@ -57,6 +57,7 @@ export default function Layout() {
         { labelKey: "nav.messages",     icon: MessageCircle,  path: "/staff/chat",       feature: "staff_messages" },
         { labelKey: "nav.pickup",       icon: Shield,         path: "/staff/pickup",     feature: "staff_pickup" },
         { labelKey: "nav.reporting",    icon: BarChart3,      path: "/staff/reporting",  feature: "staff_reporting" },
+        { labelKey: "nav.study",         icon: Sparkles,       path: "/staff/study",      feature: "staff_study_ai" },
         { labelKey: "nav.broadcast",    icon: Bell,           path: "/broadcast",        feature: "staff_broadcast" },
       ];
       return [...baseNavItems, ...all.filter((item) => isFeatureEnabled(item.feature))];

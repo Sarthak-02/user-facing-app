@@ -1106,6 +1106,14 @@
       "computerScience": "ಕಂಪ್ಯೂಟರ್ ಸೈನ್ಸ್"
     }
   },
+  "staffStudyChat": {
+    "subtitle": "ನಿಮ್ಮ ತರಗತಿಗಾಗಿ ಪಠ್ಯಪುಸ್ತಕ ವಿಷಯವನ್ನು ಅನ್ವೇಷಿಸಲು ವಿಭಾಗ ಮತ್ತು ವಿಷಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+    "pickSection": "ವಿಭಾಗ ಆಯ್ಕೆಮಾಡಿ",
+    "pickSubject": "ವಿಷಯ ಆಯ್ಕೆಮಾಡಿ",
+    "emptyStateTitle": "{{subject}} ಅನ್ವೇಷಿಸಲು ಸಿದ್ಧ",
+    "emptyStateHint": "ವ್ಯಾಖ್ಯೆಗಳು, ಉದಾಹರಣೆಗಳು, ವ್ಯಾಯಾಮಗಳು ಅಥವಾ ಪಠ್ಯಪುಸ್ತಕದಿಂದ ಯಾವುದನ್ನಾದರೂ ಕೇಳಿ.",
+    "placeholder": "{{subject}} ಬಗ್ಗೆ ಕೇಳಿ…"
+  },
   "scholarships": {
     "source": "ಮೂಲ",
     "sourceType": "ಮೂಲ ಪ್ರಕಾರ",

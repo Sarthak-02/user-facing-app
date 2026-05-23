@@ -1106,6 +1106,14 @@
       "computerScience": "Computer Science"
     }
   },
+  "staffStudyChat": {
+    "subtitle": "Select a section and subject to explore textbook content for your class.",
+    "pickSection": "Select section",
+    "pickSubject": "Select subject",
+    "emptyStateTitle": "Ready to explore {{subject}}",
+    "emptyStateHint": "Ask about definitions, examples, exercises, or anything from the textbook.",
+    "placeholder": "Ask about {{subject}}…"
+  },
   "scholarships": {
     "source": "Source",
     "sourceType": "Source type",

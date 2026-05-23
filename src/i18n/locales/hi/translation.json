@@ -1106,6 +1106,14 @@
       "computerScience": "कंप्यूटर विज्ञान"
     }
   },
+  "staffStudyChat": {
+    "subtitle": "अपनी कक्षा के लिए पाठ्यपुस्तक सामग्री देखने हेतु अनुभाग और विषय चुनें।",
+    "pickSection": "अनुभाग चुनें",
+    "pickSubject": "विषय चुनें",
+    "emptyStateTitle": "{{subject}} के बारे में पूछताछ के लिए तैयार",
+    "emptyStateHint": "परिभाषाएँ, उदाहरण, अभ्यास या पाठ्यपुस्तक से कुछ भी पूछें।",
+    "placeholder": "{{subject}} के बारे में पूछें…"
+  },
   "scholarships": {
     "source": "स्रोत",
     "sourceType": "स्रोत प्रकार",
