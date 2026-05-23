@@ -16,6 +16,8 @@ import {
   uploadLessonPlanFile,
   createTopicProgress,
   classPlanTopicRowId,
+  generateAssignment,
+  generateQuiz,
 } from "../../api/lessonPlans.api";
 import Loader from "../../ui-components/Loader";
 import {
@@ -33,8 +35,13 @@ import {
   Clock,
   MinusCircle,
   StickyNote,
+  Sparkles,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import TopicFormModal from "../../components/lesson-plans/TopicFormModal";
+import { usePermissions } from "../../store/permissions.store";
 
 const ASSIGNMENT_STATUS_OPTIONS = ["DRAFT", "PUBLISHED", "CLOSED"];
 
@@ -335,7 +342,7 @@ function MaterialForm({ topicId, progressId, sectionId, onSaved, onCancel }) {
 
 // ─── Resource section ─────────────────────────────────────────────────────────
 
-function ResourceSection({ title, icon: Icon, iconBg, count, children, onAdd, addLabel }) {
+function ResourceSection({ title, icon: Icon, iconBg, count, children, onAdd, addLabel, secondaryAction }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
@@ -348,16 +355,183 @@ function ResourceSection({ title, icon: Icon, iconBg, count, children, onAdd, ad
             <span className="text-xs font-medium bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{count}</span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onAdd}
-          className="flex items-center gap-1 rounded-lg bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          {addLabel}
-        </button>
+        <div className="flex items-center gap-2">
+          {secondaryAction}
+          <button
+            type="button"
+            onClick={onAdd}
+            className="flex items-center gap-1 rounded-lg bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {addLabel}
+          </button>
+        </div>
       </div>
       <div className="p-3 space-y-2">{children}</div>
+    </div>
+  );
+}
+
+// ─── AI Assignment Result Modal ───────────────────────────────────────────────
+
+function AIContentModal({ result, label, onClose }) {
+  const [expanded, setExpanded] = useState({});
+
+  if (!result) return null;
+
+  const toggle = (key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const sectionColors = {
+    mcq: "border-blue-200 bg-blue-50/40",
+    short: "border-green-200 bg-green-50/40",
+    long: "border-purple-200 bg-purple-50/40",
+    true_false: "border-amber-200 bg-amber-50/40",
+    fill_blank: "border-teal-200 bg-teal-50/40",
+  };
+
+  const sectionHeaderColors = {
+    mcq: "text-blue-700 bg-blue-100",
+    short: "text-green-700 bg-green-100",
+    long: "text-purple-700 bg-purple-100",
+    true_false: "text-amber-700 bg-amber-100",
+    fill_blank: "text-teal-700 bg-teal-100",
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[92vh]">
+        {/* Header */}
+        <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <div className="w-6 h-6 rounded-lg bg-indigo-100 flex items-center justify-center">
+                <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+              </div>
+              <span className="text-sm font-bold text-gray-900">{label}</span>
+            </div>
+            <p className="text-xs text-gray-500">{result.topic} · Class {result.class_name} · {result.subject}</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Summary bar */}
+        <div className="flex items-center gap-4 px-5 py-3 bg-indigo-50 border-b border-indigo-100 flex-shrink-0">
+          <div className="text-center">
+            <p className="text-xs text-indigo-500 font-medium">Questions</p>
+            <p className="text-lg font-bold text-indigo-700">{result.total_questions}</p>
+          </div>
+          <div className="h-8 w-px bg-indigo-200" />
+          <div className="text-center">
+            <p className="text-xs text-indigo-500 font-medium">Total Marks</p>
+            <p className="text-lg font-bold text-indigo-700">{result.total_marks}</p>
+          </div>
+          <div className="h-8 w-px bg-indigo-200" />
+          <div className="text-center">
+            {result.time_minutes != null ? (
+              <>
+                <p className="text-xs text-indigo-500 font-medium">Time</p>
+                <p className="text-sm font-semibold text-indigo-700">{result.time_minutes} min</p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-indigo-500 font-medium">Difficulty</p>
+                <p className="text-sm font-semibold text-indigo-700 capitalize">{result.difficulty}</p>
+              </>
+            )}
+          </div>
+          <div className="h-8 w-px bg-indigo-200" />
+          <div className="text-center">
+            <p className="text-xs text-indigo-500 font-medium">Sections</p>
+            <p className="text-lg font-bold text-indigo-700">{(result.sections ?? []).length}</p>
+          </div>
+        </div>
+
+        {/* Sections */}
+        <div className="overflow-y-auto flex-1 p-4 space-y-3">
+          {(result.sections ?? []).map((section, si) => {
+            const colorClass = sectionColors[section.type] ?? "border-gray-200 bg-gray-50/40";
+            const headerColor = sectionHeaderColors[section.type] ?? "text-gray-700 bg-gray-100";
+            const key = `s${si}`;
+            const isOpen = expanded[key] !== false;
+            return (
+              <div key={si} className={`rounded-xl border ${colorClass} overflow-hidden`}>
+                <button
+                  type="button"
+                  onClick={() => toggle(key)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${headerColor}`}>{section.label}</span>
+                    <span className="text-xs text-gray-500">{section.questions.length} questions · {section.section_marks} marks</span>
+                  </div>
+                  {isOpen ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+                </button>
+                {isOpen && (
+                  <div className="border-t border-white/60 px-4 pb-4 pt-2 space-y-3">
+                    {section.questions.map((q) => (
+                      <div key={q.number} className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
+                        <div className="flex items-start gap-2 mb-2">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 text-xs font-bold text-gray-600 flex items-center justify-center">{q.number}</span>
+                          <p className="text-sm text-gray-900 font-medium leading-snug">
+                            {q.question ?? q.statement ?? q.sentence}
+                          </p>
+                        </div>
+                        {/* MCQ options */}
+                        {q.options && (
+                          <div className="ml-8 space-y-1 mb-2">
+                            {Object.entries(q.options).map(([opt, text]) => (
+                              <div
+                                key={opt}
+                                className={`flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-xs ${q.answer === opt ? "bg-green-50 border border-green-200 text-green-800 font-semibold" : "bg-gray-50 text-gray-700"}`}
+                              >
+                                <span className="font-bold flex-shrink-0">{opt}.</span>
+                                <span>{text}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* Answer for non-MCQ */}
+                        {!q.options && (q.answer ?? q.verdict) && (
+                          <div className="ml-8 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-800 mb-2">
+                            <span className="font-semibold">Answer: </span>{q.answer ?? q.verdict}
+                          </div>
+                        )}
+                        {/* Explanation / Justification */}
+                        {(q.explanation ?? q.justification) && (
+                          <p className="ml-8 text-xs text-gray-500 italic">{q.explanation ?? q.justification}</p>
+                        )}
+                        {/* Marking hints */}
+                        {q.marking_hints && (
+                          <div className="ml-8 mt-2">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">Marking hints:</p>
+                            <ul className="space-y-0.5">
+                              {q.marking_hints.map((hint, hi) => (
+                                <li key={hi} className="text-xs text-gray-500 flex items-start gap-1.5">
+                                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
+                                  {hint}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <div className="ml-8 mt-1.5">
+                          <span className="text-xs text-gray-400">{q.marks} {q.marks === 1 ? "mark" : "marks"}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-end px-5 py-4 border-t border-gray-100 flex-shrink-0">
+          <Button variant="secondary" onClick={onClose}>Close</Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -369,7 +543,10 @@ export default function StaffTopicDetail() {
   const { sectionId, subjectId, classPlanId, topicId } = useParams();
   const navigate = useNavigate();
 
+  const { permissions } = usePermissions();
+
   const [topic, setTopic] = useState(null);
+  const [planMeta, setPlanMeta] = useState({ class_id: "", subject: "" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [existingTopicsCount, setExistingTopicsCount] = useState(0);
@@ -383,6 +560,16 @@ export default function StaffTopicDetail() {
   const [quizForm, setQuizForm] = useState(null);
   const [materialForm, setMaterialForm] = useState(null);
 
+  // AI assignment generation
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+  const [aiError, setAiError] = useState("");
+
+  // AI quiz generation
+  const [quizAiGenerating, setQuizAiGenerating] = useState(false);
+  const [quizAiResult, setQuizAiResult] = useState(null);
+  const [quizAiError, setQuizAiError] = useState("");
+
   const load = useCallback(async () => {
     if (!classPlanId || !topicId) return;
     setLoading(true);
@@ -391,6 +578,7 @@ export default function StaffTopicDetail() {
       const plan = await getClassPlanById(classPlanId, sectionId ? { section_id: sectionId } : {});
       const topics = plan?.topics ?? [];
       setExistingTopicsCount(topics.length);
+      setPlanMeta({ class_id: plan?.class_id ?? "", subject: plan?.subject ?? "" });
       const param = String(topicId);
       const found = topics.find((tp) => classPlanTopicRowId(tp) === param);
       if (!found) throw new Error(t("staffTopicDetail.topicNotInPlan"));
@@ -422,6 +610,48 @@ export default function StaffTopicDetail() {
       console.error(err);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleGenerateAssignment = async () => {
+    if (!topic) return;
+    setAiGenerating(true);
+    setAiError("");
+    try {
+      const classItem = permissions.classes?.find((c) => c.class_id === planMeta.class_id);
+      const payload = {
+        topic: topic.title,
+        class: classItem?.class_name ?? planMeta.class_id,
+        subject: planMeta.subject,
+        chapter: topic.chapter_title,
+      };
+      const result = await generateAssignment(payload);
+      setAiResult(result);
+    } catch (err) {
+      setAiError(err?.response?.data?.message ?? err?.message ?? "Failed to generate assignment");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const handleGenerateQuiz = async () => {
+    if (!topic) return;
+    setQuizAiGenerating(true);
+    setQuizAiError("");
+    try {
+      const classItem = permissions.classes?.find((c) => c.class_id === planMeta.class_id);
+      const payload = {
+        topic: topic.title,
+        class: classItem?.class_name ?? planMeta.class_id,
+        subject: planMeta.subject,
+        difficulty: "medium",
+      };
+      const result = await generateQuiz(payload);
+      setQuizAiResult(result);
+    } catch (err) {
+      setQuizAiError(err?.response?.data?.message ?? err?.message ?? "Failed to generate quiz");
+    } finally {
+      setQuizAiGenerating(false);
     }
   };
 
@@ -538,6 +768,20 @@ export default function StaffTopicDetail() {
             count={assignments.length}
             onAdd={() => { setAssignmentForm("add"); setQuizForm(null); setMaterialForm(null); }}
             addLabel={t("staffTopicDetail.add")}
+            secondaryAction={
+              <div className="flex flex-col items-end">
+                <button
+                  type="button"
+                  onClick={handleGenerateAssignment}
+                  disabled={aiGenerating}
+                  className="flex items-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1.5 text-xs font-medium text-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Sparkles className={`h-3.5 w-3.5 ${aiGenerating ? "animate-pulse" : ""}`} />
+                  {aiGenerating ? "Generating..." : "Generate with AI"}
+                </button>
+                {aiError && <p className="mt-1 text-xs text-red-500">{aiError}</p>}
+              </div>
+            }
           >
             {assignmentForm === "add" && (
               <AssignmentForm
@@ -606,6 +850,20 @@ export default function StaffTopicDetail() {
             count={quizzes.length}
             onAdd={() => { setQuizForm("add"); setAssignmentForm(null); setMaterialForm(null); }}
             addLabel={t("staffTopicDetail.add")}
+            secondaryAction={
+              <div className="flex flex-col items-end">
+                <button
+                  type="button"
+                  onClick={handleGenerateQuiz}
+                  disabled={quizAiGenerating}
+                  className="flex items-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1.5 text-xs font-medium text-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Sparkles className={`h-3.5 w-3.5 ${quizAiGenerating ? "animate-pulse" : ""}`} />
+                  {quizAiGenerating ? "Generating..." : "Generate with AI"}
+                </button>
+                {quizAiError && <p className="mt-1 text-xs text-red-500">{quizAiError}</p>}
+              </div>
+            }
           >
             {quizForm === "add" && (
               <QuizForm
@@ -719,6 +977,12 @@ export default function StaffTopicDetail() {
         prefillChapterNumber={topic.chapter_number ?? null}
         existingTopicsCount={existingTopicsCount}
       />
+
+      {/* AI Assignment Result */}
+      {aiResult && <AIContentModal label="AI Generated Assignment" result={aiResult} onClose={() => setAiResult(null)} />}
+
+      {/* AI Quiz Result */}
+      {quizAiResult && <AIContentModal label="AI Generated Quiz" result={quizAiResult} onClose={() => setQuizAiResult(null)} />}
 
       {/* Delete confirmation */}
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} className="max-w-sm">

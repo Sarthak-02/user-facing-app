@@ -340,6 +340,30 @@ export async function cloneLessonPlan(body) {
   return d != null ? normalizeClassPlan(d) : d;
 }
 
+// ─── AI Generation ───────────────────────────────────────────────────────────
+
+/**
+ * @param {{ topic: string, class: string, subject: string, chapter: string }} payload
+ */
+export async function generateAssignment(payload) {
+  const response = await axios.post(
+    "https://school-rag-api-rekohz7zqa-el.a.run.app/generate/assignment",
+    payload
+  );
+  return response.data?.data ?? response.data;
+}
+
+/**
+ * @param {{ topic: string, class: string, subject: string, difficulty: string }} payload
+ */
+export async function generateQuiz(payload) {
+  const response = await axios.post(
+    "https://school-rag-api-rekohz7zqa-el.a.run.app/generate/quiz",
+    payload
+  );
+  return response.data?.data ?? response.data;
+}
+
 // ─── Topics ──────────────────────────────────────────────────────────────────
 
 /**
