@@ -16,6 +16,7 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Users,
   ClipboardList,
   Lightbulb,
@@ -221,28 +222,69 @@ function AnswerMarkdown({ markdown }) {
 
 function SourceBlock({ item, index }) {
   const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
   const pct = formatMatchPct(item.similarity);
   const isQuestion = String(item.id || "").startsWith("question_");
   const locationParts = [item.chapter_title, item.section_title, item.subsection_title].filter(Boolean);
   return (
-    <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
+    <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 shadow-sm">
       <div className="flex flex-wrap items-center gap-2 text-xs !text-gray-700">
-        <span className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-primary-100 px-2 text-[11px] font-semibold !text-gray-900">
+        <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary-100 px-1.5 text-[11px] font-semibold !text-gray-900">
           {index + 1}
         </span>
-        {pct != null && <span title={t("studyChat.matchScoreTitle")}>{t("studyChat.matchPercent", { pct })}</span>}
-        {item.page != null && item.page !== "" && <span>{t("studyChat.pageLabel", { page: item.page })}</span>}
+        {locationParts.length > 0 && (
+          <span className="font-medium !text-gray-800">{locationParts.join(" · ")}</span>
+        )}
+        {isQuestion && (
+          <span className="font-semibold uppercase tracking-wide !text-primary-700">
+            {t("studyChat.fromTextbookExercises")}
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-2">
+          {pct != null && <span title={t("studyChat.matchScoreTitle")}>{t("studyChat.matchPercent", { pct })}</span>}
+          {item.page != null && item.page !== "" && <span>{t("studyChat.pageLabel", { page: item.page })}</span>}
+        </span>
       </div>
-      {locationParts.length > 0 && (
-        <p className="mt-2 text-sm font-medium !text-gray-900">{locationParts.join(" · ")}</p>
+      {item.content && (
+        <>
+          <p className={`mt-1.5 text-sm leading-relaxed !text-gray-900 whitespace-pre-wrap ${expanded ? "" : "line-clamp-2"}`}>
+            {item.content}
+          </p>
+          {item.content.length > 120 && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-1 text-xs text-primary-600 hover:underline dark:text-primary-400"
+            >
+              {expanded ? t("studyChat.showLess", "Show less") : t("studyChat.showMore", "Show more")}
+            </button>
+          )}
+        </>
       )}
-      {isQuestion && (
-        <p className="mt-1 text-xs font-semibold uppercase tracking-wide !text-primary-700">
-          {t("studyChat.fromTextbookExercises")}
-        </p>
-      )}
-      <p className="mt-2 text-sm leading-relaxed !text-gray-900 whitespace-pre-wrap">{item.content}</p>
     </article>
+  );
+}
+
+function SourcesSection({ sources }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs !text-gray-700 shadow-sm hover:!text-gray-900 transition-colors"
+      >
+        <BookOpen className="h-3.5 w-3.5 shrink-0" />
+        <span>{t("studyChat.textbookSources")} ({sources.length})</span>
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="mt-2 space-y-2">
+          {sources.map((item, j) => (
+            <SourceBlock key={item.id || j} item={item} index={j} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -612,16 +654,7 @@ function ChatScreen({ section, subject, onBack }) {
                           </div>
                           {m.diagram && <DiagramBlock diagram={m.diagram} />}
                           {m.sources?.length > 0 && (
-                            <div className="space-y-2">
-                              <p className="text-xs font-semibold uppercase tracking-wide !text-gray-800">
-                                {t("studyChat.textbookSources")}
-                              </p>
-                              <div className="space-y-3">
-                                {m.sources.map((item, j) => (
-                                  <SourceBlock key={item.id || j} item={item} index={j} />
-                                ))}
-                              </div>
-                            </div>
+                            <SourcesSection sources={m.sources} />
                           )}
                           {!m.answer?.trim() && !m.sources?.length && (
                             <p className="rounded-2xl rounded-bl-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
@@ -639,9 +672,18 @@ function ChatScreen({ section, subject, onBack }) {
 
           {sending && (
             <div className="flex justify-start">
-              <div className="flex items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-gray-500">
-                <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary-500" />
-                Preparing your answer…
+              <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-sm">
+                <Sparkles className="h-4 w-4 shrink-0 text-primary-500" style={{ animation: "spin 2s linear infinite" }} />
+                <div className="flex items-end gap-1">
+                  {[0, 150, 300].map((delay) => (
+                    <span
+                      key={delay}
+                      className="h-2.5 w-2.5 rounded-full bg-primary-500 animate-bounce"
+                      style={{ animationDelay: `${delay}ms` }}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-gray-500">Preparing your answer…</span>
               </div>
             </div>
           )}
