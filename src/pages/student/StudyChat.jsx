@@ -5,6 +5,11 @@ import { useAuth } from "../../store/auth.store";
 import { ragAsk } from "../../api/rag.api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
+import "katex/dist/katex.min.css";
+import MermaidDiagram from "../../components/MermaidDiagram";
 import { Sparkles, SendHorizontal, BookMarked, ChevronLeft } from "lucide-react";
 
 /** API `subject` values (English) for RAG; labels come from i18n. */
@@ -59,11 +64,25 @@ const mdComponents = {
   li: ({ ...props }) => <li className="leading-relaxed" {...props} />,
   strong: ({ ...props }) => <strong className="font-semibold text-gray-900 dark:text-gray-100" {...props} />,
   em: ({ ...props }) => <em className="italic" {...props} />,
-  pre: ({ children }) => (
-    <pre className="my-2 overflow-x-auto rounded-lg bg-black/5 dark:bg-white/10 p-3 text-xs font-mono text-gray-900 dark:text-gray-100 whitespace-pre-wrap [&>code]:bg-transparent [&>code]:p-0">
-      {children}
-    </pre>
-  ),
+  pre: ({ children }) => {
+    const child = Array.isArray(children) ? children[0] : children;
+    const lang = (child?.props?.className || "").replace("language-", "");
+    const content = String(child?.props?.children || "").replace(/\n$/, "");
+    if (lang === "mermaid") return <MermaidDiagram code={content} />;
+    if (lang === "svg") {
+      return (
+        <div
+          className="my-3 overflow-x-auto rounded-lg [&>svg]:max-w-full"
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      );
+    }
+    return (
+      <pre className="my-2 overflow-x-auto rounded-lg bg-black/5 dark:bg-white/10 p-3 text-xs font-mono text-gray-900 dark:text-gray-100 whitespace-pre-wrap [&>code]:bg-transparent [&>code]:p-0">
+        {children}
+      </pre>
+    );
+  },
   code: ({ className, children, ...props }) => {
     const isFenced = /\blanguage-/.test(className || "");
     if (isFenced) {
@@ -87,11 +106,35 @@ const mdComponents = {
   },
 };
 
+function DiagramBlock({ diagram }) {
+  if (!diagram?.type || !diagram?.content) return null;
+  if (diagram.type === "mermaid") {
+    return (
+      <div className="rounded-2xl rounded-bl-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-sm overflow-x-auto">
+        <MermaidDiagram code={diagram.content} />
+      </div>
+    );
+  }
+  if (diagram.type === "svg") {
+    return (
+      <div
+        className="rounded-2xl rounded-bl-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-sm overflow-x-auto [&>svg]:max-w-full"
+        dangerouslySetInnerHTML={{ __html: diagram.content }}
+      />
+    );
+  }
+  return (
+    <pre className="rounded-2xl rounded-bl-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-xs font-mono text-gray-900 dark:text-gray-100 whitespace-pre overflow-x-auto shadow-sm">
+      {diagram.content}
+    </pre>
+  );
+}
+
 function AnswerMarkdown({ markdown }) {
   if (!markdown?.trim()) return null;
   return (
     <div className="study-answer-md">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]} components={mdComponents}>
         {markdown}
       </ReactMarkdown>
     </div>
@@ -214,6 +257,7 @@ export default function StudyChat() {
           role: "assistant",
           answer: payload.answer,
           sources: payload.sources,
+          diagram: payload.diagram,
         },
       ]);
     } catch (e) {
@@ -349,6 +393,7 @@ export default function StudyChat() {
                               </p>
                             )}
                           </div>
+                          {m.diagram && <DiagramBlock diagram={m.diagram} />}
                           {m.sources?.length > 0 && (
                             <div className="space-y-2">
                               <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">

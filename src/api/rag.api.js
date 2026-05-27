@@ -18,6 +18,7 @@ async function _ragFetch(url, payload) {
     sources: Array.isArray(data.sources) ? data.sources : [],
     mode: data.mode ?? null,
     prompt: data.prompt ?? null,
+    diagram: data.diagram ?? null,
   };
 }
 

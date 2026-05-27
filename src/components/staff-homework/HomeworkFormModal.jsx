@@ -209,7 +209,7 @@ export default function HomeworkFormModal({
           description: "",
           dueDate: "",
           targetType: { value: "SECTION", label: t("homeworkForm.section") },
-          sectionId: sec ? { value: sec.section_id, label: sec.section_name } : null,
+          sectionId: sec ? [{ value: sec.section_id, label: sec.section_name }] : [],
           studentId: [],
           classId: cls ? { value: cls.class_id, label: cls.class_name } : null,
           attachments: [],

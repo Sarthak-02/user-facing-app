@@ -7,6 +7,20 @@ import { useAuth } from "../../store/auth.store";
 import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
 
+const GRADING_TYPE_BADGE = {
+  PERCENTAGE: "bg-blue-100 text-blue-700",
+  GPA: "bg-purple-100 text-purple-700",
+  PASS_FAIL: "bg-green-100 text-green-700",
+  LETTER_GRADE: "bg-orange-100 text-orange-700",
+};
+
+const GRADING_TYPE_SHORT = {
+  PERCENTAGE: "Percentage",
+  GPA: "GPA",
+  PASS_FAIL: "Pass / Fail",
+  LETTER_GRADE: "Letter Grade",
+};
+
 export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmitting, submitError }) {
   const { t } = useTranslation();
   const isEditing = !!exam;
@@ -43,19 +57,9 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     [campus_exam_types, t]
   );
 
-  const gradingTypesDisplay = useMemo(
-    () => {
-      const GRADING_TYPES = class_grading_config?.GRADING_TYPES || [];
-      return GRADING_TYPES.map((type) => {
-        const key = `exams.gradingTypeLabels.${type.value}`;
-        const translated = t(key);
-        return {
-          ...type,
-          label: translated === key ? type.label : translated,
-        };
-      });
-    },
-    [class_grading_config, t]
+  const gradingConfigs = useMemo(
+    () => class_grading_config?.GRADING_CONFIGS || [],
+    [class_grading_config]
   );
 
   // Current step in the form (1-4)
@@ -70,52 +74,12 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     sectionId: [],
     studentId: [],
     subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
-    gradingType: "PERCENTAGE",
+    gradingConfigId: "",
+    gradingType: "",
     passingValue: "",
     maxValue: "",
-    gradeRanges: [
-      { grade: "A", minMarks: 90, maxMarks: 100 },
-      { grade: "B", minMarks: 80, maxMarks: 89 },
-      { grade: "C", minMarks: 70, maxMarks: 79 },
-      { grade: "D", minMarks: 60, maxMarks: 69 },
-      { grade: "F", minMarks: 0, maxMarks: 59 },
-    ],
     status: "DRAFT",
   });
-
-  const letterGrades = useMemo(
-    () => class_grading_config?.LETTER_GRADES || [],
-    [class_grading_config]
-  );
-
-  const gradeOptionValue = (g) => (g && typeof g === "object" ? g.value : g);
-
-  const gradingNumericOrderInvalid = useMemo(() => {
-    const gt = formData.gradingType;
-    if (gt !== "PERCENTAGE" && gt !== "GPA") return false;
-    const max = parseFloat(formData.maxValue);
-    const pass = parseFloat(formData.passingValue);
-    if (!Number.isFinite(max) || !Number.isFinite(pass)) return false;
-    return pass > max;
-  }, [formData.gradingType, formData.maxValue, formData.passingValue]);
-
-  /** LETTER_GRADES is assumed best-first (lower index = higher achievement). */
-  const gradingLetterOrderInvalid = useMemo(() => {
-    if (formData.gradingType !== "LETTER_GRADE") return false;
-    const mv = formData.maxValue;
-    const pv = formData.passingValue;
-    if (!mv || !pv) return false;
-    const idxMax = letterGrades.findIndex((g) => String(gradeOptionValue(g)) === String(mv));
-    const idxPass = letterGrades.findIndex((g) => String(gradeOptionValue(g)) === String(pv));
-    if (idxMax === -1 || idxPass === -1) return false;
-    return idxPass < idxMax;
-  }, [formData.gradingType, formData.maxValue, formData.passingValue, letterGrades]);
-
-  const gradingScaleErrorKey = gradingNumericOrderInvalid
-    ? "exams.gradingPassingExceedsMaximum"
-    : gradingLetterOrderInvalid
-      ? "exams.gradingPassingGradeAboveMaximum"
-      : null;
 
   const subjects = useMemo(() => {
     return permissions.teacher_subjects.map((subject) => ({
@@ -269,6 +233,14 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
           }))
         : [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }];
 
+      // Match the saved grading values back to a config preset
+      const matchedConfig = (class_grading_config?.GRADING_CONFIGS || []).find(
+        (cfg) =>
+          cfg.gradingType === (exam.gradingType || "") &&
+          String(cfg.maxValue ?? "") === String(exam.maxValue ?? "") &&
+          String(cfg.passingValue ?? "") === String(exam.passingValue ?? "")
+      );
+
       const nextFormData = {
         examType: exam.examType || "",
         customExamType: exam.customExamType || "",
@@ -277,16 +249,10 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
         sectionId: sectionId,
         studentId: studentId,
         subjects: transformedSubjects,
-        gradingType: exam.gradingType || "PERCENTAGE",
+        gradingConfigId: matchedConfig?.id || "",
+        gradingType: exam.gradingType || "",
         passingValue: exam.passingValue || "",
         maxValue: exam.maxValue || "",
-        gradeRanges: exam.gradeRanges || [
-          { grade: "A", minMarks: 90, maxMarks: 100 },
-          { grade: "B", minMarks: 80, maxMarks: 89 },
-          { grade: "C", minMarks: 70, maxMarks: 79 },
-          { grade: "D", minMarks: 60, maxMarks: 69 },
-          { grade: "F", minMarks: 0, maxMarks: 59 },
-        ],
         status: exam.status || "DRAFT",
       };
 
@@ -303,16 +269,10 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
         sectionId: [],
         studentId: [],
         subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
-        gradingType: "PERCENTAGE",
+        gradingConfigId: "",
+        gradingType: "",
         passingValue: "",
         maxValue: "",
-        gradeRanges: [
-          { grade: "A", minMarks: 90, maxMarks: 100 },
-          { grade: "B", minMarks: 80, maxMarks: 89 },
-          { grade: "C", minMarks: 70, maxMarks: 79 },
-          { grade: "D", minMarks: 60, maxMarks: 69 },
-          { grade: "F", minMarks: 0, maxMarks: 59 },
-        ],
         status: "DRAFT",
       };
 
@@ -442,16 +402,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
   const canProceedStep3 = formData.subjects.every(
     sub => sub.subjectId?.value && sub.examDate && sub.startTime && sub.endTime
   );
-  const canProceedStep4 =
-    !!formData.gradingType &&
-    (formData.gradingType === "PASS_FAIL" ||
-      ((formData.gradingType === "PERCENTAGE" ||
-        formData.gradingType === "GPA" ||
-        formData.gradingType === "LETTER_GRADE") &&
-        !!formData.passingValue &&
-        !!formData.maxValue &&
-        !gradingNumericOrderInvalid &&
-        !gradingLetterOrderInvalid));
+  const canProceedStep4 = !!formData.gradingConfigId;
 
   const canSubmit = canProceedStep1 && canProceedStep2 && canProceedStep3 && canProceedStep4;
 
@@ -749,159 +700,98 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">{t("exams.gradingConfiguration")}</h3>
 
-              {gradingScaleErrorKey && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-700">{t(gradingScaleErrorKey)}</p>
+              {gradingConfigs.length === 0 ? (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-700">{t("exams.noGradingConfigs")}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {gradingConfigs.map((config) => {
+                    const isSelected = formData.gradingConfigId === config.id;
+                    return (
+                      <button
+                        key={config.id}
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            gradingConfigId: config.id,
+                            gradingType: config.gradingType,
+                            maxValue: config.maxValue?.toString() ?? "",
+                            passingValue: config.passingValue?.toString() ?? "",
+                          }))
+                        }
+                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                              isSelected ? "border-blue-500 bg-blue-500" : "border-gray-300"
+                            }`}
+                          >
+                            {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-gray-900">{config.label}</span>
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  GRADING_TYPE_BADGE[config.gradingType] ?? "bg-gray-100 text-gray-600"
+                                }`}
+                              >
+                                {GRADING_TYPE_SHORT[config.gradingType] ?? config.gradingType}
+                              </span>
+                            </div>
+                            {config.description && (
+                              <p className="text-sm text-gray-500 mt-0.5">{config.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t("exams.gradingType")} <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="gradingType"
-                  value={formData.gradingType}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  {gradingTypesDisplay.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Percentage: Max Marks and Passing Marks */}
-              {formData.gradingType === "PERCENTAGE" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t("exams.maximumMarks")} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="maxValue"
-                      value={formData.maxValue}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder={t("examForm.maxMarksPlaceholder")}
-                      min="0"
-                      required
-                    />
+              {/* Selected config summary */}
+              {formData.gradingConfigId && (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">{t("exams.selectedGradingConfig")}</p>
+                  <div className="flex items-center gap-3 flex-wrap text-sm font-medium text-gray-800">
+                    <span>{GRADING_TYPE_SHORT[formData.gradingType] ?? formData.gradingType}</span>
+                    {formData.maxValue && (
+                      <span className="text-gray-400">·</span>
+                    )}
+                    {formData.maxValue && (
+                      <span>
+                        {formData.gradingType === "PERCENTAGE"
+                          ? `${t("exams.maximumMarks")}: ${formData.maxValue}`
+                          : formData.gradingType === "GPA"
+                          ? `${t("exams.maximumGpa")}: ${formData.maxValue}`
+                          : formData.gradingType === "LETTER_GRADE"
+                          ? `${t("exams.maximumGrade")}: ${formData.maxValue}`
+                          : null}
+                      </span>
+                    )}
+                    {formData.passingValue && (
+                      <>
+                        <span className="text-gray-400">·</span>
+                        <span>
+                          {formData.gradingType === "PERCENTAGE"
+                            ? `${t("exams.passingMarks")}: ${formData.passingValue}`
+                            : formData.gradingType === "GPA"
+                            ? `${t("exams.passingGpa")}: ${formData.passingValue}`
+                            : formData.gradingType === "LETTER_GRADE"
+                            ? `${t("exams.passingGrade")}: ${formData.passingValue}`
+                            : null}
+                        </span>
+                      </>
+                    )}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t("exams.passingMarks")} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="passingValue"
-                      value={formData.passingValue}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder={t("examForm.passMarksPlaceholder")}
-                      min="0"
-                      max={formData.maxValue}
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* GPA: Max GPA and Passing GPA */}
-              {formData.gradingType === "GPA" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t("exams.maximumGpa")} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      name="maxValue"
-                      value={formData.maxValue}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder={t("examForm.maxGpaPlaceholder")}
-                      min="0"
-                      max="10"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t("exams.passingGpa")} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      name="passingValue"
-                      value={formData.passingValue}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder={t("examForm.passGpaPlaceholder")}
-                      min="0"
-                      max={formData.maxValue}
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Letter Grade: Dropdown for Maximum and Passing Grade */}
-              {formData.gradingType === "LETTER_GRADE" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t("exams.maximumGrade")} <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="maxValue"
-                      value={formData.maxValue}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="">{t("exams.selectMaxGrade")}</option>
-                      {letterGrades.map((grade) => (
-                        <option key={gradeOptionValue(grade)} value={gradeOptionValue(grade)}>
-                          {typeof grade === "object" ? grade.label : grade}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t("exams.passingGrade")} <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="passingValue"
-                      value={formData.passingValue}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="">{t("exams.selectPassingGrade")}</option>
-                      {letterGrades.map((grade) => (
-                        <option key={gradeOptionValue(grade)} value={gradeOptionValue(grade)}>
-                          {typeof grade === "object" ? grade.label : grade}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* Pass/Fail: No additional fields needed */}
-              {formData.gradingType === "PASS_FAIL" && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-700">{t("exams.passFail")}</p>
                 </div>
               )}
             </div>

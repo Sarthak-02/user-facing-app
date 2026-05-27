@@ -497,6 +497,8 @@
     "selectMaxGrade": "Select maximum grade",
     "selectPassingGrade": "Select passing grade",
     "passFail": "Pass/Fail Grading: Students will receive either \"Pass\" or \"Fail\" based on their performance. No additional configuration required.",
+    "noGradingConfigs": "No grading configurations available. Please contact your administrator.",
+    "selectedGradingConfig": "Selected configuration",
     "customExamType": "Custom Exam Type",
     "customExamTypePlaceholder": "Enter custom exam type",
     "error": "Error",

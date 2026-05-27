@@ -5,6 +5,11 @@ import { ragAskTeacher } from "../../api/rag.api";
 import { Button } from "../../ui-components";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
+import "katex/dist/katex.min.css";
+import MermaidDiagram from "../../components/MermaidDiagram";
 import {
   Sparkles,
   SendHorizontal,
@@ -154,11 +159,25 @@ const mdComponents = {
   li: ({ ...props }) => <li className="leading-relaxed !text-gray-900" {...props} />,
   strong: ({ ...props }) => <strong className="font-semibold !text-gray-900" {...props} />,
   em:     ({ ...props }) => <em className="italic !text-gray-900" {...props} />,
-  pre: ({ children }) => (
-    <pre className="my-2 overflow-x-auto rounded-lg bg-black/5 p-3 text-xs font-mono !text-gray-900 whitespace-pre-wrap [&>code]:bg-transparent [&>code]:p-0">
-      {children}
-    </pre>
-  ),
+  pre: ({ children }) => {
+    const child = Array.isArray(children) ? children[0] : children;
+    const lang = (child?.props?.className || "").replace("language-", "");
+    const content = String(child?.props?.children || "").replace(/\n$/, "");
+    if (lang === "mermaid") return <MermaidDiagram code={content} />;
+    if (lang === "svg") {
+      return (
+        <div
+          className="my-3 overflow-x-auto rounded-lg [&>svg]:max-w-full"
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      );
+    }
+    return (
+      <pre className="my-2 overflow-x-auto rounded-lg bg-black/5 p-3 text-xs font-mono !text-gray-900 whitespace-pre-wrap [&>code]:bg-transparent [&>code]:p-0">
+        {children}
+      </pre>
+    );
+  },
   code: ({ className, children, ...props }) => {
     if (/\blanguage-/.test(className || "")) {
       return <code className={`${className || ""} font-mono text-xs !text-gray-900`} {...props}>{children}</code>;
@@ -167,11 +186,35 @@ const mdComponents = {
   },
 };
 
+function DiagramBlock({ diagram }) {
+  if (!diagram?.type || !diagram?.content) return null;
+  if (diagram.type === "mermaid") {
+    return (
+      <div className="rounded-2xl rounded-bl-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-sm overflow-x-auto">
+        <MermaidDiagram code={diagram.content} />
+      </div>
+    );
+  }
+  if (diagram.type === "svg") {
+    return (
+      <div
+        className="rounded-2xl rounded-bl-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-sm overflow-x-auto [&>svg]:max-w-full"
+        dangerouslySetInnerHTML={{ __html: diagram.content }}
+      />
+    );
+  }
+  return (
+    <pre className="rounded-2xl rounded-bl-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-xs font-mono !text-gray-900 whitespace-pre overflow-x-auto shadow-sm">
+      {diagram.content}
+    </pre>
+  );
+}
+
 function AnswerMarkdown({ markdown }) {
   if (!markdown?.trim()) return null;
   return (
     <div className="study-answer-md !text-gray-900">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{markdown}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]} components={mdComponents}>{markdown}</ReactMarkdown>
     </div>
   );
 }
@@ -477,7 +520,7 @@ function ChatScreen({ section, subject, onBack }) {
       });
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", answer: payload.answer, sources: payload.sources },
+        { role: "assistant", answer: payload.answer, sources: payload.sources, diagram: payload.diagram },
       ]);
     } catch (e) {
       setMessages((prev) => [
@@ -567,6 +610,7 @@ function ChatScreen({ section, subject, onBack }) {
                               </p>
                             )}
                           </div>
+                          {m.diagram && <DiagramBlock diagram={m.diagram} />}
                           {m.sources?.length > 0 && (
                             <div className="space-y-2">
                               <p className="text-xs font-semibold uppercase tracking-wide !text-gray-800">

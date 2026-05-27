@@ -234,10 +234,12 @@ export default function TeacherHomework() {
             targetType: "CLASS",
             targetId: homeworkData.classId.value
           });
-        } else if (homeworkData.targetType?.value === "SECTION" && homeworkData.sectionId?.value) {
-          targets.push({
-            targetType: "SECTION",
-            targetId: homeworkData.sectionId.value
+        } else if (homeworkData.targetType?.value === "SECTION" && Array.isArray(homeworkData.sectionId) && homeworkData.sectionId.length > 0) {
+          homeworkData.sectionId.forEach(section => {
+            targets.push({
+              targetType: "SECTION",
+              targetId: section.value
+            });
           });
         } else if (homeworkData.targetType?.value === "STUDENT" && Array.isArray(homeworkData.studentId) && homeworkData.studentId.length > 0) {
           // Handle multiple students - studentId is an array of objects
@@ -295,10 +297,12 @@ export default function TeacherHomework() {
             targetType: "CLASS",
             targetId: homeworkData.classId.value
           });
-        } else if (homeworkData.targetType?.value === "SECTION" && homeworkData.sectionId?.value) {
-          targets.push({
-            targetType: "SECTION",
-            targetId: homeworkData.sectionId.value
+        } else if (homeworkData.targetType?.value === "SECTION" && Array.isArray(homeworkData.sectionId) && homeworkData.sectionId.length > 0) {
+          homeworkData.sectionId.forEach(section => {
+            targets.push({
+              targetType: "SECTION",
+              targetId: section.value
+            });
           });
         } else if (homeworkData.targetType?.value === "STUDENT" && Array.isArray(homeworkData.studentId) && homeworkData.studentId.length > 0) {
           // Handle multiple students - studentId is an array of objects
