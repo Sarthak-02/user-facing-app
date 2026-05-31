@@ -16,6 +16,7 @@ import {
   NotebookPen,
   Shield,
   Users,
+  CalendarHeart,
 } from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
@@ -44,6 +45,7 @@ export default function Layout() {
         { labelKey: "nav.pickup",        icon: Shield,         path: "/student/pickup",        feature: "student_pickup" },
         { labelKey: "nav.reporting",     icon: BarChart3,      path: "/student/reporting",     feature: "student_reporting" },
         { labelKey: "nav.study",         icon: Sparkles,       path: "/student/study",         feature: "student_study_ai" },
+        { labelKey: "nav.ptm",           icon: CalendarHeart,  path: "/student/ptm" },
       ];
       return [...baseNavItems, ...all.filter((item) => !item.feature || isFeatureEnabled(item.feature))];
     }
@@ -61,6 +63,7 @@ export default function Layout() {
         { labelKey: "nav.study",         icon: Sparkles,       path: "/staff/study",      feature: "staff_study_ai" },
         { labelKey: "nav.broadcast",    icon: Bell,           path: "/broadcast",        feature: "staff_broadcast" },
         { label: "Groups",              icon: Users,          path: "/staff/groups" },
+        { labelKey: "nav.ptm",          icon: CalendarHeart,  path: "/staff/ptm" },
       ];
       return [...baseNavItems, ...all.filter((item) => !item.feature || isFeatureEnabled(item.feature))];
     }
