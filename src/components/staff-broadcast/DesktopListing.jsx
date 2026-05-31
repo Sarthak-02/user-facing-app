@@ -40,6 +40,8 @@ export default function DesktopListing({ broadcastList, onSelectBroadcast }) {
     } else if (targetType === "STUDENT") {
       const studentCount = targets.length;
       return t("broadcast.target.students", { count: studentCount });
+    } else if (targetType === "GROUP") {
+      return firstTarget.target_name || "Group";
     }
 
     return t("broadcast.target.unknown");

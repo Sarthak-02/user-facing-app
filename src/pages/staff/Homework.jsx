@@ -28,6 +28,7 @@ function homeworkAppliesToSection(homework, sectionId, sectionRecord, permission
     const tid = t.target_id || t.targetId || "";
     if (type === "SECTION" && tid === sectionId) return true;
     if (type === "CLASS" && tid === sectionRecord.class_id) return true;
+    if (type === "GROUP") return true;
     if (type === "STUDENT") {
       const st = (permissions.students || []).find((s) => s.student_id === tid);
       if (st?.section_id === sectionId) return true;
@@ -160,7 +161,16 @@ export default function TeacherHomework() {
       filtered = filtered.filter((hw) => hw.status === statusFilter);
     }
 
-    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const now = new Date();
+    const isActive = (hw) =>
+      (hw.status === "PUBLISHED" || hw.status === "ACTIVE") && new Date(hw.dueDate) >= now;
+
+    filtered.sort((a, b) => {
+      const aActive = isActive(a) ? 0 : 1;
+      const bActive = isActive(b) ? 0 : 1;
+      if (aActive !== bActive) return aActive - bActive;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
 
     return filtered;
   }, [scopedHomework, statusFilter]);
@@ -234,10 +244,12 @@ export default function TeacherHomework() {
             targetType: "CLASS",
             targetId: homeworkData.classId.value
           });
-        } else if (homeworkData.targetType?.value === "SECTION" && homeworkData.sectionId?.value) {
-          targets.push({
-            targetType: "SECTION",
-            targetId: homeworkData.sectionId.value
+        } else if (homeworkData.targetType?.value === "SECTION" && Array.isArray(homeworkData.sectionId) && homeworkData.sectionId.length > 0) {
+          homeworkData.sectionId.forEach(section => {
+            targets.push({
+              targetType: "SECTION",
+              targetId: section.value
+            });
           });
         } else if (homeworkData.targetType?.value === "STUDENT" && Array.isArray(homeworkData.studentId) && homeworkData.studentId.length > 0) {
           // Handle multiple students - studentId is an array of objects
@@ -246,6 +258,11 @@ export default function TeacherHomework() {
               targetType: "STUDENT",
               targetId: student.value
             });
+          });
+        } else if (homeworkData.targetType?.value === "GROUP" && homeworkData.groupId?.value) {
+          targets.push({
+            targetType: "GROUP",
+            targetId: homeworkData.groupId.value
           });
         }
 
@@ -257,6 +274,8 @@ export default function TeacherHomework() {
                 file: file._file,
                 file_name: file.name,
                 mime_type: file.type,
+                homework_id: homeworkId,
+                ...(auth.campus_id && { campus_id: auth.campus_id }),
               });
               return { fileName: file.name, fileType: file.type, fileSize: file.size, fileUrl: publicUrl };
             }
@@ -295,10 +314,12 @@ export default function TeacherHomework() {
             targetType: "CLASS",
             targetId: homeworkData.classId.value
           });
-        } else if (homeworkData.targetType?.value === "SECTION" && homeworkData.sectionId?.value) {
-          targets.push({
-            targetType: "SECTION",
-            targetId: homeworkData.sectionId.value
+        } else if (homeworkData.targetType?.value === "SECTION" && Array.isArray(homeworkData.sectionId) && homeworkData.sectionId.length > 0) {
+          homeworkData.sectionId.forEach(section => {
+            targets.push({
+              targetType: "SECTION",
+              targetId: section.value
+            });
           });
         } else if (homeworkData.targetType?.value === "STUDENT" && Array.isArray(homeworkData.studentId) && homeworkData.studentId.length > 0) {
           // Handle multiple students - studentId is an array of objects
@@ -307,6 +328,11 @@ export default function TeacherHomework() {
               targetType: "STUDENT",
               targetId: student.value
             });
+          });
+        } else if (homeworkData.targetType?.value === "GROUP" && homeworkData.groupId?.value) {
+          targets.push({
+            targetType: "GROUP",
+            targetId: homeworkData.groupId.value
           });
         }
 
@@ -318,6 +344,7 @@ export default function TeacherHomework() {
                 file: file._file,
                 file_name: file.name,
                 mime_type: file.type,
+                ...(auth.campus_id && { campus_id: auth.campus_id }),
               });
               return { fileName: file.name, fileType: file.type, fileSize: file.size, fileUrl: publicUrl };
             }

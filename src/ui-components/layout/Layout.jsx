@@ -15,6 +15,7 @@ import {
   MessageCircle,
   NotebookPen,
   Shield,
+  Users,
 } from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
@@ -44,7 +45,7 @@ export default function Layout() {
         { labelKey: "nav.reporting",     icon: BarChart3,      path: "/student/reporting",     feature: "student_reporting" },
         { labelKey: "nav.study",         icon: Sparkles,       path: "/student/study",         feature: "student_study_ai" },
       ];
-      return [...baseNavItems, ...all.filter((item) => isFeatureEnabled(item.feature))];
+      return [...baseNavItems, ...all.filter((item) => !item.feature || isFeatureEnabled(item.feature))];
     }
 
     if (userRole === "teacher" || userRole === "staff") {
@@ -57,9 +58,11 @@ export default function Layout() {
         { labelKey: "nav.messages",     icon: MessageCircle,  path: "/staff/chat",       feature: "staff_messages" },
         { labelKey: "nav.pickup",       icon: Shield,         path: "/staff/pickup",     feature: "staff_pickup" },
         { labelKey: "nav.reporting",    icon: BarChart3,      path: "/staff/reporting",  feature: "staff_reporting" },
+        { labelKey: "nav.study",         icon: Sparkles,       path: "/staff/study",      feature: "staff_study_ai" },
         { labelKey: "nav.broadcast",    icon: Bell,           path: "/broadcast",        feature: "staff_broadcast" },
+        { label: "Groups",              icon: Users,          path: "/staff/groups" },
       ];
-      return [...baseNavItems, ...all.filter((item) => isFeatureEnabled(item.feature))];
+      return [...baseNavItems, ...all.filter((item) => !item.feature || isFeatureEnabled(item.feature))];
     }
 
     return baseNavItems;

@@ -2,8 +2,29 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Dropdown } from "../../ui-components";
 import { usePermissions } from "../../store/permissions.store";
-import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA } from "../../utils/target.schema";
+import { useAuth } from "../../store/auth.store";
+import { useStudentGroups } from "../../store/studentGroups.store";
+import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, GROUP_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
+
+const ALLOWED_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "image/tiff",
+  "image/bmp",
+  "image/ico",
+]);
 
 export default function HomeworkFormModal({
   isOpen,
@@ -18,11 +39,15 @@ export default function HomeworkFormModal({
 }) {
   const { t } = useTranslation();
   const { permissions } = usePermissions();
+  const { auth } = useAuth();
+  const campus_id = auth?.campus?.campus_id || auth?.campus_id || "";
+  const { groups, fetchGroups } = useStudentGroups();
 
   const TARGET_OPTIONS = useMemo(
     () => [
       { value: "SECTION", label: t("homeworkForm.section") },
       { value: "STUDENT", label: t("homeworkForm.student") },
+      { value: "GROUP", label: "Group" },
     ],
     [t]
   );
@@ -41,9 +66,16 @@ export default function HomeworkFormModal({
     sectionId: null,
     studentId: [],
     classId: null,
+    groupId: null,
     attachments: [],
     status: "DRAFT",
   });
+
+  useEffect(() => {
+    if (formData.targetType?.value === "GROUP" && campus_id) {
+      fetchGroups(campus_id);
+    }
+  }, [formData.targetType?.value, campus_id, fetchGroups]);
 
   const [attachmentError, setAttachmentError] = useState("");
 
@@ -96,15 +128,28 @@ export default function HomeworkFormModal({
       };
       return updateSchema(STUDENT_TARGET_SCHEMA, data);
     }
+    if (formData.targetType?.value === "GROUP") {
+      const groupData = {
+        group: {
+          selected: formData.groupId,
+          options: groups.map(({ group_id, name }) => ({ value: group_id, label: name })),
+          onChange: (option) => setFormData((prev) => ({ ...prev, groupId: option })),
+        },
+      };
+      return updateSchema(GROUP_TARGET_SCHEMA, groupData);
+    }
     return [];
-  }, [formData.targetType, formData.sectionId, formData.classId, formData.studentId, permissions.classes, permissions.sections, permissions.students]);
+  }, [formData.targetType, formData.sectionId, formData.classId, formData.studentId, formData.groupId, permissions.classes, permissions.sections, permissions.students, groups]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      prevHomeworkIdRef.current = null;
+      return;
+    }
 
-    const currentHomeworkId = homework?.id || homework?.homework_id || null;
+    const currentHomeworkId = homework?.id || homework?.homework_id || "__CREATE__";
     const hasHomeworkChanged = prevHomeworkIdRef.current !== currentHomeworkId;
-    if (!hasHomeworkChanged && prevHomeworkIdRef.current !== null) return;
+    if (!hasHomeworkChanged) return;
     prevHomeworkIdRef.current = currentHomeworkId;
 
     if (homework) {
@@ -112,6 +157,7 @@ export default function HomeworkFormModal({
       let sectionId = null;
       let studentId = [];
       let classId = null;
+      let groupId = null;
 
       if (homework.targets && homework.targets.length > 0) {
         const firstTarget = homework.targets[0];
@@ -145,6 +191,11 @@ export default function HomeworkFormModal({
           const targetId = firstTarget.target_id || firstTarget.targetId || firstTarget.class_id || "";
           const classObj = permissions.classes.find((c) => c.class_id === targetId);
           if (classObj) classId = { value: classObj.class_id, label: classObj.class_name };
+        } else if (tt === "GROUP") {
+          targetType = { value: "GROUP", label: "Group" };
+          const targetId = firstTarget.target_id || firstTarget.targetId || "";
+          const grp = groups.find((g) => g.group_id === targetId);
+          groupId = grp ? { value: grp.group_id, label: grp.name } : (targetId ? { value: targetId, label: targetId } : null);
         }
       }
 
@@ -177,6 +228,7 @@ export default function HomeworkFormModal({
         sectionId,
         studentId,
         classId,
+        groupId,
         attachments,
         status: homework.status || "DRAFT",
       });
@@ -199,6 +251,7 @@ export default function HomeworkFormModal({
           sectionId: { value: sec.section_id, label: sec.section_name },
           studentId: [{ value: studentRow.student_id, label: studentRow.student_name || studentRow.student_id }],
           classId: cls ? { value: cls.class_id, label: cls.class_name } : null,
+          groupId: null,
           attachments: [],
           status: "DRAFT",
         });
@@ -209,15 +262,16 @@ export default function HomeworkFormModal({
           description: "",
           dueDate: "",
           targetType: { value: "SECTION", label: t("homeworkForm.section") },
-          sectionId: sec ? { value: sec.section_id, label: sec.section_name } : null,
+          sectionId: sec ? [{ value: sec.section_id, label: sec.section_name }] : [],
           studentId: [],
           classId: cls ? { value: cls.class_id, label: cls.class_name } : null,
+          groupId: null,
           attachments: [],
           status: "DRAFT",
         });
       }
     }
-  }, [homework, isOpen, permissions, defaultSectionId, defaultSubjectKey, defaultStudentId, t]);
+  }, [homework, isOpen, permissions, defaultSectionId, defaultSubjectKey, defaultStudentId, groups, t]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -231,7 +285,8 @@ export default function HomeworkFormModal({
       sectionId: type?.value === "SECTION" ? [] : null,
       studentId: [],
       classId: null,
-      subject: null,
+      groupId: null,
+      subject: defaultSubjectKey ? prev.subject : null,
     }));
 
   const processFiles = (files) => {
@@ -243,6 +298,11 @@ export default function HomeworkFormModal({
     const oversized = files.filter((f) => f.size > 10 * 1024 * 1024);
     if (oversized.length > 0) {
       setAttachmentError(t("broadcast.errorFileSize"));
+      return;
+    }
+    const invalid = files.filter((f) => !ALLOWED_MIME_TYPES.has(f.type));
+    if (invalid.length > 0) {
+      setAttachmentError(t("broadcast.errorInvalidFileType"));
       return;
     }
     const newEntries = files.map((file) => ({ _file: file, name: file.name, type: file.type, size: file.size }));
@@ -286,14 +346,18 @@ export default function HomeworkFormModal({
     return Math.round(bytes / Math.pow(k, i) * 10) / 10 + " " + sizes[i];
   };
 
+  const effectiveSubject = formData.subject?.value
+    ? formData.subject
+    : (!isEditing && defaultSubjectKey ? { value: defaultSubjectKey, label: defaultSubjectKey } : null);
+
   const handleSubmit = (e, status) => {
     e.preventDefault();
-    onSubmit({ ...formData, status });
+    onSubmit({ ...formData, subject: effectiveSubject, status });
   };
 
   const canSubmit =
     formData.title.trim() &&
-    formData.subject?.value &&
+    !!effectiveSubject?.value &&
     formData.description.trim() &&
     formData.dueDate &&
     ((formData.targetType?.value === "SECTION" && formData.classId?.value && Array.isArray(formData.sectionId) && formData.sectionId.length > 0) ||
@@ -301,7 +365,8 @@ export default function HomeworkFormModal({
         formData.classId?.value &&
         formData.sectionId?.value &&
         Array.isArray(formData.studentId) &&
-        formData.studentId.length > 0));
+        formData.studentId.length > 0) ||
+      (formData.targetType?.value === "GROUP" && formData.groupId?.value));
 
   if (!isOpen) return null;
 
@@ -368,18 +433,20 @@ export default function HomeworkFormModal({
             </div>
           </div>
 
-          {/* Subject */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
-              {t("homeworkForm.subjectLabel")} <span className="text-red-500">*</span>
-            </label>
-            <Dropdown
-              selected={formData.subject}
-              onChange={(option) => setFormData((prev) => ({ ...prev, subject: option }))}
-              options={subjects}
-              placeholder={formData.sectionId ? t("homeworkForm.selectSubject") : t("homeworkForm.selectSectionFirst")}
-            />
-          </div>
+          {/* Subject — hidden when subject is already selected from outside (create mode) */}
+          {(isEditing || !defaultSubjectKey) && (
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                {t("homeworkForm.subjectLabel")} <span className="text-red-500">*</span>
+              </label>
+              <Dropdown
+                selected={formData.subject}
+                onChange={(option) => setFormData((prev) => ({ ...prev, subject: option }))}
+                options={subjects}
+                placeholder={formData.sectionId ? t("homeworkForm.selectSubject") : t("homeworkForm.selectSectionFirst")}
+              />
+            </div>
+          )}
 
           {/* Title + Due Date side by side on desktop */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -465,7 +532,7 @@ export default function HomeworkFormModal({
                   {t("broadcast.orDragDrop")}
                 </p>
                 <p className="text-xs text-gray-400">{t("broadcast.maxFiles")}</p>
-                <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
+                <input ref={fileInputRef} type="file" multiple accept={[...ALLOWED_MIME_TYPES].join(",")} onChange={handleFileChange} className="hidden" />
               </div>
             )}
 

@@ -104,6 +104,11 @@ export default function BroadcastPage() {
             targetId: student.value
           });
         });
+      } else if (broadcastData.targetType?.value === "GROUP" && broadcastData.groupId?.value) {
+        targets.push({
+          targetType: "GROUP",
+          targetId: broadcastData.groupId.value
+        });
       }
 
       // Upload attachments to GCS via signed URLs, then collect metadata

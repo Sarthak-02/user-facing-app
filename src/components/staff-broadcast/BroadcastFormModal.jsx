@@ -8,7 +8,9 @@ import {
   announcementCategoryOptionFromValue,
 } from "../../constants/announcementCategories";
 import { usePermissions } from "../../store/permissions.store";
-import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA } from "../../utils/target.schema";
+import { useAuth } from "../../store/auth.store";
+import { useStudentGroups } from "../../store/studentGroups.store";
+import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA, GROUP_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
 
 function pickTarget(value, targetOpts) {
@@ -24,6 +26,7 @@ function getEmptyBroadcastForm(targetOpts) {
     sectionId: null,
     studentId: [],
     classId: null,
+    groupId: null,
     attachments: [],
     status: "NOTIFYING",
   };
@@ -41,6 +44,7 @@ function buildFormFromBroadcast(broadcast, permissions, targetOpts) {
     sectionId: null,
     studentId: [],
     classId: null,
+    groupId: null,
     attachments: Array.isArray(broadcast.broadcastAttachments)
       ? broadcast.broadcastAttachments
       : Array.isArray(broadcast.attachmentUrls)
@@ -81,6 +85,14 @@ function buildFormFromBroadcast(broadcast, permissions, targetOpts) {
       sectionId: sec
         ? { value: sec.section_id, label: sec.section_name }
         : { value: firstId, label: String(firstId) },
+    };
+  }
+  if (tt === "GROUP") {
+    const firstId = first.targetId || first.target_id;
+    return {
+      ...base,
+      targetType: pickTarget("GROUP", targetOpts),
+      groupId: firstId ? { value: firstId, label: firstId } : null,
     };
   }
   if (tt === "STUDENT") {
@@ -127,6 +139,9 @@ const CATEGORY_ICONS = {
 export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmitting, submitError, existingBroadcast = null }) {
   const { t } = useTranslation();
   const { permissions } = usePermissions();
+  const { auth } = useAuth();
+  const campus_id = auth?.campus?.campus_id || auth?.campus_id || "";
+  const { groups, fetchGroups } = useStudentGroups();
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -136,6 +151,7 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
       { value: "CLASS", label: t("broadcast.targetOptions.class") },
       { value: "SECTION", label: t("broadcast.targetOptions.section") },
       { value: "STUDENT", label: t("broadcast.targetOptions.student") },
+      { value: "GROUP", label: "Group" },
     ],
     [t]
   );
@@ -196,16 +212,31 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
       };
       return updateSchema(STUDENT_TARGET_SCHEMA, data);
     }
+    if (formData.targetType?.value === "GROUP") {
+      return updateSchema(GROUP_TARGET_SCHEMA, {
+        group: {
+          selected: formData.groupId,
+          options: groups.map(({ group_id, name }) => ({ value: group_id, label: name })),
+          onChange: (option) => setFormData((prev) => ({ ...prev, groupId: option })),
+        },
+      });
+    }
     return [];
-  }, [formData, permissions.classes, permissions.sections, permissions.students]);
+  }, [formData, permissions.classes, permissions.sections, permissions.students, groups]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  useEffect(() => {
+    if (formData?.targetType?.value === "GROUP" && campus_id) {
+      fetchGroups(campus_id);
+    }
+  }, [formData?.targetType?.value, campus_id, fetchGroups]);
+
   const setTargetType = (type) =>
-    setFormData((prev) => ({ ...prev, targetType: type, sectionId: null, studentId: [], classId: null }));
+    setFormData((prev) => ({ ...prev, targetType: type, sectionId: null, studentId: [], classId: null, groupId: null }));
 
   const processFiles = (files) => {
     if (!formData) return;
@@ -260,7 +291,8 @@ export default function BroadcastFormModal({ isOpen, onClose, onSubmit, isSubmit
           formData.classId?.value &&
           formData.sectionId?.value &&
           Array.isArray(formData.studentId) &&
-          formData.studentId.length > 0))
+          formData.studentId.length > 0) ||
+        (formData.targetType?.value === "GROUP" && formData.groupId?.value))
   );
 
   if (!isOpen || formData == null) return null;

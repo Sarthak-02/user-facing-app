@@ -22,7 +22,8 @@ function resolveTargetNames(targets, permissions = null) {
     const targetLabels = {
       'CLASS': 'Class',
       'SECTION': 'Section',
-      'STUDENT': 'Student'
+      'STUDENT': 'Student',
+      'GROUP': 'Group',
     };
     
     const displayParts = Object.entries(targetCounts).map(([type, count]) => {
@@ -48,6 +49,8 @@ function resolveTargetNames(targets, permissions = null) {
         const studentItem = permissions.students?.find(s => s.student_id === target.targetId);
         return studentItem ? studentItem.student_name : `Student (${target.targetId})`;
       }
+      case 'GROUP':
+        return target.target_name || 'Group';
       default:
         return target.targetId;
     }

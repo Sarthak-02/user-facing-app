@@ -406,6 +406,7 @@
     "maxFiles": "Max 3 files · 10MB each",
     "errorMaxAttachments": "Maximum 3 attachments allowed",
     "errorFileSize": "Each file must be less than 10MB",
+    "errorInvalidFileType": "File type not supported. Please upload a PDF, document, spreadsheet, image, or text file.",
     "send": "Send Broadcast",
     "myBroadcasts": "My Broadcasts",
     "createBroadcast": "Create Broadcast",
@@ -497,6 +498,8 @@
     "selectMaxGrade": "Select maximum grade",
     "selectPassingGrade": "Select passing grade",
     "passFail": "Pass/Fail Grading: Students will receive either \"Pass\" or \"Fail\" based on their performance. No additional configuration required.",
+    "noGradingConfigs": "No grading configurations available. Please contact your administrator.",
+    "selectedGradingConfig": "Selected configuration",
     "customExamType": "Custom Exam Type",
     "customExamTypePlaceholder": "Enter custom exam type",
     "error": "Error",
@@ -1105,6 +1108,14 @@
       "economics": "Economics",
       "computerScience": "Computer Science"
     }
+  },
+  "staffStudyChat": {
+    "subtitle": "Select a section and subject to explore textbook content for your class.",
+    "pickSection": "Select section",
+    "pickSubject": "Select subject",
+    "emptyStateTitle": "Ready to explore {{subject}}",
+    "emptyStateHint": "Ask about definitions, examples, exercises, or anything from the textbook.",
+    "placeholder": "Ask about {{subject}}…"
   },
   "scholarships": {
     "source": "Source",

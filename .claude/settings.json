@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed -n '406,410p' /Users/sarthakgupta/Desktop/code/ams/frontend/user-facing-app/src/i18n/locales/hi/translation.json)",
+      "Bash(sed -n '406,410p' /Users/sarthakgupta/Desktop/code/ams/frontend/user-facing-app/src/i18n/locales/kn/translation.json)",
+      "Bash(sed -n '406,410p' /Users/sarthakgupta/Desktop/code/ams/frontend/user-facing-app/src/i18n/locales/ta/translation.json)"
+    ]
+  }
+}
