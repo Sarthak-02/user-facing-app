@@ -5,6 +5,25 @@ import { usePermissions } from "../../store/permissions.store";
 import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
 
+const ALLOWED_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "image/tiff",
+  "image/bmp",
+  "image/ico",
+]);
+
 export default function HomeworkFormModal({
   isOpen,
   onClose,
@@ -245,6 +264,11 @@ export default function HomeworkFormModal({
       setAttachmentError(t("broadcast.errorFileSize"));
       return;
     }
+    const invalid = files.filter((f) => !ALLOWED_MIME_TYPES.has(f.type));
+    if (invalid.length > 0) {
+      setAttachmentError(t("broadcast.errorInvalidFileType"));
+      return;
+    }
     const newEntries = files.map((file) => ({ _file: file, name: file.name, type: file.type, size: file.size }));
     setFormData((prev) => ({ ...prev, attachments: [...prev.attachments, ...newEntries] }));
   };
@@ -465,7 +489,7 @@ export default function HomeworkFormModal({
                   {t("broadcast.orDragDrop")}
                 </p>
                 <p className="text-xs text-gray-400">{t("broadcast.maxFiles")}</p>
-                <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
+                <input ref={fileInputRef} type="file" multiple accept={[...ALLOWED_MIME_TYPES].join(",")} onChange={handleFileChange} className="hidden" />
               </div>
             )}
 

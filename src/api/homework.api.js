@@ -292,21 +292,17 @@ export async function gradeHomeworkSubmission(homeworkId, submissionId, gradeDat
 export async function generateHomeworkAttachmentSignedUrl(data) {
   const { file, ...payload } = data;
 
-  console.log("payload", payload);
   try {
-    // 1️⃣ Get signed URL from backend
     const resp = await api.post("/homework/attachment/upload-url", payload);
 
-    const { uploadUrl, publicUrl } = resp?.data?.data || {};
-    if (!uploadUrl || !publicUrl) {
+    const { uploadUrl, downloadUrl } = resp?.data?.data || {};
+    if (!uploadUrl || !downloadUrl) {
       throw new Error("Failed to generate signed URL");
     }
 
-    // 2️⃣ Upload image directly to GCS
     await uploadImage(uploadUrl, file);
 
-    // 3️⃣ Return optimized image URLs
-    return publicUrl;
+    return downloadUrl;
   } catch (err) {
     console.error("Image upload failed:", err);
     throw err;

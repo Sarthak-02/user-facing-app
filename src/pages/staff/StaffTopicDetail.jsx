@@ -100,6 +100,7 @@ function AssignmentForm({ topicId, progressId, sectionId, assignment, onSaved, o
   const [title, setTitle] = useState(assignment?.title ?? "");
   const [dueDate, setDueDate] = useState(assignment?.due_date ? assignment.due_date.slice(0, 10) : "");
   const [status, setStatus] = useState(assignment?.status ?? "DRAFT");
+  const [contentText, setContentText] = useState(assignment?.content?.text ?? "");
   const [fileUrl, setFileUrl] = useState(assignment?.file_url ?? "");
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -128,7 +129,16 @@ function AssignmentForm({ topicId, progressId, sectionId, assignment, onSaved, o
     if (!title.trim()) { setError(t("staffTopicDetail.titleRequired")); return; }
     setSubmitting(true);
     try {
-      const body = { title: title.trim(), due_date: dueDate || undefined, file_url: fileUrl || undefined, status };
+      const content = contentText.trim()
+        ? { text: contentText.trim() }
+        : (isEdit && assignment?.content ? assignment.content : undefined);
+      const body = {
+        title: title.trim(),
+        due_date: dueDate || undefined,
+        file_url: fileUrl || undefined,
+        status,
+        content,
+      };
       if (isEdit) {
         await updateTopicAssignment(assignment.id, body);
       } else {
@@ -172,6 +182,16 @@ function AssignmentForm({ topicId, progressId, sectionId, assignment, onSaved, o
           </select>
         </div>
       </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">Assignment content</label>
+        <textarea
+          value={contentText}
+          onChange={(e) => setContentText(e.target.value)}
+          rows={4}
+          className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-600 resize-none"
+          placeholder="Describe the assignment, questions, or instructions..."
+        />
+      </div>
       <FileUploadRow
         fileUrl={fileUrl}
         fileName={fileName}
@@ -194,6 +214,7 @@ function QuizForm({ topicId, progressId, sectionId, quiz, onSaved, onCancel }) {
   const { t } = useTranslation();
   const isEdit = !!quiz;
   const [title, setTitle] = useState(quiz?.title ?? "");
+  const [contentText, setContentText] = useState(quiz?.content?.text ?? "");
   const [fileUrl, setFileUrl] = useState(quiz?.file_url ?? "");
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -222,7 +243,15 @@ function QuizForm({ topicId, progressId, sectionId, quiz, onSaved, onCancel }) {
     if (!title.trim()) { setError(t("staffTopicDetail.titleRequired")); return; }
     setSubmitting(true);
     try {
-      const body = { title: title.trim(), file_url: fileUrl || undefined, generated_by_ai: false };
+      const content = contentText.trim()
+        ? { text: contentText.trim() }
+        : (isEdit && quiz?.content ? quiz.content : undefined);
+      const body = {
+        title: title.trim(),
+        file_url: fileUrl || undefined,
+        generated_by_ai: quiz?.generated_by_ai ?? false,
+        content,
+      };
       if (isEdit) {
         await updateTopicQuiz(quiz.id, body);
       } else {
@@ -248,6 +277,16 @@ function QuizForm({ topicId, progressId, sectionId, quiz, onSaved, onCancel }) {
     <form onSubmit={handleSubmit} className="rounded-xl border border-violet-200 bg-violet-50/40 p-4 space-y-3">
       <p className="text-sm font-semibold text-gray-900">{isEdit ? t("staffTopicDetail.editQuiz") : t("staffTopicDetail.newQuiz")}</p>
       <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("staffTopicDetail.quizTitlePlaceholder")} required />
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">Quiz content</label>
+        <textarea
+          value={contentText}
+          onChange={(e) => setContentText(e.target.value)}
+          rows={4}
+          className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-600 resize-none"
+          placeholder="List quiz questions, instructions, or topics covered..."
+        />
+      </div>
       <FileUploadRow
         fileUrl={fileUrl}
         fileName={fileName}
@@ -340,6 +379,130 @@ function MaterialForm({ topicId, progressId, sectionId, onSaved, onCancel }) {
   );
 }
 
+// ─── Content viewer ──────────────────────────────────────────────────────────
+
+const CONTENT_SECTION_COLORS = {
+  mcq: "border-blue-200 bg-blue-50/40",
+  short: "border-green-200 bg-green-50/40",
+  long: "border-purple-200 bg-purple-50/40",
+  true_false: "border-amber-200 bg-amber-50/40",
+  fill_blank: "border-teal-200 bg-teal-50/40",
+};
+const CONTENT_SECTION_HEADER_COLORS = {
+  mcq: "text-blue-700 bg-blue-100",
+  short: "text-green-700 bg-green-100",
+  long: "text-purple-700 bg-purple-100",
+  true_false: "text-amber-700 bg-amber-100",
+  fill_blank: "text-teal-700 bg-teal-100",
+};
+
+function ContentViewer({ content }) {
+  const [openSections, setOpenSections] = useState({});
+
+  if (!content) return null;
+
+  if (content.text) {
+    return (
+      <div className="mt-2 rounded-lg bg-white border border-gray-100 px-3 py-2.5 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+        {content.text}
+      </div>
+    );
+  }
+
+  if (!Array.isArray(content.sections) || content.sections.length === 0) return null;
+
+  const toggle = (i) => setOpenSections((prev) => ({ ...prev, [i]: !prev[i] }));
+
+  return (
+    <div className="mt-2 space-y-2">
+      {/* Summary strip */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-indigo-50 px-3 py-2">
+        <span className="text-xs font-semibold text-indigo-700">{content.total_questions} questions</span>
+        <span className="text-indigo-300 text-xs">·</span>
+        <span className="text-xs font-semibold text-indigo-700">{content.total_marks} marks</span>
+        {content.time_minutes != null && (
+          <>
+            <span className="text-indigo-300 text-xs">·</span>
+            <span className="text-xs font-semibold text-indigo-700">{content.time_minutes} min</span>
+          </>
+        )}
+        {content.difficulty && (
+          <>
+            <span className="text-indigo-300 text-xs">·</span>
+            <span className="text-xs font-semibold text-indigo-700 capitalize">{content.difficulty}</span>
+          </>
+        )}
+      </div>
+
+      {/* Sections */}
+      {content.sections.map((section, si) => {
+        const colorClass = CONTENT_SECTION_COLORS[section.type] ?? "border-gray-200 bg-gray-50/40";
+        const headerColor = CONTENT_SECTION_HEADER_COLORS[section.type] ?? "text-gray-700 bg-gray-100";
+        const isOpen = openSections[si] !== false;
+        return (
+          <div key={si} className={`rounded-xl border ${colorClass} overflow-hidden`}>
+            <button
+              type="button"
+              onClick={() => toggle(si)}
+              className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+            >
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${headerColor}`}>{section.label}</span>
+                <span className="text-xs text-gray-500">{section.questions.length} q · {section.section_marks} marks</span>
+              </div>
+              {isOpen ? <ChevronUp className="h-3.5 w-3.5 text-gray-400" /> : <ChevronDown className="h-3.5 w-3.5 text-gray-400" />}
+            </button>
+            {isOpen && (
+              <div className="border-t border-white/60 px-3 pb-3 pt-2 space-y-2">
+                {section.questions.map((q) => (
+                  <div key={q.number} className="bg-white rounded-lg border border-gray-100 p-2.5 shadow-sm">
+                    <div className="flex items-start gap-2 mb-1.5">
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 text-xs font-bold text-gray-600 flex items-center justify-center">
+                        {q.number}
+                      </span>
+                      <p className="flex-1 text-sm text-gray-900 font-medium leading-snug">
+                        {q.question ?? q.statement ?? q.sentence}
+                      </p>
+                    </div>
+                    {q.options && (
+                      <div className="ml-7 space-y-1 mb-1.5">
+                        {Object.entries(q.options).map(([opt, text]) => (
+                          <div
+                            key={opt}
+                            className={`flex items-start gap-1.5 rounded-lg px-2 py-1 text-xs ${
+                              q.answer === opt
+                                ? "bg-green-50 border border-green-200 text-green-800 font-semibold"
+                                : "bg-gray-50 text-gray-700"
+                            }`}
+                          >
+                            <span className="font-bold flex-shrink-0">{opt}.</span>
+                            <span>{text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {!q.options && (q.answer ?? q.verdict) && (
+                      <div className="ml-7 rounded-lg bg-green-50 border border-green-200 px-2.5 py-1.5 text-xs text-green-800 mb-1.5">
+                        <span className="font-semibold">Answer: </span>{q.answer ?? q.verdict}
+                      </div>
+                    )}
+                    {(q.explanation ?? q.justification) && (
+                      <p className="ml-7 text-xs text-gray-400 italic">{q.explanation ?? q.justification}</p>
+                    )}
+                    <div className="ml-7 mt-1">
+                      <span className="text-xs text-gray-400">{q.marks} {q.marks === 1 ? "mark" : "marks"}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Resource section ─────────────────────────────────────────────────────────
 
 function ResourceSection({ title, icon: Icon, iconBg, count, children, onAdd, addLabel, secondaryAction }) {
@@ -372,14 +535,259 @@ function ResourceSection({ title, icon: Icon, iconBg, count, children, onAdd, ad
   );
 }
 
-// ─── AI Assignment Result Modal ───────────────────────────────────────────────
+// ─── Question Edit Form ───────────────────────────────────────────────────────
 
-function AIContentModal({ result, label, onClose }) {
+function QuestionEditForm({ question, sectionType, onSave, onCancel }) {
+  const isNew = !question;
+  const [text, setText] = useState(question?.question ?? question?.statement ?? question?.sentence ?? "");
+  const [marks, setMarks] = useState(String(question?.marks ?? 1));
+  const [answer, setAnswer] = useState(question?.answer ?? question?.verdict ?? "");
+  const [explanation, setExplanation] = useState(question?.explanation ?? question?.justification ?? "");
+  const [options, setOptions] = useState(
+    sectionType === "mcq"
+      ? ["A", "B", "C", "D"].map((k) => ({ key: k, text: question?.options?.[k] ?? "" }))
+      : []
+  );
+
+  const isMcq = sectionType === "mcq";
+  const isTrueFalse = sectionType === "true_false";
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    const q = {
+      ...(question || {}),
+      question: text.trim(),
+      marks: Math.max(1, parseInt(marks, 10) || 1),
+      answer: answer.trim(),
+      explanation: explanation.trim() || undefined,
+    };
+    if (isMcq) {
+      q.options = Object.fromEntries(options.map((o) => [o.key, o.text]));
+    }
+    onSave(q);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="rounded-xl border border-blue-200 bg-blue-50/40 p-3 space-y-2.5">
+      <div>
+        <label className="text-xs font-medium text-gray-600 mb-1 block">Question</label>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={2}
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Enter question text..."
+          required
+        />
+      </div>
+      {isMcq && (
+        <div className="grid grid-cols-2 gap-2">
+          {options.map((opt, idx) => (
+            <div key={opt.key}>
+              <label className="text-xs font-medium text-gray-500 mb-0.5 block">Option {opt.key}</label>
+              <input
+                value={opt.text}
+                onChange={(e) =>
+                  setOptions((prev) => prev.map((o, i) => (i === idx ? { ...o, text: e.target.value } : o)))
+                }
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                placeholder={`Option ${opt.key}`}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <label className="text-xs font-medium text-gray-600 mb-1 block">Answer</label>
+          {isMcq ? (
+            <select
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select correct option</option>
+              {["A", "B", "C", "D"].map((k) => (
+                <option key={k} value={k}>{k}</option>
+              ))}
+            </select>
+          ) : isTrueFalse ? (
+            <select
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select</option>
+              <option value="True">True</option>
+              <option value="False">False</option>
+            </select>
+          ) : (
+            <input
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              placeholder="Answer..."
+            />
+          )}
+        </div>
+        <div className="w-20">
+          <label className="text-xs font-medium text-gray-600 mb-1 block">Marks</label>
+          <input
+            type="number"
+            min="1"
+            value={marks}
+            onChange={(e) => setMarks(e.target.value)}
+            className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+      <div>
+        <label className="text-xs font-medium text-gray-500 mb-1 block">Explanation (optional)</label>
+        <input
+          value={explanation}
+          onChange={(e) => setExplanation(e.target.value)}
+          className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+          placeholder="Optional explanation..."
+        />
+      </div>
+      <div className="flex justify-end gap-2 pt-0.5">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors"
+        >
+          {isNew ? "Add Question" : "Save Changes"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ─── AI Content Modal (Editable) ─────────────────────────────────────────────
+
+// itemId + existingDueDate + existingStatus are set when editing an already-saved item (update mode)
+function AIContentModal({ result, label, type, topicId, progressId, sectionId, itemId, existingDueDate, existingStatus, onSaved, onClose }) {
+  const isUpdate = !!itemId;
+  const [editedResult, setEditedResult] = useState(null);
+  const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [editingQ, setEditingQ] = useState(null);
+  const [addingQ, setAddingQ] = useState(null);
   const [expanded, setExpanded] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
-  if (!result) return null;
+  useEffect(() => {
+    if (!result) return;
+    setEditedResult(JSON.parse(JSON.stringify(result)));
+    setTitle(result.topic ?? "");
+    setDueDate(existingDueDate ?? "");
+    setEditingQ(null);
+    setAddingQ(null);
+    setSaveError("");
+  }, [result, existingDueDate]);
+
+  if (!result || !editedResult) return null;
 
   const toggle = (key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const recalc = (sections) => ({
+    total_questions: sections.reduce((s, sec) => s + sec.questions.length, 0),
+    total_marks: sections.reduce((s, sec) => sec.questions.reduce((sm, q) => sm + (q.marks || 0), 0) + s, 0),
+  });
+
+  const deleteQuestion = (si, qi) => {
+    if (editingQ?.si === si && editingQ?.qi === qi) setEditingQ(null);
+    setEditedResult((prev) => {
+      const sections = prev.sections.map((sec, i) => {
+        if (i !== si) return sec;
+        const questions = sec.questions
+          .filter((_, j) => j !== qi)
+          .map((q, idx) => ({ ...q, number: idx + 1 }));
+        return { ...sec, questions, section_marks: questions.reduce((s, q) => s + (q.marks || 0), 0) };
+      });
+      return { ...prev, sections, ...recalc(sections) };
+    });
+  };
+
+  const saveQuestion = (si, qi, updated) => {
+    setEditedResult((prev) => {
+      const sections = prev.sections.map((sec, i) => {
+        if (i !== si) return sec;
+        const questions = sec.questions.map((q, j) => (j === qi ? { ...updated, number: j + 1 } : q));
+        return { ...sec, questions, section_marks: questions.reduce((s, q) => s + (q.marks || 0), 0) };
+      });
+      return { ...prev, sections, ...recalc(sections) };
+    });
+    setEditingQ(null);
+  };
+
+  const addQuestion = (si, newQ) => {
+    setEditedResult((prev) => {
+      const sections = prev.sections.map((sec, i) => {
+        if (i !== si) return sec;
+        const questions = [...sec.questions, { ...newQ, number: sec.questions.length + 1 }];
+        return { ...sec, questions, section_marks: questions.reduce((s, q) => s + (q.marks || 0), 0) };
+      });
+      return { ...prev, sections, ...recalc(sections) };
+    });
+    setAddingQ(null);
+  };
+
+  const handleSave = async (status) => {
+    setSaving(true);
+    setSaveError("");
+    try {
+      const saveTitle = title.trim() || editedResult.topic;
+      if (isUpdate) {
+        if (type === "assignment") {
+          await updateTopicAssignment(itemId, {
+            title: saveTitle,
+            due_date: dueDate || undefined,
+            status: status ?? existingStatus ?? "DRAFT",
+            content: editedResult,
+          });
+        } else {
+          await updateTopicQuiz(itemId, {
+            title: saveTitle,
+            generated_by_ai: true,
+            content: editedResult,
+          });
+        }
+      } else {
+        let pid = progressId;
+        if (!pid) {
+          const p = await createTopicProgress(topicId, { section_id: sectionId, is_added_by_teacher: true });
+          pid = p?.id ?? p?.progress_id;
+        }
+        if (type === "assignment") {
+          await addTopicAssignment(pid, {
+            title: saveTitle,
+            due_date: dueDate || undefined,
+            status,
+            content: editedResult,
+          });
+        } else {
+          await addTopicQuiz(pid, {
+            title: saveTitle,
+            generated_by_ai: true,
+            content: editedResult,
+          });
+        }
+      }
+      onSaved();
+    } catch (err) {
+      setSaveError(err?.message || "Failed to save");
+      setSaving(false);
+    }
+  };
 
   const sectionColors = {
     mcq: "border-blue-200 bg-blue-50/40",
@@ -388,7 +796,6 @@ function AIContentModal({ result, label, onClose }) {
     true_false: "border-amber-200 bg-amber-50/40",
     fill_blank: "border-teal-200 bg-teal-50/40",
   };
-
   const sectionHeaderColors = {
     mcq: "text-blue-700 bg-blue-100",
     short: "text-green-700 bg-green-100",
@@ -402,16 +809,36 @@ function AIContentModal({ result, label, onClose }) {
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <div className="w-6 h-6 rounded-lg bg-indigo-100 flex items-center justify-center">
+          <div className="flex-1 min-w-0 mr-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
                 <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
               </div>
               <span className="text-sm font-bold text-gray-900">{label}</span>
             </div>
-            <p className="text-xs text-gray-500">{result.topic} · Class {result.class_name} · {result.subject}</p>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+              placeholder="Title..."
+            />
+            {type === "assignment" && (
+              <div className="mt-2 flex items-center gap-2">
+                <label className="text-xs text-gray-500 whitespace-nowrap">Due date:</label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="px-2.5 py-1 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-400"
+                />
+              </div>
+            )}
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -420,37 +847,37 @@ function AIContentModal({ result, label, onClose }) {
         <div className="flex items-center gap-4 px-5 py-3 bg-indigo-50 border-b border-indigo-100 flex-shrink-0">
           <div className="text-center">
             <p className="text-xs text-indigo-500 font-medium">Questions</p>
-            <p className="text-lg font-bold text-indigo-700">{result.total_questions}</p>
+            <p className="text-lg font-bold text-indigo-700">{editedResult.total_questions}</p>
           </div>
           <div className="h-8 w-px bg-indigo-200" />
           <div className="text-center">
             <p className="text-xs text-indigo-500 font-medium">Total Marks</p>
-            <p className="text-lg font-bold text-indigo-700">{result.total_marks}</p>
+            <p className="text-lg font-bold text-indigo-700">{editedResult.total_marks}</p>
           </div>
           <div className="h-8 w-px bg-indigo-200" />
           <div className="text-center">
-            {result.time_minutes != null ? (
+            {editedResult.time_minutes != null ? (
               <>
                 <p className="text-xs text-indigo-500 font-medium">Time</p>
-                <p className="text-sm font-semibold text-indigo-700">{result.time_minutes} min</p>
+                <p className="text-sm font-semibold text-indigo-700">{editedResult.time_minutes} min</p>
               </>
             ) : (
               <>
                 <p className="text-xs text-indigo-500 font-medium">Difficulty</p>
-                <p className="text-sm font-semibold text-indigo-700 capitalize">{result.difficulty}</p>
+                <p className="text-sm font-semibold text-indigo-700 capitalize">{editedResult.difficulty}</p>
               </>
             )}
           </div>
           <div className="h-8 w-px bg-indigo-200" />
           <div className="text-center">
             <p className="text-xs text-indigo-500 font-medium">Sections</p>
-            <p className="text-lg font-bold text-indigo-700">{(result.sections ?? []).length}</p>
+            <p className="text-lg font-bold text-indigo-700">{(editedResult.sections ?? []).length}</p>
           </div>
         </div>
 
         {/* Sections */}
         <div className="overflow-y-auto flex-1 p-4 space-y-3">
-          {(result.sections ?? []).map((section, si) => {
+          {(editedResult.sections ?? []).map((section, si) => {
             const colorClass = sectionColors[section.type] ?? "border-gray-200 bg-gray-50/40";
             const headerColor = sectionHeaderColors[section.type] ?? "text-gray-700 bg-gray-100";
             const key = `s${si}`;
@@ -470,57 +897,96 @@ function AIContentModal({ result, label, onClose }) {
                 </button>
                 {isOpen && (
                   <div className="border-t border-white/60 px-4 pb-4 pt-2 space-y-3">
-                    {section.questions.map((q) => (
-                      <div key={q.number} className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
-                        <div className="flex items-start gap-2 mb-2">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 text-xs font-bold text-gray-600 flex items-center justify-center">{q.number}</span>
-                          <p className="text-sm text-gray-900 font-medium leading-snug">
-                            {q.question ?? q.statement ?? q.sentence}
-                          </p>
-                        </div>
-                        {/* MCQ options */}
-                        {q.options && (
-                          <div className="ml-8 space-y-1 mb-2">
-                            {Object.entries(q.options).map(([opt, text]) => (
-                              <div
-                                key={opt}
-                                className={`flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-xs ${q.answer === opt ? "bg-green-50 border border-green-200 text-green-800 font-semibold" : "bg-gray-50 text-gray-700"}`}
-                              >
-                                <span className="font-bold flex-shrink-0">{opt}.</span>
-                                <span>{text}</span>
+                    {section.questions.map((q, qi) => (
+                      <div key={q.number}>
+                        {editingQ?.si === si && editingQ?.qi === qi ? (
+                          <QuestionEditForm
+                            question={q}
+                            sectionType={section.type}
+                            onSave={(updated) => saveQuestion(si, qi, updated)}
+                            onCancel={() => setEditingQ(null)}
+                          />
+                        ) : (
+                          <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
+                            <div className="flex items-start gap-2 mb-2">
+                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 text-xs font-bold text-gray-600 flex items-center justify-center">{q.number}</span>
+                              <p className="flex-1 text-sm text-gray-900 font-medium leading-snug">
+                                {q.question ?? q.statement ?? q.sentence}
+                              </p>
+                              <div className="flex gap-0.5 flex-shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingQ({ si, qi }); setAddingQ(null); }}
+                                  className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteQuestion(si, qi)}
+                                  className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
                               </div>
-                            ))}
+                            </div>
+                            {q.options && (
+                              <div className="ml-8 space-y-1 mb-2">
+                                {Object.entries(q.options).map(([opt, text]) => (
+                                  <div
+                                    key={opt}
+                                    className={`flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-xs ${q.answer === opt ? "bg-green-50 border border-green-200 text-green-800 font-semibold" : "bg-gray-50 text-gray-700"}`}
+                                  >
+                                    <span className="font-bold flex-shrink-0">{opt}.</span>
+                                    <span>{text}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {!q.options && (q.answer ?? q.verdict) && (
+                              <div className="ml-8 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-800 mb-2">
+                                <span className="font-semibold">Answer: </span>{q.answer ?? q.verdict}
+                              </div>
+                            )}
+                            {(q.explanation ?? q.justification) && (
+                              <p className="ml-8 text-xs text-gray-500 italic">{q.explanation ?? q.justification}</p>
+                            )}
+                            {q.marking_hints && (
+                              <div className="ml-8 mt-2">
+                                <p className="text-xs font-semibold text-gray-500 mb-1">Marking hints:</p>
+                                <ul className="space-y-0.5">
+                                  {q.marking_hints.map((hint, hi) => (
+                                    <li key={hi} className="text-xs text-gray-500 flex items-start gap-1.5">
+                                      <span className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
+                                      {hint}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            <div className="ml-8 mt-1.5">
+                              <span className="text-xs text-gray-400">{q.marks} {q.marks === 1 ? "mark" : "marks"}</span>
+                            </div>
                           </div>
                         )}
-                        {/* Answer for non-MCQ */}
-                        {!q.options && (q.answer ?? q.verdict) && (
-                          <div className="ml-8 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-800 mb-2">
-                            <span className="font-semibold">Answer: </span>{q.answer ?? q.verdict}
-                          </div>
-                        )}
-                        {/* Explanation / Justification */}
-                        {(q.explanation ?? q.justification) && (
-                          <p className="ml-8 text-xs text-gray-500 italic">{q.explanation ?? q.justification}</p>
-                        )}
-                        {/* Marking hints */}
-                        {q.marking_hints && (
-                          <div className="ml-8 mt-2">
-                            <p className="text-xs font-semibold text-gray-500 mb-1">Marking hints:</p>
-                            <ul className="space-y-0.5">
-                              {q.marking_hints.map((hint, hi) => (
-                                <li key={hi} className="text-xs text-gray-500 flex items-start gap-1.5">
-                                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
-                                  {hint}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        <div className="ml-8 mt-1.5">
-                          <span className="text-xs text-gray-400">{q.marks} {q.marks === 1 ? "mark" : "marks"}</span>
-                        </div>
                       </div>
                     ))}
+                    {addingQ?.si === si ? (
+                      <QuestionEditForm
+                        sectionType={section.type}
+                        onSave={(newQ) => addQuestion(si, newQ)}
+                        onCancel={() => setAddingQ(null)}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { setAddingQ({ si }); setEditingQ(null); }}
+                        className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-xs font-medium text-gray-400 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add question
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -528,8 +994,28 @@ function AIContentModal({ result, label, onClose }) {
           })}
         </div>
 
-        <div className="flex justify-end px-5 py-4 border-t border-gray-100 flex-shrink-0">
-          <Button variant="secondary" onClick={onClose}>Close</Button>
+        {saveError && (
+          <p className="px-5 py-2 text-xs text-red-600 border-t border-red-100 bg-red-50 flex-shrink-0">{saveError}</p>
+        )}
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-gray-100 flex-shrink-0">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          {type === "assignment" && !isUpdate && (
+            <Button
+              variant="secondary"
+              disabled={saving || !title.trim()}
+              onClick={() => handleSave("DRAFT")}
+            >
+              {saving ? "Saving..." : "Save as Draft"}
+            </Button>
+          )}
+          <Button
+            disabled={saving || !title.trim()}
+            onClick={() => handleSave(type === "assignment" ? (isUpdate ? undefined : "PUBLISHED") : undefined)}
+          >
+            {saving ? "Saving..." : isUpdate ? "Update" : "Save & Publish"}
+          </Button>
         </div>
       </div>
     </div>
@@ -569,6 +1055,20 @@ export default function StaffTopicDetail() {
   const [quizAiGenerating, setQuizAiGenerating] = useState(false);
   const [quizAiResult, setQuizAiResult] = useState(null);
   const [quizAiError, setQuizAiError] = useState("");
+
+  const [expandedItems, setExpandedItems] = useState(new Set());
+  const toggleItemExpand = (id) =>
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // AI edit mode: editing an already-saved quiz/assignment that has structured content
+  const [aiEditItem, setAiEditItem] = useState(null); // { item, type }
+  const handleAiEdit = (item, type) => setAiEditItem({ item, type });
+  const closeAiEdit = () => setAiEditItem(null);
 
   const load = useCallback(async () => {
     if (!classPlanId || !topicId) return;
@@ -807,35 +1307,60 @@ export default function StaffTopicDetail() {
                     onCancel={() => setAssignmentForm(null)}
                   />
                 ) : (
-                  <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-medium text-gray-900">{a.title}</p>
-                        {a.status && (
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${assignmentStatusColor(a.status)}`}>
-                            {a.status.charAt(0) + a.status.slice(1).toLowerCase()}
-                          </span>
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 overflow-hidden">
+                    <div className="flex items-start gap-3 p-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900">{a.title}</p>
+                          {a.status && (
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${assignmentStatusColor(a.status)}`}>
+                              {a.status.charAt(0) + a.status.slice(1).toLowerCase()}
+                            </span>
+                          )}
+                        </div>
+                        {a.due_date && (
+                          <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
+                            <Calendar className="h-3 w-3" />{t("staffTopicDetail.duePrefix")} {formatDate(a.due_date, i18n.language)}
+                          </p>
+                        )}
+                        {a.file_url && (
+                          <a href={a.file_url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-primary-600 hover:underline">
+                            <Paperclip className="h-3 w-3" />{t("staffTopicDetail.attachmentLink")} <ExternalLink className="h-3 w-3" />
+                          </a>
                         )}
                       </div>
-                      {a.due_date && (
-                        <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
-                          <Calendar className="h-3 w-3" />{t("staffTopicDetail.duePrefix")} {formatDate(a.due_date, i18n.language)}
-                        </p>
-                      )}
-                      {a.file_url && (
-                        <a href={a.file_url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-primary-600 hover:underline">
-                          <Paperclip className="h-3 w-3" />{t("staffTopicDetail.attachmentLink")} <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
+                      <div className="flex shrink-0 gap-0.5">
+                        {a.content && (
+                          <button
+                            type="button"
+                            onClick={() => toggleItemExpand(a.id)}
+                            className="rounded-lg p-1.5 text-gray-400 hover:bg-white hover:text-gray-700 transition-colors"
+                            title={expandedItems.has(a.id) ? "Hide content" : "View content"}
+                          >
+                            {expandedItems.has(a.id) ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            Array.isArray(a.content?.sections) && a.content.sections.length > 0
+                              ? handleAiEdit(a, "assignment")
+                              : setAssignmentForm(a)
+                          }
+                          className="rounded-lg p-1.5 text-gray-400 hover:bg-white hover:text-gray-700 transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button type="button" onClick={() => setDeleteTarget({ type: "assignment", id: a.id })} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex shrink-0 gap-0.5">
-                      <button type="button" onClick={() => setAssignmentForm(a)} className="rounded-lg p-1.5 text-gray-400 hover:bg-white hover:text-gray-700 transition-colors">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button type="button" onClick={() => setDeleteTarget({ type: "assignment", id: a.id })} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    {expandedItems.has(a.id) && a.content && (
+                      <div className="px-3 pb-3 border-t border-gray-100">
+                        <ContentViewer content={a.content} />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -889,28 +1414,53 @@ export default function StaffTopicDetail() {
                     onCancel={() => setQuizForm(null)}
                   />
                 ) : (
-                  <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-medium text-gray-900">{q.title}</p>
-                        {q.generated_by_ai && (
-                          <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">{t("staffTopicDetail.aiBadge")}</span>
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 overflow-hidden">
+                    <div className="flex items-start gap-3 p-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900">{q.title}</p>
+                          {q.generated_by_ai && (
+                            <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">{t("staffTopicDetail.aiBadge")}</span>
+                          )}
+                        </div>
+                        {q.file_url && (
+                          <a href={q.file_url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-primary-600 hover:underline">
+                            <Paperclip className="h-3 w-3" />{t("staffTopicDetail.attachmentLink")} <ExternalLink className="h-3 w-3" />
+                          </a>
                         )}
                       </div>
-                      {q.file_url && (
-                        <a href={q.file_url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-primary-600 hover:underline">
-                          <Paperclip className="h-3 w-3" />{t("staffTopicDetail.attachmentLink")} <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
+                      <div className="flex shrink-0 gap-0.5">
+                        {q.content && (
+                          <button
+                            type="button"
+                            onClick={() => toggleItemExpand(q.id)}
+                            className="rounded-lg p-1.5 text-gray-400 hover:bg-white hover:text-gray-700 transition-colors"
+                            title={expandedItems.has(q.id) ? "Hide content" : "View content"}
+                          >
+                            {expandedItems.has(q.id) ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            Array.isArray(q.content?.sections) && q.content.sections.length > 0
+                              ? handleAiEdit(q, "quiz")
+                              : setQuizForm(q)
+                          }
+                          className="rounded-lg p-1.5 text-gray-400 hover:bg-white hover:text-gray-700 transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button type="button" onClick={() => setDeleteTarget({ type: "quiz", id: q.id })} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex shrink-0 gap-0.5">
-                      <button type="button" onClick={() => setQuizForm(q)} className="rounded-lg p-1.5 text-gray-400 hover:bg-white hover:text-gray-700 transition-colors">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button type="button" onClick={() => setDeleteTarget({ type: "quiz", id: q.id })} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    {expandedItems.has(q.id) && q.content && (
+                      <div className="px-3 pb-3 border-t border-gray-100">
+                        <ContentViewer content={q.content} />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -978,11 +1528,50 @@ export default function StaffTopicDetail() {
         existingTopicsCount={existingTopicsCount}
       />
 
-      {/* AI Assignment Result */}
-      {aiResult && <AIContentModal label="AI Generated Assignment" result={aiResult} onClose={() => setAiResult(null)} />}
+      {/* AI Assignment Result (new) */}
+      {aiResult && (
+        <AIContentModal
+          label="AI Generated Assignment"
+          type="assignment"
+          result={aiResult}
+          topicId={topicRowId}
+          progressId={progressId}
+          sectionId={sectionId}
+          onSaved={() => { setAiResult(null); load(); }}
+          onClose={() => setAiResult(null)}
+        />
+      )}
 
-      {/* AI Quiz Result */}
-      {quizAiResult && <AIContentModal label="AI Generated Quiz" result={quizAiResult} onClose={() => setQuizAiResult(null)} />}
+      {/* AI Quiz Result (new) */}
+      {quizAiResult && (
+        <AIContentModal
+          label="AI Generated Quiz"
+          type="quiz"
+          result={quizAiResult}
+          topicId={topicRowId}
+          progressId={progressId}
+          sectionId={sectionId}
+          onSaved={() => { setQuizAiResult(null); load(); }}
+          onClose={() => setQuizAiResult(null)}
+        />
+      )}
+
+      {/* Edit existing AI-generated quiz or assignment */}
+      {aiEditItem && (
+        <AIContentModal
+          label={aiEditItem.type === "quiz" ? "Edit Quiz" : "Edit Assignment"}
+          type={aiEditItem.type}
+          result={aiEditItem.item.content}
+          itemId={aiEditItem.item.id}
+          existingDueDate={aiEditItem.item.due_date ? aiEditItem.item.due_date.slice(0, 10) : ""}
+          existingStatus={aiEditItem.item.status}
+          topicId={topicRowId}
+          progressId={progressId}
+          sectionId={sectionId}
+          onSaved={() => { closeAiEdit(); load(); }}
+          onClose={closeAiEdit}
+        />
+      )}
 
       {/* Delete confirmation */}
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} className="max-w-sm">

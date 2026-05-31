@@ -259,6 +259,8 @@ export default function TeacherHomework() {
                 file: file._file,
                 file_name: file.name,
                 mime_type: file.type,
+                homework_id: homeworkId,
+                ...(auth.campus_id && { campus_id: auth.campus_id }),
               });
               return { fileName: file.name, fileType: file.type, fileSize: file.size, fileUrl: publicUrl };
             }
@@ -322,6 +324,7 @@ export default function TeacherHomework() {
                 file: file._file,
                 file_name: file.name,
                 mime_type: file.type,
+                ...(auth.campus_id && { campus_id: auth.campus_id }),
               });
               return { fileName: file.name, fileType: file.type, fileSize: file.size, fileUrl: publicUrl };
             }

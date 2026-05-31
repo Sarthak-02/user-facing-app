@@ -406,6 +406,7 @@
     "maxFiles": "Max 3 files · 10MB each",
     "errorMaxAttachments": "Maximum 3 attachments allowed",
     "errorFileSize": "Each file must be less than 10MB",
+    "errorInvalidFileType": "File type not supported. Please upload a PDF, document, spreadsheet, image, or text file.",
     "send": "Send Broadcast",
     "myBroadcasts": "My Broadcasts",
     "createBroadcast": "Create Broadcast",
