@@ -40,6 +40,21 @@ export const SECTION_TARGET_SCHEMA = [
     }
 ]
 
+export const GROUP_TARGET_SCHEMA = [
+    {
+        label: "Select Group",
+        value: null,
+        multi: false,
+        type: "group",
+        required: true,
+        options: [],
+        placeholder: "Select Group",
+        onChange: (value) => {
+            console.log(value);
+        },
+    }
+]
+
 export const STUDENT_TARGET_SCHEMA = [
     {
         label: "Select Class",

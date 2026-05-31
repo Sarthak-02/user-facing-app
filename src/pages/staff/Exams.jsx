@@ -37,6 +37,8 @@ function buildTargets(examData) {
     studentIds.forEach((student) => {
       targets.push({ targetType: "STUDENT", targetId: student.value });
     });
+  } else if (examData.targetType?.value === "GROUP" && examData.groupId?.value) {
+    targets.push({ targetType: "GROUP", targetId: examData.groupId.value });
   }
   return targets;
 }

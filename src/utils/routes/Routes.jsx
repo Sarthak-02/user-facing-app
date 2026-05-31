@@ -45,6 +45,7 @@ import StudentLessonPlansHome from "../../pages/student/StudentLessonPlansHome";
 import StudentLessonPlansBrowse from "../../pages/student/StudentLessonPlansBrowse";
 import StudentTopicDetail from "../../pages/student/StudentTopicDetail";
 import StaffStudyChat from "../../pages/staff/StaffStudyChat";
+import StudentGroups from "../../pages/staff/StudentGroups";
 
 export const routes = [
   {
@@ -260,6 +261,14 @@ export const routes = [
         element: (
           <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_reporting">
             <TeacherReporting />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/groups",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff", "admin"]}>
+            <StudentGroups />
           </RoleBasedRoute>
         ),
       },

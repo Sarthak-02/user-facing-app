@@ -4,7 +4,8 @@ import { Button } from "../../ui-components";
 import TargetSelector from "../TargetSelector";
 import { usePermissions } from "../../store/permissions.store";
 import { useAuth } from "../../store/auth.store";
-import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA } from "../../utils/target.schema";
+import { useStudentGroups } from "../../store/studentGroups.store";
+import { SECTION_TARGET_SCHEMA, STUDENT_TARGET_SCHEMA, CLASS_TARGET_SCHEMA, GROUP_TARGET_SCHEMA } from "../../utils/target.schema";
 import { updateSchema } from "../../utils/update.schema";
 
 const GRADING_TYPE_BADGE = {
@@ -28,16 +29,20 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
   const { permissions } = usePermissions();
 
   const {
+    auth,
     auth: {
       campus: { campus_exam_types, class_grading_config },
     },
   } = useAuth();
+  const campus_id = auth?.campus?.campus_id || auth?.campus_id || "";
+  const { groups, fetchGroups } = useStudentGroups();
 
   const targetOpts = useMemo(
     () => [
       { value: "CLASS", label: t("broadcast.targetOptions.class") },
       { value: "SECTION", label: t("broadcast.targetOptions.section") },
       { value: "STUDENT", label: t("broadcast.targetOptions.student") },
+      { value: "GROUP", label: "Group" },
     ],
     [t]
   );
@@ -73,6 +78,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     classId: null,
     sectionId: [],
     studentId: [],
+    groupId: null,
     subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
     gradingConfigId: "",
     gradingType: "",
@@ -80,6 +86,12 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
     maxValue: "",
     status: "DRAFT",
   });
+
+  useEffect(() => {
+    if (formData.targetType?.value === "GROUP" && campus_id) {
+      fetchGroups(campus_id);
+    }
+  }, [formData.targetType?.value, campus_id, fetchGroups]);
 
   const subjects = useMemo(() => {
     return permissions.teacher_subjects.map((subject) => ({
@@ -165,8 +177,16 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
         },
       }
       return updateSchema(STUDENT_TARGET_SCHEMA, data);
+    } else if (formData.targetType?.value === "GROUP") {
+      return updateSchema(GROUP_TARGET_SCHEMA, {
+        group: {
+          selected: formData.groupId,
+          options: groups.map(({ group_id, name }) => ({ value: group_id, label: name })),
+          onChange: (option) => setFormData((prev) => ({ ...prev, groupId: option })),
+        },
+      });
     }
-  }, [formData.targetType, formData.sectionId, formData.classId, formData.studentId, permissions.classes, permissions.sections, permissions.students]);
+  }, [formData.targetType, formData.sectionId, formData.classId, formData.studentId, formData.groupId, permissions.classes, permissions.sections, permissions.students, groups]);
 
   // Initialize form when exam changes
   useEffect(() => {
@@ -177,11 +197,20 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
       let classId = null;
       let sectionId = [];
       let studentId = [];
+      let groupId = null;
 
       if (exam.targets && exam.targets.length > 0) {
         const firstTarget = exam.targets[0];
-        
-        if (firstTarget.targetType === "CLASS") {
+
+        if (firstTarget.targetType === "GROUP") {
+          targetType = pickExamTarget("GROUP");
+          const grp = groups.find((g) => g.group_id === firstTarget.targetId);
+          groupId = grp
+            ? { value: grp.group_id, label: grp.name }
+            : firstTarget.targetId
+              ? { value: firstTarget.targetId, label: firstTarget.targetId }
+              : null;
+        } else if (firstTarget.targetType === "CLASS") {
           targetType = pickExamTarget("CLASS");
           // Find the class in permissions to get the label
           const classItem = permissions.classes?.find(c => c.class_id === firstTarget.targetId);
@@ -248,6 +277,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
         classId: classId,
         sectionId: sectionId,
         studentId: studentId,
+        groupId: groupId,
         subjects: transformedSubjects,
         gradingConfigId: matchedConfig?.id || "",
         gradingType: exam.gradingType || "",
@@ -268,6 +298,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
         classId: null,
         sectionId: [],
         studentId: [],
+        groupId: null,
         subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
         gradingConfigId: "",
         gradingType: "",
@@ -299,6 +330,7 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
       classId: null,
       sectionId: [],
       studentId: [],
+      groupId: null,
       subjects: [{ subjectId: "", subjectName: "", examDate: "", startTime: "", endTime: "" }],
     }));
   };
@@ -398,7 +430,8 @@ export default function ExamFormModal({ isOpen, onClose, onSubmit, exam, isSubmi
       formData.classId?.value &&
       !!formData.sectionId?.value &&
       Array.isArray(formData.studentId) &&
-      formData.studentId.length > 0);
+      formData.studentId.length > 0) ||
+    (formData.targetType?.value === "GROUP" && !!formData.groupId?.value);
   const canProceedStep3 = formData.subjects.every(
     sub => sub.subjectId?.value && sub.examDate && sub.startTime && sub.endTime
   );

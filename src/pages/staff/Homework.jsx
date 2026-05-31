@@ -28,6 +28,7 @@ function homeworkAppliesToSection(homework, sectionId, sectionRecord, permission
     const tid = t.target_id || t.targetId || "";
     if (type === "SECTION" && tid === sectionId) return true;
     if (type === "CLASS" && tid === sectionRecord.class_id) return true;
+    if (type === "GROUP") return true;
     if (type === "STUDENT") {
       const st = (permissions.students || []).find((s) => s.student_id === tid);
       if (st?.section_id === sectionId) return true;
@@ -160,7 +161,16 @@ export default function TeacherHomework() {
       filtered = filtered.filter((hw) => hw.status === statusFilter);
     }
 
-    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const now = new Date();
+    const isActive = (hw) =>
+      (hw.status === "PUBLISHED" || hw.status === "ACTIVE") && new Date(hw.dueDate) >= now;
+
+    filtered.sort((a, b) => {
+      const aActive = isActive(a) ? 0 : 1;
+      const bActive = isActive(b) ? 0 : 1;
+      if (aActive !== bActive) return aActive - bActive;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
 
     return filtered;
   }, [scopedHomework, statusFilter]);
@@ -249,6 +259,11 @@ export default function TeacherHomework() {
               targetId: student.value
             });
           });
+        } else if (homeworkData.targetType?.value === "GROUP" && homeworkData.groupId?.value) {
+          targets.push({
+            targetType: "GROUP",
+            targetId: homeworkData.groupId.value
+          });
         }
 
         // Upload new files (those with _file), keep already-uploaded ones as-is
@@ -313,6 +328,11 @@ export default function TeacherHomework() {
               targetType: "STUDENT",
               targetId: student.value
             });
+          });
+        } else if (homeworkData.targetType?.value === "GROUP" && homeworkData.groupId?.value) {
+          targets.push({
+            targetType: "GROUP",
+            targetId: homeworkData.groupId.value
           });
         }
 
