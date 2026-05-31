@@ -41,6 +41,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import TopicFormModal from "../../components/lesson-plans/TopicFormModal";
+import ContentViewer from "../../components/lesson-plans/ContentViewer";
 import { usePermissions } from "../../store/permissions.store";
 
 const ASSIGNMENT_STATUS_OPTIONS = ["DRAFT", "PUBLISHED", "CLOSED"];
@@ -379,130 +380,6 @@ function MaterialForm({ topicId, progressId, sectionId, onSaved, onCancel }) {
   );
 }
 
-// ─── Content viewer ──────────────────────────────────────────────────────────
-
-const CONTENT_SECTION_COLORS = {
-  mcq: "border-blue-200 bg-blue-50/40",
-  short: "border-green-200 bg-green-50/40",
-  long: "border-purple-200 bg-purple-50/40",
-  true_false: "border-amber-200 bg-amber-50/40",
-  fill_blank: "border-teal-200 bg-teal-50/40",
-};
-const CONTENT_SECTION_HEADER_COLORS = {
-  mcq: "text-blue-700 bg-blue-100",
-  short: "text-green-700 bg-green-100",
-  long: "text-purple-700 bg-purple-100",
-  true_false: "text-amber-700 bg-amber-100",
-  fill_blank: "text-teal-700 bg-teal-100",
-};
-
-function ContentViewer({ content }) {
-  const [openSections, setOpenSections] = useState({});
-
-  if (!content) return null;
-
-  if (content.text) {
-    return (
-      <div className="mt-2 rounded-lg bg-white border border-gray-100 px-3 py-2.5 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-        {content.text}
-      </div>
-    );
-  }
-
-  if (!Array.isArray(content.sections) || content.sections.length === 0) return null;
-
-  const toggle = (i) => setOpenSections((prev) => ({ ...prev, [i]: !prev[i] }));
-
-  return (
-    <div className="mt-2 space-y-2">
-      {/* Summary strip */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-indigo-50 px-3 py-2">
-        <span className="text-xs font-semibold text-indigo-700">{content.total_questions} questions</span>
-        <span className="text-indigo-300 text-xs">·</span>
-        <span className="text-xs font-semibold text-indigo-700">{content.total_marks} marks</span>
-        {content.time_minutes != null && (
-          <>
-            <span className="text-indigo-300 text-xs">·</span>
-            <span className="text-xs font-semibold text-indigo-700">{content.time_minutes} min</span>
-          </>
-        )}
-        {content.difficulty && (
-          <>
-            <span className="text-indigo-300 text-xs">·</span>
-            <span className="text-xs font-semibold text-indigo-700 capitalize">{content.difficulty}</span>
-          </>
-        )}
-      </div>
-
-      {/* Sections */}
-      {content.sections.map((section, si) => {
-        const colorClass = CONTENT_SECTION_COLORS[section.type] ?? "border-gray-200 bg-gray-50/40";
-        const headerColor = CONTENT_SECTION_HEADER_COLORS[section.type] ?? "text-gray-700 bg-gray-100";
-        const isOpen = openSections[si] !== false;
-        return (
-          <div key={si} className={`rounded-xl border ${colorClass} overflow-hidden`}>
-            <button
-              type="button"
-              onClick={() => toggle(si)}
-              className="w-full flex items-center justify-between px-3 py-2.5 text-left"
-            >
-              <div className="flex items-center gap-2">
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${headerColor}`}>{section.label}</span>
-                <span className="text-xs text-gray-500">{section.questions.length} q · {section.section_marks} marks</span>
-              </div>
-              {isOpen ? <ChevronUp className="h-3.5 w-3.5 text-gray-400" /> : <ChevronDown className="h-3.5 w-3.5 text-gray-400" />}
-            </button>
-            {isOpen && (
-              <div className="border-t border-white/60 px-3 pb-3 pt-2 space-y-2">
-                {section.questions.map((q) => (
-                  <div key={q.number} className="bg-white rounded-lg border border-gray-100 p-2.5 shadow-sm">
-                    <div className="flex items-start gap-2 mb-1.5">
-                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 text-xs font-bold text-gray-600 flex items-center justify-center">
-                        {q.number}
-                      </span>
-                      <p className="flex-1 text-sm text-gray-900 font-medium leading-snug">
-                        {q.question ?? q.statement ?? q.sentence}
-                      </p>
-                    </div>
-                    {q.options && (
-                      <div className="ml-7 space-y-1 mb-1.5">
-                        {Object.entries(q.options).map(([opt, text]) => (
-                          <div
-                            key={opt}
-                            className={`flex items-start gap-1.5 rounded-lg px-2 py-1 text-xs ${
-                              q.answer === opt
-                                ? "bg-green-50 border border-green-200 text-green-800 font-semibold"
-                                : "bg-gray-50 text-gray-700"
-                            }`}
-                          >
-                            <span className="font-bold flex-shrink-0">{opt}.</span>
-                            <span>{text}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {!q.options && (q.answer ?? q.verdict) && (
-                      <div className="ml-7 rounded-lg bg-green-50 border border-green-200 px-2.5 py-1.5 text-xs text-green-800 mb-1.5">
-                        <span className="font-semibold">Answer: </span>{q.answer ?? q.verdict}
-                      </div>
-                    )}
-                    {(q.explanation ?? q.justification) && (
-                      <p className="ml-7 text-xs text-gray-400 italic">{q.explanation ?? q.justification}</p>
-                    )}
-                    <div className="ml-7 mt-1">
-                      <span className="text-xs text-gray-400">{q.marks} {q.marks === 1 ? "mark" : "marks"}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── Resource section ─────────────────────────────────────────────────────────
 
 function ResourceSection({ title, icon: Icon, iconBg, count, children, onAdd, addLabel, secondaryAction }) {
@@ -805,7 +682,7 @@ function AIContentModal({ result, label, type, topicId, progressId, sectionId, i
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-2 pb-16 sm:p-4">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">

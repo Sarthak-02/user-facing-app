@@ -14,7 +14,13 @@ import {
   FileText,
   BookmarkCheck,
   StickyNote,
+  ChevronDown,
+  ChevronUp,
+  Paperclip,
+  ExternalLink,
+  Sparkles,
 } from "lucide-react";
+import ContentViewer from "../../components/lesson-plans/ContentViewer";
 import { TopicDetailShimmer } from "../../ui-components/Shimmer";
 
 function formatDate(d, locale) {
@@ -133,6 +139,15 @@ export default function StudentTopicDetail() {
       </div>
     );
   }
+
+  const [expandedItems, setExpandedItems] = useState(new Set());
+  const toggleItem = (id) =>
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const sc = topicStatusConfig(topic.status, t);
   const { Icon } = sc;
@@ -257,34 +272,59 @@ export default function StudentTopicDetail() {
                 </h3>
               </div>
               <div className="space-y-2">
-                {assignments.map((a, i) => (
-                  <a
-                    key={i}
-                    href={a.file_url || undefined}
-                    target={a.file_url ? "_blank" : undefined}
-                    rel="noopener noreferrer"
-                    className={`flex items-center gap-3 p-3 rounded-xl border border-amber-100 bg-amber-50 ${a.file_url ? "hover:bg-amber-100 cursor-pointer" : "cursor-default"} transition-colors`}
-                    onClick={!a.file_url ? (e) => e.preventDefault() : undefined}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-amber-200 flex items-center justify-center flex-shrink-0">
-                      <ClipboardList className="h-4 w-4 text-amber-700" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{a.title || t("studentTopicDetail.assignmentFallback", { index: i + 1 })}</p>
-                      {a.due_date && (
-                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                          <Calendar className="h-3 w-3" />
-                          {t("staffTopicDetail.duePrefix")} {formatDate(a.due_date, i18n.language)}
-                        </p>
+                {assignments.map((a, i) => {
+                  const hasContent = !!(a.content?.text || a.content?.sections?.length);
+                  const isExpanded = expandedItems.has(a.id ?? i);
+                  return (
+                    <div key={a.id ?? i} className="rounded-xl border border-amber-100 bg-amber-50 overflow-hidden">
+                      <div className="flex items-center gap-3 p-3">
+                        <div className="w-8 h-8 rounded-lg bg-amber-200 flex items-center justify-center flex-shrink-0">
+                          <ClipboardList className="h-4 w-4 text-amber-700" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {a.title || t("studentTopicDetail.assignmentFallback", { index: i + 1 })}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            {a.due_date && (
+                              <p className="text-xs text-gray-500 flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {t("staffTopicDetail.duePrefix")} {formatDate(a.due_date, i18n.language)}
+                              </p>
+                            )}
+                            {a.file_url && (
+                              <a
+                                href={a.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-amber-700 hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Paperclip className="h-3 w-3" />
+                                Attachment
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                        {hasContent && (
+                          <button
+                            type="button"
+                            onClick={() => toggleItem(a.id ?? i)}
+                            className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-100 transition-colors flex-shrink-0"
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </button>
+                        )}
+                      </div>
+                      {isExpanded && hasContent && (
+                        <div className="px-3 pb-3 border-t border-amber-100">
+                          <ContentViewer content={a.content} studentMode />
+                        </div>
                       )}
                     </div>
-                    {a.file_url && (
-                      <svg className="h-4 w-4 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                    )}
-                  </a>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -301,31 +341,59 @@ export default function StudentTopicDetail() {
                 </h3>
               </div>
               <div className="space-y-2">
-                {quizzes.map((q, i) => (
-                  <a
-                    key={i}
-                    href={q.file_url || undefined}
-                    target={q.file_url ? "_blank" : undefined}
-                    rel="noopener noreferrer"
-                    className={`flex items-center gap-3 p-3 rounded-xl border border-violet-100 bg-violet-50 ${q.file_url ? "hover:bg-violet-100 cursor-pointer" : "cursor-default"} transition-colors`}
-                    onClick={!q.file_url ? (e) => e.preventDefault() : undefined}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-violet-200 flex items-center justify-center flex-shrink-0">
-                      <Zap className="h-4 w-4 text-violet-700" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{q.title || t("studentTopicDetail.quizFallback", { index: i + 1 })}</p>
-                      {q.generated_by_ai && (
-                        <p className="text-xs text-violet-500 mt-0.5">{t("studentTopicDetail.aiGenerated")}</p>
+                {quizzes.map((q, i) => {
+                  const hasContent = !!(q.content?.text || q.content?.sections?.length);
+                  const isExpanded = expandedItems.has(q.id ?? i);
+                  return (
+                    <div key={q.id ?? i} className="rounded-xl border border-violet-100 bg-violet-50 overflow-hidden">
+                      <div className="flex items-center gap-3 p-3">
+                        <div className="w-8 h-8 rounded-lg bg-violet-200 flex items-center justify-center flex-shrink-0">
+                          <Zap className="h-4 w-4 text-violet-700" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {q.title || t("studentTopicDetail.quizFallback", { index: i + 1 })}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            {q.generated_by_ai && (
+                              <span className="inline-flex items-center gap-1 text-xs text-violet-500">
+                                <Sparkles className="h-3 w-3" />
+                                {t("studentTopicDetail.aiGenerated")}
+                              </span>
+                            )}
+                            {q.file_url && (
+                              <a
+                                href={q.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-violet-700 hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Paperclip className="h-3 w-3" />
+                                Attachment
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                        {hasContent && (
+                          <button
+                            type="button"
+                            onClick={() => toggleItem(q.id ?? i)}
+                            className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-100 transition-colors flex-shrink-0"
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </button>
+                        )}
+                      </div>
+                      {isExpanded && hasContent && (
+                        <div className="px-3 pb-3 border-t border-violet-100">
+                          <ContentViewer content={q.content} studentMode />
+                        </div>
                       )}
                     </div>
-                    {q.file_url && (
-                      <svg className="h-4 w-4 text-violet-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                    )}
-                  </a>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
