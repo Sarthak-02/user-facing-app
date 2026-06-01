@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
-import { getPtmSlotsByTeacher, createPtmSlot, updatePtmSlot, cancelPtmSlot } from "../../api/ptm.api";
+import { getPtmSlotsByTeacher, createPtmSlot, updatePtmSlot, cancelPtmSlot, parentBookSlot } from "../../api/ptm.api";
 import SlotFormModal from "../../components/ptm/SlotFormModal";
 
 const STATUS_COLORS = {
@@ -137,14 +137,18 @@ export default function StaffPTM() {
     fetchSlots();
   }, [fetchSlots]);
 
-  const handleFormSubmit = async (formData) => {
+  const handleFormSubmit = async ({ formData, studentBookings }) => {
     setIsSubmitting(true);
     setSubmitError("");
     try {
       if (formModal.slot) {
         await updatePtmSlot(formModal.slot.id, formData);
       } else {
-        await createPtmSlot({ ...formData, teacher_id, campus_id, created_by: teacher_id });
+        const created = await createPtmSlot({ ...formData, teacher_id, campus_id, created_by: teacher_id });
+        if (studentBookings?.length > 0) {
+          const slotId = created?.id || created?.slot?.id;
+          if (slotId) await parentBookSlot(slotId, studentBookings);
+        }
       }
       setFormModal({ open: false, slot: null });
       fetchSlots();
@@ -167,7 +171,7 @@ export default function StaffPTM() {
   const filteredSlots = statusFilter === "all" ? slots : slots.filter((s) => s.status === statusFilter);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-6 py-5">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -203,6 +207,7 @@ export default function StaffPTM() {
       </div>
 
       {/* Content */}
+      <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-6 py-6">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -245,6 +250,7 @@ export default function StaffPTM() {
             ))}
           </div>
         )}
+      </div>
       </div>
 
       <SlotFormModal

@@ -14,10 +14,9 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
     capacity: 1,
   });
 
-  // Teacher-assign state (only relevant on create)
-  const [assignToStudent, setAssignToStudent] = useState(false);
+  // Student booking state — only used on create
   const [selectedSectionId, setSelectedSectionId] = useState("");
-  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
 
   useEffect(() => {
     if (!isOpen) return;
@@ -27,11 +26,10 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
       date: slot?.date ? slot.date.split("T")[0] : "",
       start_time: slot?.startTime || "",
       end_time: slot?.endTime || "",
-      capacity: slot?.capacity ?? 1,
+      capacity: 9999,
     });
-    setAssignToStudent(false);
     setSelectedSectionId("");
-    setSelectedStudentId("");
+    setSelectedStudentIds(new Set());
   }, [isOpen, slot]);
 
   const studentsInSection = useMemo(() => {
@@ -42,24 +40,38 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
   }, [selectedSectionId, getStudentsBySection, permissions.students]);
 
   const sections = permissions.sections || [];
+  const capacity = formData.capacity || 1;
+  const spotsLeft = capacity - selectedStudentIds.size;
+
+  const toggleStudent = (studentId) => {
+    setSelectedStudentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(studentId)) {
+        next.delete(studentId);
+      } else if (next.size < capacity) {
+        next.add(studentId);
+      }
+      return next;
+    });
+  };
+
+  // When capacity decreases, trim excess selections
+  useEffect(() => {
+    if (selectedStudentIds.size > capacity) {
+      const trimmed = [...selectedStudentIds].slice(0, capacity);
+      setSelectedStudentIds(new Set(trimmed));
+    }
+  }, [capacity]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSectionChange = (e) => {
-    setSelectedSectionId(e.target.value);
-    setSelectedStudentId("");
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    const payload = { ...formData };
-    if (!isEditing && assignToStudent && selectedStudentId) {
-      payload.student_id = selectedStudentId;
-    }
-    onSubmit(payload);
+    const studentBookings = isEditing ? [] : [...selectedStudentIds].map((id) => ({ student_id: id }));
+    onSubmit({ formData, studentBookings });
   };
 
   const canSubmit =
@@ -67,7 +79,6 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
     formData.date &&
     formData.start_time &&
     formData.end_time &&
-    (!assignToStudent || selectedStudentId) &&
     !isSubmitting;
 
   if (!isOpen) return null;
@@ -76,7 +87,7 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl z-10">
           <h2 className="text-lg font-semibold text-gray-900">
             {isEditing ? "Edit PTM Slot" : "Create PTM Slot"}
           </h2>
@@ -91,6 +102,7 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {/* Title */}
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">
               Title <span className="text-red-500">*</span>
@@ -107,10 +119,9 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
             />
           </div>
 
+          {/* Description */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">
-              Description
-            </label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Description</label>
             <textarea
               name="description"
               value={formData.description}
@@ -122,6 +133,7 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
             />
           </div>
 
+          {/* Date */}
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">
               Date <span className="text-red-500">*</span>
@@ -136,6 +148,7 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
             />
           </div>
 
+          {/* Start / End time */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -165,95 +178,82 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
             </div>
           </div>
 
-          {/* Capacity */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">
-              Max Students (Capacity)
-            </label>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setFormData((p) => ({ ...p, capacity: Math.max(1, (p.capacity || 1) - 1) }))}
-                className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors text-lg font-medium"
-              >
-                −
-              </button>
-              <span className="w-8 text-center text-sm font-semibold text-gray-900">{formData.capacity}</span>
-              <button
-                type="button"
-                onClick={() => setFormData((p) => ({ ...p, capacity: (p.capacity || 1) + 1 }))}
-                className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors text-lg font-medium"
-              >
-                +
-              </button>
-              <span className="text-xs text-gray-400 ml-1">student{formData.capacity !== 1 ? "s" : ""} per slot</span>
-            </div>
-          </div>
-
-          {/* Assign to student — only on create */}
+          {/* Book students — only on create */}
           {!isEditing && (
-            <div className="border border-gray-100 rounded-xl overflow-hidden">
-              <button
-                type="button"
-                onClick={() => {
-                  setAssignToStudent((v) => !v);
-                  setSelectedSectionId("");
-                  setSelectedStudentId("");
-                }}
-                className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                <span>Assign to a specific student</span>
-                <span className={`w-8 h-5 rounded-full transition-colors flex-shrink-0 ${assignToStudent ? "bg-blue-500" : "bg-gray-200"}`}>
-                  <span className={`block w-4 h-4 mt-0.5 rounded-full bg-white shadow transition-transform ${assignToStudent ? "translate-x-3.5" : "translate-x-0.5"}`} />
-                </span>
-              </button>
+            <div className="space-y-3 pt-1 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  Book for Students
+                  <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                </label>
+                {selectedStudentIds.size > 0 && (
+                  <span className="text-xs text-blue-600 font-medium">
+                    {selectedStudentIds.size} selected
+                  </span>
+                )}
+              </div>
 
-              {assignToStudent && (
-                <div className="px-4 pb-4 pt-1 space-y-3 border-t border-gray-100 bg-gray-50">
+              {/* Section picker */}
+              <select
+                value={selectedSectionId}
+                onChange={(e) => { setSelectedSectionId(e.target.value); setSelectedStudentIds(new Set()); }}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                <option value="">Select section…</option>
+                {sections.map((sec) => {
+                  const cls = (permissions.classes || []).find((c) => c.class_id === sec.class_id);
+                  return (
+                    <option key={sec.section_id} value={sec.section_id}>
+                      {cls ? `${cls.class_name} · ${sec.section_name}` : sec.section_name}
+                    </option>
+                  );
+                })}
+              </select>
+
+              {/* Student checkbox list */}
+              {selectedSectionId && (
+                studentsInSection.length === 0 ? (
+                  <p className="text-sm text-gray-400">No students in this section.</p>
+                ) : (
                   <div>
-                    <label className="text-xs font-medium text-gray-500 mb-1 block uppercase tracking-wide">Section</label>
-                    <select
-                      value={selectedSectionId}
-                      onChange={handleSectionChange}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    >
-                      <option value="">Select section…</option>
-                      {sections.map((sec) => {
-                        const cls = (permissions.classes || []).find((c) => c.class_id === sec.class_id);
-                        const label = cls ? `${cls.class_name} · ${sec.section_name}` : sec.section_name;
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs text-gray-400 uppercase tracking-wide font-medium">Students</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allSelected = studentsInSection.every((s) => selectedStudentIds.has(s.student_id));
+                          setSelectedStudentIds(allSelected ? new Set() : new Set(studentsInSection.map((s) => s.student_id)));
+                        }}
+                        className="text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
+                      >
+                        {studentsInSection.every((s) => selectedStudentIds.has(s.student_id)) ? "Deselect all" : "Select all"}
+                      </button>
+                    </div>
+                    <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 max-h-44 overflow-y-auto">
+                      {studentsInSection.map((st) => {
+                        const isSelected = selectedStudentIds.has(st.student_id);
+                        const atCapacity = !isSelected && selectedStudentIds.size >= capacity;
                         return (
-                          <option key={sec.section_id} value={sec.section_id}>{label}</option>
+                          <label
+                            key={st.student_id}
+                            className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
+                              isSelected ? "bg-blue-50" : atCapacity ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              disabled={atCapacity}
+                              onChange={() => toggleStudent(st.student_id)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-800">{st.student_name || st.student_id}</span>
+                          </label>
                         );
                       })}
-                    </select>
-                  </div>
-
-                  {selectedSectionId && (
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 mb-1 block uppercase tracking-wide">Student</label>
-                      {studentsInSection.length === 0 ? (
-                        <p className="text-sm text-gray-400">No students in this section.</p>
-                      ) : (
-                        <select
-                          value={selectedStudentId}
-                          onChange={(e) => setSelectedStudentId(e.target.value)}
-                          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        >
-                          <option value="">Select student…</option>
-                          {studentsInSection.map((st) => (
-                            <option key={st.student_id} value={st.student_id}>
-                              {st.student_name || st.student_id}
-                            </option>
-                          ))}
-                        </select>
-                      )}
                     </div>
-                  )}
-
-                  {assignToStudent && !selectedStudentId && (
-                    <p className="text-xs text-amber-600">Please select a student to assign this slot.</p>
-                  )}
-                </div>
+                  </div>
+                )
               )}
             </div>
           )}
@@ -278,7 +278,13 @@ export default function SlotFormModal({ isOpen, onClose, onSubmit, slot, isSubmi
               disabled={!canSubmit}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isSubmitting ? "Saving…" : isEditing ? "Save Changes" : "Create Slot"}
+              {isSubmitting
+                ? "Saving…"
+                : isEditing
+                  ? "Save Changes"
+                  : selectedStudentIds.size > 0
+                    ? `Create & Book ${selectedStudentIds.size} Student${selectedStudentIds.size !== 1 ? "s" : ""}`
+                    : "Create Slot"}
             </button>
           </div>
         </form>

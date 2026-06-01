@@ -267,7 +267,7 @@ export default function StaffPTMSlotDetail() {
     }
   };
 
-  const handleEditSlot = async (formData) => {
+  const handleEditSlot = async ({ formData }) => {
     setIsSubmitting(true);
     setEditError("");
     try {
@@ -351,7 +351,7 @@ export default function StaffPTMSlotDetail() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Slot Details</h2>
           {slot.description && <p className="text-sm text-gray-600">{slot.description}</p>}
-          <div className="grid grid-cols-3 gap-3 text-sm">
+          <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <span className="text-gray-400 text-xs block mb-0.5">Date</span>
               <span className="font-medium text-gray-900">
@@ -361,17 +361,6 @@ export default function StaffPTMSlotDetail() {
             <div>
               <span className="text-gray-400 text-xs block mb-0.5">Time</span>
               <span className="font-medium text-gray-900">{slot.startTime} – {slot.endTime}</span>
-            </div>
-            <div>
-              <span className="text-gray-400 text-xs block mb-0.5">Capacity</span>
-              <span className="font-medium text-gray-900">
-                {activeBookings.length} / {capacity}
-                {spotsLeft > 0 && (
-                  <span className="ml-1.5 text-xs text-green-600 font-normal">
-                    ({spotsLeft} open)
-                  </span>
-                )}
-              </span>
             </div>
           </div>
 
