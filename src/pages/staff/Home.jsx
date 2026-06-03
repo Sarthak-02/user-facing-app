@@ -426,9 +426,9 @@ function QuickStatContent({ icon, label, value, colorClass, hint }) {
       createElement(icon, { size: 18, strokeWidth: 2 })
     ),
     createElement("p", { className: "text-2xl font-bold tabular-nums leading-none text-gray-900" }, value),
-    createElement("p", { className: "text-center text-xs font-semibold leading-snug text-gray-600" }, label),
+    createElement("p", { className: "w-full text-center text-xs font-semibold leading-snug text-gray-600" }, label),
     hint
-      ? createElement("p", { className: "text-center text-[11px] font-medium leading-snug text-primary-600 mt-0.5 px-0.5" }, hint)
+      ? createElement("p", { className: "w-full text-center text-[11px] font-medium leading-snug text-primary-600 mt-0.5" }, hint)
       : null
   );
 }
@@ -654,23 +654,25 @@ export default function StaffHome() {
 
   return (
     <>
-      <div className="min-h-full bg-[var(--color-background)] p-4 pb-30 md:p-6">
+      <div className="min-h-full bg-[var(--color-background)] p-4 pb-8 md:p-6">
         <div className="mx-auto max-w-5xl space-y-4">
           {/* Hero card */}
-          <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-5 shadow-lg">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-xl font-bold text-white">
-                {summary.firstName.charAt(0).toUpperCase()}
+          <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-5 shadow-lg md:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-4 min-w-0 flex-1">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-xl font-bold text-white">
+                  {summary.firstName.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-indigo-200">{summary.greeting}</p>
+                  <h1 className="text-2xl font-bold tracking-tight text-white">{summary.firstName}</h1>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-indigo-100">
+                    <CalendarDays size={12} className="shrink-0" />
+                    {summary.dayLine}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-indigo-200">{summary.greeting}</p>
-                <h1 className="text-2xl font-bold tracking-tight text-white">{summary.firstName}</h1>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-indigo-100">
-                  <CalendarDays size={12} className="shrink-0" />
-                  {summary.dayLine}
-                </p>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-1">
+              <div className="flex shrink-0 sm:self-start">
                 <div className="flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1.5 backdrop-blur-sm">
                   <School size={14} className="shrink-0 text-indigo-100" aria-hidden />
                   <p className="text-xs font-semibold text-white">
@@ -718,7 +720,7 @@ export default function StaffHome() {
           ) : null}
 
           {/* Quick stats */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <QuickStat
               icon={Clock}
               label={t("home.staff.stats.todaysClasses")}
@@ -756,7 +758,7 @@ export default function StaffHome() {
           </div>
 
           {/* Quick nav links */}
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
             {staffQuickNav.map(({ to, icon, labelKey, color }) => (
               <Link
                 key={to}
@@ -766,7 +768,7 @@ export default function StaffHome() {
                 <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${color}`}>
                   {createElement(icon, { size: 16 })}
                 </span>
-                <p className="text-sm font-semibold text-gray-800">{t(labelKey)}</p>
+                <p className="flex-1 min-w-0 truncate text-sm font-semibold text-gray-800">{t(labelKey)}</p>
                 <ChevronRight size={14} className="ml-auto shrink-0 text-gray-300" />
               </Link>
             ))}
@@ -778,7 +780,7 @@ export default function StaffHome() {
       <Modal
         open={isScheduleModalOpen}
         onClose={() => setIsScheduleModalOpen(false)}
-        className="max-w-sm"
+        className="max-w-sm sm:max-w-md"
       >
         <div className="mb-4 pr-6">
           <h2 className="text-base font-bold text-gray-900">{t("home.staff.todaysSchedule")}</h2>
@@ -899,7 +901,7 @@ export default function StaffHome() {
       <Modal
         open={isHomeworkModalOpen}
         onClose={() => setIsHomeworkModalOpen(false)}
-        className="max-w-sm"
+        className="max-w-sm sm:max-w-md"
       >
         <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.staff.homeworkDue")}</h2>
         {upcomingHomework.length === 0 ? (
@@ -990,7 +992,7 @@ export default function StaffHome() {
       <Modal
         open={isAnnouncementsModalOpen}
         onClose={() => setIsAnnouncementsModalOpen(false)}
-        className="max-w-sm"
+        className="max-w-sm sm:max-w-md"
       >
         <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.staff.announcements")}</h2>
         {announcements.length === 0 ? (
