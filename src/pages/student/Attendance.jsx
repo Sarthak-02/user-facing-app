@@ -98,8 +98,8 @@ export default function StudentAttendance() {
               ? `${record.attendanceSession.teacher.teacher_first_name} ${record.attendanceSession.teacher.teacher_last_name}`
               : t("common.na");
 
-            const date = record.attendanceSession?.submittedAt
-              ? new Date(record.attendanceSession.submittedAt).toISOString().split('T')[0]
+            const date = record.attendanceSession?.date
+              ? new Date(record.attendanceSession.date).toISOString().split('T')[0]
               : new Date().toISOString().split('T')[0];
 
             return {
