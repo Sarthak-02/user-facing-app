@@ -172,6 +172,8 @@
     "rollNo": "Roll No: {{rollNo}}",
     "present": "Present",
     "absent": "Absent",
+    "firstHalf": "First Half Leave",
+    "secondHalf": "Second Half Leave",
     "notMarked": "Not Marked",
     "columns": {
       "student": "Student",
@@ -181,7 +183,8 @@
     "summary": {
       "total": "Total",
       "present": "Present",
-      "absent": "Absent"
+      "absent": "Absent",
+      "halfDay": "Half Day"
     },
     "confirm": {
       "title": "Confirm Attendance",

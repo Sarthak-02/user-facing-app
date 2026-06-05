@@ -172,6 +172,8 @@
     "rollNo": "रोल नंबर: {{rollNo}}",
     "present": "उपस्थित",
     "absent": "अनुपस्थित",
+    "firstHalf": "पहली छमाही छुट्टी",
+    "secondHalf": "दूसरी छमाही छुट्टी",
     "notMarked": "अंकित नहीं",
     "columns": {
       "student": "विद्यार्थी",
@@ -181,7 +183,8 @@
     "summary": {
       "total": "कुल",
       "present": "उपस्थित",
-      "absent": "अनुपस्थित"
+      "absent": "अनुपस्थित",
+      "halfDay": "अर्ध दिन"
     },
     "confirm": {
       "title": "उपस्थिति की पुष्टि करें",

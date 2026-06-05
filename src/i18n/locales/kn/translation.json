@@ -172,6 +172,8 @@
     "rollNo": "ರೋಲ್ ಸಂಖ್ಯೆ: {{rollNo}}",
     "present": "ಪ್ರಸ್ತುತ",
     "absent": "ಗೈರು",
+    "firstHalf": "ಮೊದಲ ಅರ್ಧ ರಜೆ",
+    "secondHalf": "ಎರಡನೇ ಅರ್ಧ ರಜೆ",
     "notMarked": "ಗುರುತಿಸಲಾಗಿಲ್ಲ",
     "columns": {
       "student": "ವಿದ್ಯಾರ್ಥಿ",
@@ -181,7 +183,8 @@
     "summary": {
       "total": "ಒಟ್ಟು",
       "present": "ಪ್ರಸ್ತುತ",
-      "absent": "ಗೈರು"
+      "absent": "ಗೈರು",
+      "halfDay": "ಅರ್ಧ ದಿನ"
     },
     "confirm": {
       "title": "ಹಾಜರಾತಿಯನ್ನು ದೃಢೀಕರಿಸಿ",

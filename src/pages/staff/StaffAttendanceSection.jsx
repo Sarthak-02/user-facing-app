@@ -354,8 +354,8 @@ export default function StaffAttendanceSection({ readOnly = false }) {
   };
 
   const presentCount = Object.values(attendance).filter((s) => s === "PRESENT").length;
-
   const absentCount = Object.values(attendance).filter((s) => s === "ABSENT").length;
+  const halfDayCount = Object.values(attendance).filter((s) => s === "FIRST_HALF" || s === "SECOND_HALF").length;
 
   const tabClass = ({ isActive }) =>
     [
@@ -399,6 +399,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
           isSubmitting={isSubmitting}
           presentCount={presentCount}
           absentCount={absentCount}
+          halfDayCount={halfDayCount}
           totalCount={students.length}
         />
       )}
@@ -576,7 +577,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
         {!isLoadingAttendance && students.length > 0 && (editMode || !noAttendanceFound) && (
           <>
             <div className={editMode ? "hidden" : ""}>
-              <AttendanceSummary total={students.length} absent={absentCount} present={presentCount} />
+              <AttendanceSummary total={students.length} absent={absentCount} present={presentCount} halfDay={halfDayCount} />
               {!readOnly && submittedAttendanceData?.is_attendance_taken && isToday(selectedDate) && (
                 <div className="mt-3 flex items-center justify-between rounded-lg border border-success-200 bg-success-50 px-4 py-2.5 dark:border-success-800 dark:bg-success-950">
                   <div className="flex items-center gap-2 text-sm font-medium text-success-700 dark:text-success-400">
