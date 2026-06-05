@@ -44,7 +44,7 @@ export default function BottomNav({ navItems, setActiveNav }) {
   const overflowHasActive = overflowItems.some((item) => isActive(item.path));
 
   const navButtonClass = (active) =>
-    `flex flex-col items-center text-xs transition-colors min-w-0 flex-1 px-0.5 ${
+    `flex flex-col items-stretch gap-0.5 text-[10px] transition-colors min-w-0 flex-1 px-1 ${
       active ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
     }`;
 
@@ -114,11 +114,13 @@ export default function BottomNav({ navItems, setActiveNav }) {
                 className={navButtonClass(active)}
                 onClick={() => handleNavClick(labelKey ?? label, path)}
               >
-                <Icon
-                  size={20}
-                  color={active ? "var(--color-primary-600)" : "black"}
-                />
-                <span className="truncate max-w-full">{text}</span>
+                <span className="flex justify-center">
+                  <Icon
+                    size={20}
+                    color={active ? "var(--color-primary-600)" : "black"}
+                  />
+                </span>
+                <span className="text-center leading-tight break-words line-clamp-2">{text}</span>
               </button>
             );
           })}
@@ -130,15 +132,17 @@ export default function BottomNav({ navItems, setActiveNav }) {
               aria-expanded={moreOpen}
               aria-haspopup="menu"
             >
-              <MoreHorizontal
-                size={20}
-                color={
-                  overflowHasActive || moreOpen
-                    ? "var(--color-primary-600)"
-                    : "black"
-                }
-              />
-              <span>{t("sidebar.more")}</span>
+              <span className="flex justify-center">
+                <MoreHorizontal
+                  size={20}
+                  color={
+                    overflowHasActive || moreOpen
+                      ? "var(--color-primary-600)"
+                      : "black"
+                  }
+                />
+              </span>
+              <span className="text-center leading-tight">{t("sidebar.more")}</span>
             </button>
           )}
         </div>

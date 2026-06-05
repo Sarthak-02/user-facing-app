@@ -46,6 +46,9 @@ import StudentLessonPlansBrowse from "../../pages/student/StudentLessonPlansBrow
 import StudentTopicDetail from "../../pages/student/StudentTopicDetail";
 import StaffStudyChat from "../../pages/staff/StaffStudyChat";
 import StudentGroups from "../../pages/staff/StudentGroups";
+import StaffPTM from "../../pages/staff/StaffPTM";
+import StaffPTMSlotDetail from "../../pages/staff/StaffPTMSlotDetail";
+import StudentPTM from "../../pages/student/StudentPTM";
 
 export const routes = [
   {
@@ -273,6 +276,22 @@ export const routes = [
         ),
       },
       {
+        path: "staff/ptm",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]} >
+            <StaffPTM />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "staff/ptm/:slotId",
+        element: (
+          <RoleBasedRoute allowedRoles={["teacher", "staff"]}>
+            <StaffPTMSlotDetail />
+          </RoleBasedRoute>
+        ),
+      },
+      {
         path: "staff/study",
         element: (
           <RoleBasedRoute allowedRoles={["teacher", "staff"]} requiredFeature="staff_study_ai">
@@ -435,6 +454,14 @@ export const routes = [
         element: (
           <RoleBasedRoute allowedRoles={["student"]} requiredFeature="student_pickup">
             <StudentPickup />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: "student/ptm",
+        element: (
+          <RoleBasedRoute allowedRoles={["student"]}>
+            <StudentPTM />
           </RoleBasedRoute>
         ),
       },

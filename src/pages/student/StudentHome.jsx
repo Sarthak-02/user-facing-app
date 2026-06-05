@@ -252,9 +252,9 @@ function QuickStatContent({ icon, label, value, colorClass, hint }) {
       createElement(icon, { size: 18, strokeWidth: 2 })
     ),
     createElement("p", { className: "text-2xl font-bold tabular-nums leading-none text-gray-900" }, value),
-    createElement("p", { className: "text-center text-xs font-semibold leading-snug text-gray-600" }, label),
+    createElement("p", { className: "w-full text-center text-xs font-semibold leading-snug text-gray-600" }, label),
     hint
-      ? createElement("p", { className: "text-center text-[11px] font-medium leading-snug text-primary-600 mt-0.5 px-0.5" }, hint)
+      ? createElement("p", { className: "w-full text-center text-[11px] font-medium leading-snug text-primary-600 mt-0.5" }, hint)
       : null
   );
 }
@@ -486,7 +486,7 @@ export default function StudentHome() {
 
   return (
     <>
-    <div className="min-h-full bg-[var(--color-background)] p-4 pb-30 md:p-6">
+    <div className="min-h-full bg-[var(--color-background)] p-4 pb-8 md:p-6">
       <div className="mx-auto max-w-5xl space-y-4">
         {/* Hero card */}
         <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-5 shadow-lg md:p-6">
@@ -555,7 +555,7 @@ export default function StudentHome() {
         })()}
 
         {/* Quick stats row */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <QuickStat
             icon={Clock}
             label={t("home.student.stats.classesToday")}
@@ -597,7 +597,7 @@ export default function StudentHome() {
     <Modal
       open={isHomeworkModalOpen}
       onClose={() => setIsHomeworkModalOpen(false)}
-      className="max-w-sm"
+      className="max-w-sm sm:max-w-md"
     >
       <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.student.homeworkDue")}</h2>
       {upcomingHomework.length === 0 ? (
@@ -657,7 +657,7 @@ export default function StudentHome() {
     <Modal
       open={isScheduleModalOpen}
       onClose={() => setIsScheduleModalOpen(false)}
-      className="max-w-sm"
+      className="max-w-sm sm:max-w-md"
     >
       <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.student.schedule")}</h2>
 
@@ -749,7 +749,7 @@ export default function StudentHome() {
     <Modal
       open={isAnnouncementsModalOpen}
       onClose={() => setIsAnnouncementsModalOpen(false)}
-      className="max-w-sm"
+      className="max-w-sm sm:max-w-md"
     >
       <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.student.announcements")}</h2>
       {announcements.length === 0 ? (
@@ -798,7 +798,7 @@ export default function StudentHome() {
     <Modal
       open={isCalendarModalOpen}
       onClose={() => setIsCalendarModalOpen(false)}
-      className="max-w-sm"
+      className="max-w-sm sm:max-w-md"
     >
       <h2 className="mb-4 pr-6 text-base font-bold text-gray-900">{t("home.student.academicCalendar")}</h2>
       {(() => {
