@@ -21,21 +21,36 @@ function formatDate(date, locale) {
   return `${formattedDate} (${dayOfWeek})`;
 }
 
-function StatusBadge({ status }) {
+function StatusCell({ status, halfDayType }) {
   const { t } = useTranslation();
+
+  let badge;
   if (status === "PRESENT") {
-    return <Badge variant="success">{t("studentAttendance.present")}</Badge>;
+    badge = <Badge variant="success">{t("studentAttendance.present")}</Badge>;
+  } else if (status === "ABSENT") {
+    badge = <Badge variant="error">{t("studentAttendance.absent")}</Badge>;
+  } else if (status === "LATE") {
+    badge = <Badge variant="warning">{t("studentAttendance.late")}</Badge>;
+  } else if (status === "ON_LEAVE") {
+    badge = <Badge variant="info">{t("studentAttendance.onLeave")}</Badge>;
+  } else if (status === "HALF_DAY") {
+    badge = <Badge variant="warning">{t("studentAttendance.halfDay")}</Badge>;
+  } else {
+    badge = <Badge variant="default">{t("common.statusUnknown", { status: String(status ?? "") })}</Badge>;
   }
-  if (status === "ABSENT") {
-    return <Badge variant="error">{t("studentAttendance.absent")}</Badge>;
-  }
-  if (status === "LATE") {
-    return <Badge variant="warning">{t("studentAttendance.late")}</Badge>;
-  }
-  if (status === "ON_LEAVE") {
-    return <Badge variant="info">{t("studentAttendance.onLeave")}</Badge>;
-  }
-  return <Badge variant="default">{t("common.statusUnknown", { status: String(status ?? "") })}</Badge>;
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {badge}
+      {status === "HALF_DAY" && halfDayType && (
+        <span className="text-xs text-warning-600 font-medium">
+          {halfDayType === "FIRST"
+            ? t("studentAttendance.presentFirstHalf")
+            : t("studentAttendance.presentSecondHalf")}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export default function DesktopListing({ attendanceRecords }) {
@@ -69,7 +84,7 @@ export default function DesktopListing({ attendanceRecords }) {
       {
         key: "status",
         label: t("studentAttendance.colStatus"),
-        render: (row) => <StatusBadge status={row.status} />,
+        render: (row) => <StatusCell status={row.status} halfDayType={row.half_day_type} />,
       },
       {
         key: "markedBy",

@@ -20,7 +20,7 @@ function formatDate(date, locale) {
   return `${formattedDate} (${dayOfWeek})`;
 }
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, halfDayType }) {
   const { t } = useTranslation();
   if (status === "PRESENT") {
     return <Badge variant="success">{t("studentAttendance.present")}</Badge>;
@@ -33,6 +33,9 @@ function StatusBadge({ status }) {
   }
   if (status === "ON_LEAVE") {
     return <Badge variant="info">{t("studentAttendance.onLeave")}</Badge>;
+  }
+  if (status === "HALF_DAY") {
+    return <Badge variant="warning">{t("studentAttendance.halfDay")}</Badge>;
   }
   return <Badge variant="default">{t("common.statusUnknown", { status: String(status ?? "") })}</Badge>;
 }
@@ -64,7 +67,16 @@ export default function MobileListing({ attendanceRecords }) {
                     })}
                   </div>
                 </div>
-                <StatusBadge status={record.status} />
+                <div className="flex flex-col items-end gap-1">
+                  <StatusBadge status={record.status} halfDayType={record.half_day_type} />
+                  {record.status === "HALF_DAY" && record.half_day_type && (
+                    <span className="text-xs text-warning-600 font-medium">
+                      {record.half_day_type === "FIRST"
+                        ? t("studentAttendance.presentFirstHalf")
+                        : t("studentAttendance.presentSecondHalf")}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Details */}

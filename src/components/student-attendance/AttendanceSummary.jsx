@@ -6,21 +6,23 @@ export default function AttendanceSummary({
   total,
   present,
   absent,
+  halfDay = 0,
+  attendancePercentage = "0",
   statusFilter,
   onStatusFilterChange
 }) {
   const { t } = useTranslation();
-  const presentPercentage = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+  const pct = parseFloat(attendancePercentage) || 0;
 
-  const rateColor = parseFloat(presentPercentage) >= 75
+  const rateColor = pct >= 75
     ? "text-success-600"
-    : parseFloat(presentPercentage) >= 50
+    : pct >= 50
     ? "text-amber-600"
     : "text-error-600";
 
-  const rateBarColor = parseFloat(presentPercentage) >= 75
+  const rateBarColor = pct >= 75
     ? "bg-success-500"
-    : parseFloat(presentPercentage) >= 50
+    : pct >= 50
     ? "bg-amber-500"
     : "bg-error-500";
 
@@ -58,7 +60,9 @@ export default function AttendanceSummary({
             {t("studentAttendance.present")}
           </span>
         </div>
-        <div className="text-base font-bold tabular-nums text-success-600 sm:text-xl">{present}</div>
+        <div className="text-base font-bold tabular-nums text-success-600 sm:text-xl">
+          {present + halfDay * 0.5}
+        </div>
       </Card>
 
       {/* Absent */}
@@ -74,7 +78,9 @@ export default function AttendanceSummary({
             {t("studentAttendance.absent")}
           </span>
         </div>
-        <div className="text-base font-bold tabular-nums text-error-600 sm:text-xl">{absent}</div>
+        <div className="text-base font-bold tabular-nums text-error-600 sm:text-xl">
+          {absent + halfDay * 0.5}
+        </div>
       </Card>
 
       {/* Rate */}
@@ -86,12 +92,12 @@ export default function AttendanceSummary({
           </span>
         </div>
         <div className={`text-base font-bold tabular-nums sm:text-xl ${rateColor}`}>
-          {presentPercentage}%
+          {pct}%
         </div>
         <div className="mt-1.5 h-1 w-full rounded-full bg-gray-200 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${rateBarColor}`}
-            style={{ width: `${presentPercentage}%` }}
+            style={{ width: `${pct}%` }}
           />
         </div>
       </Card>

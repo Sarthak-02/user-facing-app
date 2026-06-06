@@ -218,7 +218,8 @@ export default function StudentAttendance() {
             total={summary.total}
             present={summary.present}
             absent={summary.absent}
-            onLeave={summary.onLeave}
+            halfDay={summary.half_day}
+            attendancePercentage={summary.attendance_percentage}
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
           />

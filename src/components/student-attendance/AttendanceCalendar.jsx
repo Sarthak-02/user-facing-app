@@ -11,9 +11,14 @@ function normalizeStatus(status) {
   return String(status ?? "").toUpperCase();
 }
 
-/** Present count for the cell ratio (strict “Present” status only). */
+/** Present count for the cell ratio. HALF_DAY counts as 0.5. */
 function countPresentMarks(records) {
-  return records.filter((r) => normalizeStatus(r.status) === "PRESENT").length;
+  return records.reduce((sum, r) => {
+    const s = normalizeStatus(r.status);
+    if (s === "PRESENT") return sum + 1;
+    if (s === "HALF_DAY") return sum + 0.5;
+    return sum;
+  }, 0);
 }
 
 function countAbsentMarks(records) {
@@ -62,6 +67,9 @@ function StatusBadge({ status }) {
         {status === "EXCUSED" ? t("attendanceCalendar.statusExcused") : t("attendanceCalendar.statusOnLeave")}
       </Badge>
     );
+  }
+  if (status === "HALF_DAY") {
+    return <Badge variant="warning">{t("studentAttendance.halfDay")}</Badge>;
   }
   return <Badge variant="default">{t("common.statusUnknown", { status: String(status ?? "") })}</Badge>;
 }
@@ -302,6 +310,13 @@ export default function AttendanceCalendar({ attendanceRecords }) {
                     </span>
                     <StatusBadge status={rec.status} />
                   </div>
+                  {rec.status === "HALF_DAY" && rec.half_day_type && (
+                    <div className="mt-1.5 text-xs font-medium text-warning-600">
+                      {rec.half_day_type === "FIRST"
+                        ? t("studentAttendance.presentFirstHalf")
+                        : t("studentAttendance.presentSecondHalf")}
+                    </div>
+                  )}
                   <div className="mt-2 text-xs text-gray-500">{t("attendanceCalendar.markedBy")}</div>
                   <div className="text-sm text-gray-800">
                     {rec.markedBy?.trim() ? rec.markedBy : t("common.na")}

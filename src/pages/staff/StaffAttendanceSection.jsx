@@ -33,6 +33,19 @@ function parseDateInputValue(s) {
   return new Date(y, m - 1, d);
 }
 
+function parseAttendanceStatus(attendance_status, half_day_type) {
+  if (attendance_status === "HALF_DAY") {
+    return half_day_type === "SECOND" ? "FIRST_HALF" : "SECOND_HALF";
+  }
+  return attendance_status;
+}
+
+function toApiRecord(student_id, status) {
+  if (status === "FIRST_HALF") return { student_id, status: "HALF_DAY", half_day_type: "SECOND" };
+  if (status === "SECOND_HALF") return { student_id, status: "HALF_DAY", half_day_type: "FIRST" };
+  return { student_id, status };
+}
+
 export default function StaffAttendanceSection({ readOnly = false }) {
   const { t, i18n } = useTranslation();
   const { sectionId: sectionIdParam } = useParams();
@@ -147,7 +160,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
             const attendanceMap = {};
             response?.data?.students?.forEach((record) => {
               if (record?.attendance_status) {
-                attendanceMap[record.student_id] = record.attendance_status;
+                attendanceMap[record.student_id] = parseAttendanceStatus(record.attendance_status, record.half_day_type);
               }
             });
 
@@ -240,10 +253,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
 
   async function handleSubmit() {
     setIsSubmitting(true);
-    const records = Object.entries(attendance).map(([key, value]) => ({
-      student_id: key,
-      status: value,
-    }));
+    const records = Object.entries(attendance).map(([key, value]) => toApiRecord(key, value));
 
     const submitPayload = isEditing
       ? { session_id: submittedAttendanceData.attendanceSessionId, teacher_id: userId, records }
@@ -266,7 +276,7 @@ export default function StaffAttendanceSection({ readOnly = false }) {
           const attendanceMap = {};
           updatedData.data.students.forEach((record) => {
             if (record?.attendance_status) {
-              attendanceMap[record.student_id] = record.attendance_status;
+              attendanceMap[record.student_id] = parseAttendanceStatus(record.attendance_status, record.half_day_type);
             }
           });
           setAttendance(attendanceMap);
