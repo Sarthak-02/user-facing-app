@@ -191,6 +191,22 @@ function buildTodaysPeriods(timetable, now = new Date(), sectionMeta = null, slo
     const slot = slotById.get(entry.slotId);
     const start = slot?.startTime ?? "";
     const end = slot?.endTime ?? "";
+
+    if (entry.isElective && Array.isArray(entry.electives)) {
+      return {
+        start,
+        end,
+        subject: slotLabel ? slotLabel("elective") : "Elective",
+        subjectId: null,
+        room: "",
+        slotType: slot?.type ?? "elective",
+        sectionName,
+        sectionId,
+        isElective: true,
+        electives: entry.electives,
+      };
+    }
+
     let subject = "—";
     if (typeof entry.subject === "string") {
       subject = entry.subject.trim() || "—";
@@ -410,6 +426,7 @@ function daysUntil(iso) {
 
 function periodSubjectLabel(period, t) {
   if (!period) return "";
+  if (period.isElective) return t("home.slots.elective");
   if (period.slotType === "lunch") return t("home.slots.lunch");
   if (period.slotType === "assembly") return t("home.slots.assembly");
   if (period.slotType === "break") return t("home.slots.break");
@@ -803,6 +820,74 @@ export default function StaffHome() {
             {periods.map((p, i) => {
               const isCurrent = i === currentPeriodIndex;
               const isPast = !isCurrent && timeToMinutes(p.end) < currentNowMinutes;
+
+              if (p.isElective) {
+                return (
+                  <li
+                    key={`${p.sectionId || ""}-${p.start}-${p.end}-elective-${i}`}
+                    className={[
+                      "rounded-xl border border-l-4 px-3 py-2.5 transition-all",
+                      isCurrent
+                        ? "border-sky-300 border-l-sky-500 bg-sky-50"
+                        : isPast
+                          ? "border-violet-100 border-l-violet-300 bg-violet-50/40 opacity-60"
+                          : "border-violet-200 border-l-violet-500 bg-violet-50",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                        isCurrent ? "bg-sky-500" : "bg-violet-200"
+                      }`}>
+                        <BookOpen
+                          size={16}
+                          className={isCurrent ? "text-white" : "text-violet-800"}
+                          aria-hidden
+                        />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                          <p className={`font-semibold text-sm ${isCurrent ? "text-sky-900" : "text-violet-900"}`}>
+                            {t("home.slots.elective")}
+                          </p>
+                          <span className="rounded-full bg-violet-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-800">
+                            {t("home.slots.elective")}
+                          </span>
+                          {isCurrent ? (
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-sky-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                              {t("home.staff.period.now")}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                          {p.sectionName ? (
+                            <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+                              isCurrent ? "bg-sky-100 text-sky-700" : "bg-violet-200 text-violet-900"
+                            }`}>
+                              {p.sectionName}
+                            </span>
+                          ) : null}
+                          <span className="font-mono text-xs tabular-nums text-gray-800">{p.start}–{p.end}</span>
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {p.electives.map((el, ei) => (
+                            <span
+                              key={ei}
+                              className="inline-flex items-center gap-1 rounded-md border border-violet-100 bg-white px-2 py-0.5 text-xs font-semibold text-violet-700"
+                            >
+                              {el.subject}
+                              {el.room ? (
+                                <span className="font-normal text-violet-400">· {el.room}</span>
+                              ) : null}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                );
+              }
+
               const isNonClass = STAFF_NON_CLASS_SLOT_TYPES.has(p.slotType);
               const matchedSubjectId =
                 p.sectionId && p.subject

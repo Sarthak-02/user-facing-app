@@ -951,7 +951,8 @@
     "slots": {
       "assembly": "Assembly",
       "lunch": "Lunch",
-      "break": "Break"
+      "break": "Break",
+      "elective": "Elective"
     },
     "weekdayShort": {
       "mon": "Mon",

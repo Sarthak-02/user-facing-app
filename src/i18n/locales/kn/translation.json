@@ -951,7 +951,8 @@
     "slots": {
       "assembly": "ಅಸೆಂಬ್ಲಿ",
       "lunch": "ಊಟ",
-      "break": "ಬ್ರೇಕ್"
+      "break": "ಬ್ರೇಕ್",
+      "elective": "ಐಚ್ಛಿಕ"
     },
     "weekdayShort": {
       "mon": "ಸೋಮ",

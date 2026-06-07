@@ -951,7 +951,8 @@
     "slots": {
       "assembly": "प्रार्थना सभा",
       "lunch": "दिन का खाना",
-      "break": "अंतराल"
+      "break": "अंतराल",
+      "elective": "ऐच्छिक"
     },
     "weekdayShort": {
       "mon": "सोम",

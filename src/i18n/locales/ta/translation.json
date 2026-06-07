@@ -951,7 +951,8 @@
     "slots": {
       "assembly": "சட்டசபை",
       "lunch": "மதிய உணவு",
-      "break": "இடைவேளை"
+      "break": "இடைவேளை",
+      "elective": "தேர்வு பாடம்"
     },
     "weekdayShort": {
       "mon": "திங்கள்",

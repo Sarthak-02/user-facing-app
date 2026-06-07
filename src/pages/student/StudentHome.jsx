@@ -156,6 +156,19 @@ function buildPeriodsForDay(timetable, dayId, t = (k) => k) {
 
   return visibleSlots.map((slot) => {
     const entry = entryBySlot.get(slot.id);
+
+    if (entry?.isElective && Array.isArray(entry.electives)) {
+      return {
+        start: slot.startTime ?? "",
+        end: slot.endTime ?? "",
+        subject: t("home.slots.elective"),
+        room: "",
+        slotType: "elective",
+        isElective: true,
+        electives: entry.electives,
+      };
+    }
+
     const subject =
       (NON_CLASS_SLOT_TYPES.has(slot.type) ? t(`home.slots.${slot.type}`) : null) ??
       entry?.subject?.trim() ??
@@ -698,6 +711,67 @@ export default function StudentHome() {
             const isCurrent = isViewingToday && i === currentPeriodIndex;
             const isPast =
               isViewingToday && !isCurrent && timeToMinutes(p.end) < currentNowMinutes;
+
+            if (p.isElective) {
+              return (
+                <li
+                  key={`${p.start}-${p.end}-elective-${i}`}
+                  className={`rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                    isCurrent
+                      ? "border-l-[3px] border-violet-500 bg-violet-50 pl-[9px]"
+                      : isPast
+                        ? "border-violet-100 bg-violet-50/40 opacity-60"
+                        : "border-violet-100 bg-violet-50/50"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                        isCurrent
+                          ? "bg-violet-500 text-white"
+                          : isPast
+                            ? "bg-gray-200 text-gray-400"
+                            : "bg-violet-100 text-violet-600"
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className={`font-semibold ${isCurrent ? "text-violet-900" : "text-violet-800"}`}>
+                          {p.subject}
+                        </p>
+                        <span className="rounded bg-violet-200 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-800">
+                          {t("home.slots.elective")}
+                        </span>
+                        {isCurrent && (
+                          <span className="rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                            {t("home.period.now")}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {p.electives.map((el, ei) => (
+                          <span
+                            key={ei}
+                            className="inline-flex items-center gap-1 rounded-md border border-violet-100 bg-white px-2 py-0.5 text-xs font-semibold text-violet-700"
+                          >
+                            {el.subject}
+                            {el.room ? (
+                              <span className="font-normal text-violet-400">· {el.room}</span>
+                            ) : null}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="shrink-0 font-mono text-xs font-semibold tabular-nums text-gray-400">
+                      {p.start}–{p.end}
+                    </p>
+                  </div>
+                </li>
+              );
+            }
+
             return (
               <li
                 key={`${p.start}-${p.end}-${p.subject}-${i}`}
